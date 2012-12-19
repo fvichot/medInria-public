@@ -1,61 +1,93 @@
 #include "cliSupportToolBox.h"
 
 #include <dtkCore/dtkAbstractView.h>
-#include <ctkCmdLineModuleManager.h>
-#include <ctkCmdLineModuleReference.h>
+
 #include <ctkCmdLineModuleBackendLocalProcess.h>
 #include <ctkCmdLineModuleFrontendFactoryQtGui.h>
-
+#include <ctkCmdLineModuleFuture.h>
+#include <ctkCmdLineModuleFutureWatcher.h>
+#include <ctkCmdLineModuleManager.h>
+#include <ctkCmdLineModuleReference.h>
+#include <ctkCmdLineModuleRunException.h>
 #include <ctkException.h>
+
+
+QStringList pathSplitter(const QString & path)
+{
+    QString paths = path;
+
+#ifdef Q_WS_WIN
+    QStringList pathList;
+    QRegExp pathFilterRx("(([a-zA-Z]:)?[^:]+)");
+
+    int pos = 0;
+
+    while ((pos = pathFilterRx.indexIn(paths, pos)) != -1) {
+
+        QString pathItem = pathFilterRx.cap(1);
+        pathItem.replace( "\\" , "/" );
+
+        if (!pathItem.isEmpty())
+            pathList << pathItem;
+
+        pos += pathFilterRx.matchedLength();
+    }
+#else
+    QStringList pathList = paths.split(":", QString::SkipEmptyParts);
+#endif
+
+    return pathList;
+}
+
 
 class cliSupportToolBoxPrivate
 {
 public:
+    cliSupportToolBoxPrivate()
+        : view(NULL)
+        , manager(NULL)
+        , backend(NULL)
+        , frontend(NULL)
+        , futureWatcher(NULL)
+        , gridLayout(NULL)
+        , moduleList(NULL)
+        , moduleGui(NULL)
+        , moduleRun(NULL)
+    {}
+
+    ~cliSupportToolBoxPrivate()
+    {
+        delete frontend;
+        delete backend;
+        delete manager;
+        delete futureWatcher;
+        delete gridLayout;
+        delete moduleList;
+        delete moduleGui;
+        delete moduleRun;
+    }
+
     dtkAbstractView * view;
+
+    QString path;
+    ctkCmdLineModuleManager * manager;
+    ctkCmdLineModuleBackendLocalProcess * backend;
+    ctkCmdLineModuleFrontendQtGui * frontend;
+    ctkCmdLineModuleFutureWatcher * futureWatcher;
+    QHash<QString, ctkCmdLineModuleReference> modules;
+
+    QGridLayout * gridLayout;
+    QComboBox * moduleList;
+    QWidget * moduleGui;
+    QProgressBar * moduleProgress;
+    QPushButton * moduleRun;
 };
+
 
 cliSupportToolBox::cliSupportToolBox(QWidget *parent) : medToolBox(parent), d(new cliSupportToolBoxPrivate)
 {
-    d->view = 0;
-    this->setTitle("CTK CLI Support");
-
-    // Instantiate a ctkCmdLineModuleManager class.
-    ctkCmdLineModuleManager moduleManager(
-                // Use "strict" validation mode, rejecting modules with non-valid XML descriptions.
-                ctkCmdLineModuleManager::STRICT_VALIDATION,
-                // Use the default cache location for this application
-                QDesktopServices::storageLocation(QDesktopServices::CacheLocation)
-                );
-
-    // Instantiate a back-end for running executable modules in a local process.
-    // This back-end handles the "file" Url scheme.
-    QScopedPointer<ctkCmdLineModuleBackend> processBackend(new ctkCmdLineModuleBackendLocalProcess);
-    // Register the back-end with the module manager.
-    moduleManager.registerBackend(processBackend.data());
-
-    ctkCmdLineModuleReference moduleRef;
-    try
-    {
-        // Register a local executable as a module, the ctkCmdLineModuleBackendLocalProcess
-        // can handle it.
-        moduleRef = moduleManager.registerModule(QUrl::fromLocalFile("/home/fvichot/dev/CTK/build/CTK-build/bin/ctkCmdLineModuleTestBed"));
-    }
-    catch (const ctkInvalidArgumentException& e)
-    {
-        // Module validation failed.
-        qDebug() << "lksdjlksdjf:" << e;
-//        return EXIT_FAILURE;
-    }
-
-    // We use the "Qt Gui" frontend factory.
-    QScopedPointer<ctkCmdLineModuleFrontendFactory> frontendFactory(new ctkCmdLineModuleFrontendFactoryQtGui);
-    qApp->addLibraryPath("/home/fvichot/dev/CTK/build/CTK-build/bin");
-    QScopedPointer<ctkCmdLineModuleFrontend> frontend(frontendFactory->create(moduleRef));
-    // Create the actual GUI representation.
-    QWidget* gui = qobject_cast<QWidget*>(frontend->guiHandle());
-
-
-   this->addWidget(gui);
+    this->setTitle("CLI Manager");
+    this->init();
 }
 
 
@@ -84,6 +116,139 @@ QString cliSupportToolBox::description()
 }
 
 
+void cliSupportToolBox::init()
+{
+    QString cacheLocation = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+    d->manager = new ctkCmdLineModuleManager( ctkCmdLineModuleManager::STRICT_VALIDATION, cacheLocation);
+    d->backend = new ctkCmdLineModuleBackendLocalProcess();
+    d->manager->registerBackend(d->backend);
+
+    qApp->addLibraryPath(CTK_QTDESIGNERPLUGINS_DIR); // set in CMakeLists.txt
+
+    QDir module_dir;
+    QString defaultPath;
+#ifdef Q_WS_MAC
+    module_dir = qApp->applicationDirPath() + "/../Modules";
+#else
+    module_dir = qApp->applicationDirPath() + "/../modules";
+#endif
+    defaultPath = module_dir.absolutePath();
+
+    const char MODULE_PATH_VAR_NAME[] = "MEDINRIA_MODULE_PATH";
+    QByteArray moduleVarArray = qgetenv(MODULE_PATH_VAR_NAME);
+
+    if ( ! moduleVarArray.isEmpty() )
+    {
+        d->path = QString::fromUtf8(moduleVarArray.constData());
+    }
+    else
+    {
+        QSettings settings;
+        settings.beginGroup("modules");
+        if (!settings.contains("path"))
+        {
+            qDebug()<<"Filling in empty path in settings with default path:"
+                   << module_dir.absolutePath();
+            settings.setValue("path", module_dir.absolutePath());
+        }
+        qDebug()<< "path:" << settings.value("path", defaultPath).toString();
+        d->path = settings.value("path", defaultPath).toString();
+        settings.endGroup();
+    }
+
+    if(d->path.isEmpty()) {
+        qWarning() << "Your config does not seem to be set correctly.";
+        qWarning() << "Please set modules.path.";
+        qWarning() << "Default directory would be: " << defaultPath;
+    }
+
+    ctkCmdLineModuleReference moduleRef;
+
+    if( ! d->path.isNull())
+    {
+        QStringList pathList = pathSplitter(d->path);
+        foreach(QString path, pathList)
+        {
+            QDir dir(path);
+            if (dir.exists())
+            {
+                dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+//                dir.setNameFilters(QStringList() << "ctkCmdLineModule*");
+                dir.setSorting(QDir::Name);
+                foreach (QFileInfo entry, dir.entryInfoList())
+                {
+                    try
+                    {
+                        moduleRef = d->manager->registerModule(QUrl::fromLocalFile(entry.absoluteFilePath()));
+                        d->modules.insert(entry.absoluteFilePath(), moduleRef);
+                    }
+                    catch (const ctkInvalidArgumentException& e)
+                    {
+                        qDebug() << "Module could not be loaded:" << e;
+                        continue;
+                    }
+                    catch (const ctkCmdLineModuleRunException& e)
+                    {
+                        qDebug() << "Module could not be loaded:" << e;
+                        continue;
+                    }
+                }
+            }
+            else
+            {
+                qWarning() << "Failed to load modules from path " << path << ". Directory does not exist.";
+            }
+        }
+    }
+
+    // Main widget for the tool box content
+    QWidget * modulePage = new QWidget(this);
+    // We organise in a grid layout
+    d->gridLayout = new QGridLayout(modulePage);
+
+    // first row : combo box to select the current module to run
+    QHBoxLayout * comboLayout = new QHBoxLayout;
+    QLabel * moduleListLabel = new QLabel("Modules:", modulePage);
+    d->moduleList = new QComboBox(modulePage);
+    comboLayout->addWidget(moduleListLabel);
+    comboLayout->addWidget(d->moduleList);
+
+    foreach(const QString & key, d->modules.keys())
+    {
+        QFileInfo fInfo(key);
+        d->moduleList->addItem(fInfo.fileName(), key); //TODO: handle identical names
+    }
+    connect(d->moduleList, SIGNAL(currentIndexChanged(int)), this, SLOT(moduleSelected(int)));
+    d->gridLayout->addLayout(comboLayout, 0, 0);
+
+    // Next row is for the module generated UI
+
+    // Another row for progress bar
+    d->moduleProgress = new QProgressBar(modulePage);
+    d->moduleProgress->setValue(0);
+    d->gridLayout->addWidget(d->moduleProgress, 2, 0);
+
+    // Another row for run button
+    d->moduleRun = new QPushButton("Run CLI", modulePage);
+    connect(d->moduleRun, SIGNAL(clicked()), this, SLOT(runCurrentModule()));
+    d->gridLayout->addWidget(d->moduleRun, 3, 0, Qt::AlignCenter);
+
+    this->addWidget(modulePage);
+
+
+    if (d->moduleList->count() == 0)
+    {
+        d->moduleList->setEnabled(false);
+        d->moduleRun->setEnabled(false);
+    }
+    else
+    {
+        d->moduleList->setCurrentIndex(0);
+        this->moduleSelected(0);
+    }
+}
+
+
 void cliSupportToolBox::setData(dtkAbstractData *data)
 {
     qDebug() << "CLI setData called";
@@ -108,5 +273,44 @@ void cliSupportToolBox::update(dtkAbstractView * view)
     qDebug() << "CLI update called";
     d->view = view;
 
-//    connect(d->view, SIGNAL(propertySet(QString,QString)), this, SLOT(updateLandmarksRenderer(QString,QString)));
+    //    connect(d->view, SIGNAL(propertySet(QString,QString)), this, SLOT(updateLandmarksRenderer(QString,QString)));
+}
+
+
+void cliSupportToolBox::moduleSelected(int index)
+{
+    QString key = d->moduleList->itemData(index).toString();
+    if ( ! d->modules.contains(key))
+        return;
+
+    ctkCmdLineModuleReference ref = d->modules[key];
+    delete d->frontend;
+    delete d->moduleGui;
+
+    d->frontend = new ctkCmdLineModuleFrontendQtGui(ref);
+    d->moduleGui = qobject_cast<QWidget*>(d->frontend->guiHandle());
+    d->gridLayout->addWidget(d->moduleGui, 1, 0);
+}
+
+
+void cliSupportToolBox::runCurrentModule()
+{
+    d->moduleProgress->setEnabled(true);
+    d->moduleRun->setEnabled(false);
+    ctkCmdLineModuleFuture future = d->manager->run(d->frontend);
+    d->futureWatcher = new ctkCmdLineModuleFutureWatcher();
+    d->futureWatcher->setFuture(future);
+
+    //FIXME : slight race condition here, the module could have already finished.
+    connect(d->futureWatcher, SIGNAL(finished()), this, SLOT(moduleFinished()));
+    connect(d->futureWatcher, SIGNAL(progressRangeChanged(int,int)), d->moduleProgress, SLOT(setRange(int,int)));
+//        connect(d->futureWatcher, SIGNAL(progressTextChanged(QString)), d->moduleProgress, SLOT());
+    connect(d->futureWatcher, SIGNAL(progressValueChanged(int)), d->moduleProgress, SLOT(setValue(int)));
+}
+
+
+void cliSupportToolBox::moduleFinished()
+{
+    d->moduleProgress->setEnabled(false);
+    d->moduleRun->setEnabled(true);
 }

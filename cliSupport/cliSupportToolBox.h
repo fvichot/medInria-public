@@ -22,13 +22,22 @@ public:
      static QString identifier();
      static QString description();
 
+protected:
+     void init();
+
 public slots:
      virtual void update (dtkAbstractView *view);
 
 protected slots:
 
+     virtual void clear (void);
 
-    virtual void clear (void);
+     void moduleSelected(int index);
+     void runCurrentModule();
+
+     void moduleFinished();
+     void progressTextChanged(const QString & progressText);
+     void progressValueChanged(int progressValue);
 
 private:
 

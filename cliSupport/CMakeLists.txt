@@ -42,6 +42,9 @@ include(${medInria_USE_FILE})
 find_package(CTK REQUIRED)
 include(${CTK_USE_FILE})
 
+# Add a define to set the path to the designer plugins in the source
+add_definitions(-DCTK_QTDESIGNERPLUGINS_DIR="${CTK_QTDESIGNERPLUGINS_DIR}")
+
 set(QT_USE_QTUITOOLS 1)
 include(${QT_USE_FILE})
 
