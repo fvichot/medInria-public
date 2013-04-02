@@ -68,6 +68,7 @@ set(${PROJECT_NAME}_HEADERS
   ${${PROJECT_NAME}_DEVEL_HEADERS}
   medDataReaderWriter.h
   medAbstractDatabaseItem.h
+  medStyleSheetParser.h
 )
 set(${PROJECT_NAME}_SOURCES
   medDataIndex.cpp
@@ -100,6 +101,7 @@ set(${PROJECT_NAME}_SOURCES
   medViewEventFilter.cpp
   annotationData/medImageMaskAnnotationData.cpp
   annotationData/medSeedPointAnnotationData.cpp
+  medStyleSheetParser.cpp
 )
 
 #   Wrapping

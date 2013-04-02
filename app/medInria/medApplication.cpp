@@ -20,6 +20,7 @@
 #include <dtkCore/dtkGlobal.h>
 #include <dtkLog/dtkLog.h>
 #include <medPluginManager.h>
+#include <medStyleSheetParser.h>
 #include <medMainWindow.h>
 
 
@@ -110,8 +111,8 @@ medApplication::medApplication(int & argc, char**argv) :
     d->fixSettingsPath(this->organizationName(),this->applicationName());
 
     qDebug() <<  "default data location:" << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-    //The ownership of the style object is transferred.
-    this->setStyleSheet(dtkReadFile(":/medInria.qss"));
+    medStyleSheetParser parser(dtkReadFile(":/medInria.qss"));
+    this->setStyleSheet(parser.result());
 
     //  Set some splash screen properties:
 
