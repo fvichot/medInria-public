@@ -44,6 +44,8 @@
 #include <vtkMetaDataSetSequence.h>
 #include <vtkDataArrayCollection.h>
 
+#include <medParameterFactory.h>
+
 #include <vector>
 
 typedef QPair<vtkSmartPointer<vtkLookupTable>, QString> LutPair;
@@ -71,6 +73,9 @@ v3dViewMeshInteractor::v3dViewMeshInteractor(): medAbstractVtkViewInteractor(), 
     for (int i=0; i<6; i++)
         d->imageBounds[i] = 0;
     d->view = NULL;
+
+    parameters.append(medParameterFactory::instance()->registerDoubleParameter("Opacity", 0.0, 1.0));
+    parameters.append(medParameterFactory::instance()->registerBooleanParameter("Visible"));
 }
 
 
@@ -377,6 +382,11 @@ QStringList v3dViewMeshInteractor::getAllLUTs() const
             luts.append(QString::fromStdString(*it));
     }
     return luts;
+}
+
+QList<int> v3dViewMeshInteractor::getParameters() const
+{
+
 }
 
 void v3dViewMeshInteractor::setOpacity(dtkAbstractData * data, double opacity)
