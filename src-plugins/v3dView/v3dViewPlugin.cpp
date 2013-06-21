@@ -18,10 +18,13 @@
 #include "medTimeLineToolBox.h"
 #include "medTensorViewToolBox.h"
 #include "medFiberViewToolBox.h"
+#include "medViewLayersToolBox.h"
+#include "v3dViewImageInteractor.h"
 #include "v3dViewMeshInteractor.h"
 #include "v3dView4DInteractor.h"
 #include "v3dViewAnnotationInteractor.h"
 #include "v3dViewPlugin.h"
+
 #ifndef DISABLE_TTK_DEPENDENT_CODE
   #include "v3dViewFiberInteractor.h"
   #include "v3dViewTensorInteractor.h"
@@ -63,12 +66,14 @@ bool v3dViewPlugin::initialize()
     if (!medViewPropertiesToolBox::registered())        { dtkWarn() << "Unable to register medViewPropertiesToolBox type"; }
     if (!medTensorViewToolBox::registered())        { dtkWarn() << "Unable to register medTensorViewToolBox type"; }
     if (!medFiberViewToolBox::registered())        { dtkWarn() << "Unable to register medFiberViewToolBox type"; }
+    if (!medViewLayersToolBox::registered())        { dtkWarn() << "Unable to register medViewLayersToolBox type"; }
     if (!v3dView::registered())                     { dtkWarn() << "Unable to register v3dView type";                     }
 
 #ifndef DISABLE_TTK_DEPENDENT_CODE
     if (!v3dViewFiberInteractor::registered())      { dtkWarn() << "Unable to register v3dViewFiberInteractor type";      }
 #endif
 
+    if (!v3dViewImageInteractor::registered())      { dtkWarn() << "Unable to register v3dViewImageInteractor type";      }
     if (!v3dViewMeshInteractor::registered())       { dtkWarn() << "Unable to register v3dViewMeshInteractor type";       }
     if (!v3dView4DInteractor::registered())         { dtkWarn() << "Unable to register v3dView4DInteractor type";         }
     if (!v3dViewAnnotationInteractor::registered()) { dtkWarn() << "Unable to register v3dViewAnnotationInteractor type"; }
