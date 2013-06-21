@@ -13,19 +13,19 @@
 
 #include "medVisualizationWorkspace.h"
 
-#include <medViewPropertiesToolBox.h>
 #include <medViewContainer.h>
 #include <medTabbedViewContainers.h>
-#include <medTimeLineToolBox.h>
 #include <medVisualizationLayoutToolBox.h>
 #include <medSettingsManager.h>
+#include <medToolBoxFactory.h>
 
 class medVisualizationWorkspacePrivate
 {
 public:
-    medVisualizationLayoutToolBox *layoutToolBox;
-    medTimeLineToolBox *timeToolBox;
-    medViewPropertiesToolBox *viewPropertiesToolBox;
+    medVisualizationLayoutToolBox * layoutToolBox;
+    medToolBox * timeToolBox;
+    medToolBox * viewPropertiesToolBox;
+    medToolBox * viewLayersToolBox;
 };
 
 medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorkspace(parent), d(new medVisualizationWorkspacePrivate)
@@ -46,11 +46,12 @@ medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorks
 
     // -- View toolbox --
 
-    d->viewPropertiesToolBox = new medViewPropertiesToolBox(parent);
-    d->timeToolBox           = new medTimeLineToolBox(parent);
-
+    d->viewPropertiesToolBox = medToolBoxFactory::instance()->createToolBox("medViewPropertiesToolBox", parent);
+    d->timeToolBox           = medToolBoxFactory::instance()->createToolBox("medTimeLineToolBox", parent);
+    d->viewLayersToolBox     = medToolBoxFactory::instance()->createToolBox("medViewLayersToolBox", parent);
 
     this->addToolBox( d->viewPropertiesToolBox );
+    this->addToolBox( d->viewLayersToolBox );
     this->addToolBox( d->timeToolBox );
 
     connect ( this, SIGNAL(layoutModeChanged(const QString&)),
