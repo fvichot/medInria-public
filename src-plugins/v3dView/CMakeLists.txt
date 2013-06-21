@@ -98,13 +98,16 @@ endif()
 set(${PROJECT_NAME}_HEADERS_MOC
   v3dViewPlugin.h
   v3dView.h
-  medAbstractVtkViewInteractor.h
   medVtkView.h
+  medAbstractVtkViewInteractor.h
+  v3dViewImageInteractor.h
   v3dViewMeshInteractor.h
   v3dView4DInteractor.h
   v3dViewAnnotationInteractor.h
   medViewPropertiesToolBox.h
   medTimeLineToolBox.h
+  medViewLayersToolBox.h
+  medLayerItemWidget.h
   ${${PROJECT_NAME}_TTK_DEPENDENT_HEADERS_MOC}
   )
 
@@ -119,12 +122,15 @@ set(${PROJECT_NAME}_SOURCES
   v3dViewPlugin.cpp
   v3dView.cpp
   medVtkView.cpp
+  v3dViewImageInteractor.cpp
   v3dViewMeshInteractor.cpp
   v3dView4DInteractor.cpp
   v3dFiberBundle.cpp
   v3dViewAnnotationInteractor.cpp
   medViewPropertiesToolBox.cpp
   medTimeLineToolBox.cpp
+  medViewLayersToolBox.cpp
+  medLayerItemWidget.cpp
   annotations/v3dViewAnnIntImageMaskHelper.cpp
   annotations/v3dViewAnnIntSeedPointHelper.cpp
   annotations/vtkSeedPointHandle.cpp
