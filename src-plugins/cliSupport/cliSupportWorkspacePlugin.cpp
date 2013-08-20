@@ -6,8 +6,8 @@
 #include "cliSupportWorkspacePlugin.h"
 #include "cliSupportToolBox.h"
 
-#include <medViewerWorkspace.h>
-#include <medViewerWorkspaceFactory.h>
+#include <medWorkspace.h>
+#include <medWorkspaceFactory.h>
 #include <medToolBoxFactory.h>
 
 #include <dtkLog/dtkLog.h>
@@ -43,9 +43,10 @@ cliSupportWorkspacePlugin::~cliSupportWorkspacePlugin(void)
 
 bool cliSupportWorkspacePlugin::initialize(void)
 {
-    medViewerWorkspaceFactory * viewerWSpaceFactory = medViewerWorkspaceFactory::instance();
-    if ( ! viewerWSpaceFactory->registerWorkspace<cliSupportWorkspace>("CLI Support", tr("CLI Support"), tr("CommandLine plugins support using CTK implementation.")))
+    medWorkspaceFactory * workspaceFactory = medWorkspaceFactory::instance();
+    if ( ! workspaceFactory->registerWorkspace<cliSupportWorkspace>("CLI Support", tr("CLI Support"), tr("CommandLine plugins support using CTK implementation."))) {
         dtkWarn() << "Unable to register cliSupportWorkspace";
+    }
 
 
     medToolBoxFactory * factory = medToolBoxFactory::instance();
@@ -53,8 +54,9 @@ bool cliSupportWorkspacePlugin::initialize(void)
         cliSupportToolBox::identifier(),
         cliSupportToolBox::name(),
         cliSupportToolBox::description(),
-        QStringList() << "cli plugins"))
+        QStringList() << "cli plugins")) {
         dtkWarn() << "Unable to register cliSupportToolBox type";
+    }
     
     return true;
 }

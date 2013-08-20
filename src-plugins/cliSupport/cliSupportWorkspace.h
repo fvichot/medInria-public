@@ -6,13 +6,13 @@
 #define cliSupportWORKSPACE_H
 
 #include <QtCore>
-#include <medViewerWorkspace.h>
+#include <medWorkspace.h>
 
 #include "cliSupportWorkspacePluginExport.h"
 
 class cliSupportWorkspacePrivate;
 
-class cliSupportWorkspace : public medViewerWorkspace
+class cliSupportWorkspace : public medWorkspace
 {
     Q_OBJECT
 
@@ -24,6 +24,8 @@ public:
 
     virtual QString identifier()  const;
     virtual QString description() const;
+
+    static bool isUsable() {return true;}
 
 public slots:
     /**

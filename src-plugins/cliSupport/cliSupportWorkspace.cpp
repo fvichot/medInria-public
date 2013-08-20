@@ -4,11 +4,11 @@
 
 #include "cliSupportWorkspace.h"
 #include <medViewContainer.h>
-#include <medViewContainerSingle.h>
+#include <medSingleViewContainer.h>
 #include <medTabbedViewContainers.h>
-#include <medViewerToolBoxViewProperties.h>
-#include <medViewerToolBoxLayout.h>
-#include <medViewerToolBoxTime.h>
+#include <medViewPropertiesToolBox.h>
+#include <medVisualizationLayoutToolBox.h>
+#include <medTimeLineToolBox.h>
 #include <cliSupportToolBox.h>
 
 #include <dtkCore/dtkSmartPointer.h>
@@ -23,9 +23,9 @@
 class cliSupportWorkspacePrivate
 {
 public:
-    medViewerToolBoxLayout         * layoutToolBox;
-    medViewerToolBoxTime           * timeToolBox;
-    medViewerToolBoxViewProperties * viewPropertiesToolBox;
+    medToolBox         * layoutToolBox;
+    medToolBox         * timeToolBox;
+    medToolBox         * viewPropertiesToolBox;
     cliSupportToolBox  * cliToolBox;
 };
 
@@ -34,10 +34,10 @@ public:
 // /////////////////////////////////////////////////////////////////
 
 
-cliSupportWorkspace::cliSupportWorkspace(QWidget *parent) : medViewerWorkspace(parent), d(new cliSupportWorkspacePrivate)
+cliSupportWorkspace::cliSupportWorkspace(QWidget *parent) : medWorkspace(parent), d(new cliSupportWorkspacePrivate)
 {
     // -- Layout toolbox --
-    d->layoutToolBox = new medViewerToolBoxLayout(parent);
+    d->layoutToolBox = new medVisualizationLayoutToolBox(parent);
 
     connect (d->layoutToolBox, SIGNAL(modeChanged(const QString&)),
              this,             SIGNAL(layoutModeChanged(const QString&)));
@@ -52,8 +52,8 @@ cliSupportWorkspace::cliSupportWorkspace(QWidget *parent) : medViewerWorkspace(p
 
     // -- View toolbox --
 
-    d->viewPropertiesToolBox = new medViewerToolBoxViewProperties(parent);
-    d->timeToolBox           = new medViewerToolBoxTime(parent);
+    d->viewPropertiesToolBox = new medViewPropertiesToolBox(parent);
+    d->timeToolBox           = new medTimeLineToolBox(parent);
 
 
     this->addToolBox( d->viewPropertiesToolBox );
@@ -91,7 +91,7 @@ void cliSupportWorkspace::setupViewContainerStack()
     //the stack has been instantiated in constructor
     if (!this->stackedViewContainers()->count())
     {
-        medViewContainerSingle * cliSupportContainer = new medViewContainerSingle(this->stackedViewContainers());
+        medSingleViewContainer * cliSupportContainer = new medSingleViewContainer(this->stackedViewContainers());
         if (dtkSmartPointer<dtkAbstractView> view = dtkAbstractViewFactory::instance()->createSmartPointer("v3dView"))
         {
             cliSupportContainer->setView (view);
