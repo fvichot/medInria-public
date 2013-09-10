@@ -27,6 +27,7 @@
 #include <vtkMetaSurfaceMesh.h>
 
 #include <vtkMarchingCubes.h>
+#include <vtkTriangleFilter.h>
 #include <vtkSmartPointer.h>
 
 //#include <vtkActor.h>
@@ -44,7 +45,8 @@ class medMeshToolsPrivate
 public:
     dtkSmartPointer <dtkAbstractData> input;
     dtkSmartPointer <dtkAbstractData> output;
-    int isoValue;
+    double isoValue;
+    double targetReduction;
     template <class PixelType> int update();
 };
 
@@ -57,34 +59,68 @@ template <class PixelType> int medMeshToolsPrivate::update()
 
     ImageType * img = static_cast<ImageType *>(input->data());
 
-    qDebug() << "Ptr :" << (void*)img << img->GetImageDimension();
-
     filter->SetInput(img);
     filter->Update();
 
     vtkImageData * vtkImage = filter->GetOutput();
 
-    double dim[10] = {};
-    vtkImage->GetBounds(dim);
-    qDebug() << "Ptr :" << (void*)vtkImage << dim[0]<< dim[1]<< dim[2];
 
+//    vtkImageToIsosurface * surfacer = vtkImageToIsosurface::New();
 
-    vtkImageToIsosurface * surfacer = vtkImageToIsosurface::New();
+//    surfacer->SetInput(vtkImage);
 
-    surfacer->SetInput(vtkImage);
+//    double colors[4] = {0.5, 0.5, 0.5, 0.5};
+//    surfacer->SetParameters(isoValue, 50, colors);
 
-    double colors[4] = {0.5, 0.5, 0.5, 0.5};
-    surfacer->SetParameters(isoValue, 50, colors);
+////    vtkSmartPointer<vtkMarchingCubes> surfacer =
+////      vtkSmartPointer<vtkMarchingCubes>::New();
 
-//    vtkSmartPointer<vtkMarchingCubes> surfacer =
-//      vtkSmartPointer<vtkMarchingCubes>::New();
-
-//    surfacer->SetInput(filter->GetOutput());
-//    surfacer->ComputeNormalsOn();
-//    surfacer->SetValue(0, 400);
-    surfacer->Update();
+////    surfacer->SetInput(filter->GetOutput());
+////    surfacer->ComputeNormalsOn();
+////    surfacer->SetValue(0, 400);
+//    surfacer->Update();
 
 //    qDebug() << surfacer->GetPolyData();
+
+
+
+    vtkContourFilter* contour = vtkContourFilter::New();
+    contour->SetInput( vtkImage );
+    contour->SetValue(0, isoValue);
+    contour->Update();
+
+    vtkTriangleFilter* contourTrian = vtkTriangleFilter::New();
+    contourTrian->SetInputConnection(contour->GetOutputPort());
+    contourTrian->PassVertsOn();
+    contourTrian->PassLinesOn();
+    contourTrian->Update();
+
+    // Decimate the mesh if required
+    vtkDecimatePro* contourDecimated = vtkDecimatePro::New();
+    contourDecimated->SetInputConnection(contourTrian->GetOutputPort());
+    contourDecimated->SetTargetReduction(targetReduction);
+    contourDecimated->SplittingOff();
+    contourDecimated->PreserveTopologyOn();
+    contourDecimated->Update();
+
+
+    // Smooth the mesh if required
+    vtkSmoothPolyDataFilter* contourSmoothed = vtkSmoothPolyDataFilter::New();
+    contourSmoothed->SetInputConnection(contourTrian->GetOutputPort());
+    contourSmoothed->SetNumberOfIterations(30);
+    contourSmoothed->SetRelaxationFactor(0.2);
+    contourSmoothed->Update();
+
+
+    output->CopyStructure(contourSmoothed->GetOutput());
+
+    contour->Delete();
+    contourTrian->Delete();
+    contourDecimated->Delete();
+    contourSmoothed->Delete();
+
+
+
 
     vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
     smesh->SetDataSet(surfacer->GetPolyData());
