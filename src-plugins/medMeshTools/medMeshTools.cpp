@@ -112,18 +112,16 @@ template <class PixelType> int medMeshToolsPrivate::update()
     contourSmoothed->Update();
 
 
-    output->CopyStructure(contourSmoothed->GetOutput());
-
-    contour->Delete();
-    contourTrian->Delete();
-    contourDecimated->Delete();
-    contourSmoothed->Delete();
+//    contour->Delete();
+//    contourTrian->Delete();
+//    contourDecimated->Delete();
+//    contourSmoothed->Delete();
 
 
 
 
     vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
-    smesh->SetDataSet(surfacer->GetPolyData());
+    smesh->SetDataSet(contourSmoothed->GetOutput());
 
 //    smesh->Write("/tmp/test.vtk");
 
