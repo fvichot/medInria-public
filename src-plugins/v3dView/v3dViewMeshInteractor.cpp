@@ -124,6 +124,8 @@ void v3dViewMeshInteractor::setData(dtkAbstractData *data)
         vtkMetaDataSet * mesh = dynamic_cast<vtkMetaDataSet*>((vtkDataObject *)(data->data()));
         vtkPointSet * pointSet = vtkPointSet::SafeDownCast (mesh->GetDataSet());
 
+        qDebug() << mesh << pointSet;
+
         if(!d->view->hasImage())
             changeBounds(pointSet);
 

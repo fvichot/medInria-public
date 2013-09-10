@@ -45,6 +45,7 @@ class VTK_VISUMANAGEMENT_EXPORT vtkImageToIsosurface: public vtkObject
   { return this->Mapper->GetInput(); }
 
   void SetParameters (int val, double color[4]);
+  void SetParameters (int val, int delta, double color[4]);
 
   void ReverseNormals();
   

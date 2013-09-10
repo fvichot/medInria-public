@@ -13,12 +13,12 @@
 
 #pragma once
 
-#include <medFilteringAbstractToolBox.h>
+#include <medToolBox.h>
 #include "medMeshToolsPluginExport.h"
 
 class medMeshToolsToolBoxPrivate;
 
-class MEDMESHTOOLSPLUGIN_EXPORT medMeshToolsToolBox : public medFilteringAbstractToolBox
+class MEDMESHTOOLSPLUGIN_EXPORT medMeshToolsToolBox : public medToolBox
 {
     Q_OBJECT
     
@@ -31,13 +31,22 @@ public:
     static bool registered();
     dtkPlugin * plugin();
     
+    void update(dtkAbstractView *view);
+    void clear(void);
+
 signals:
     void success();
     void failure();
     
-    public slots:
+public slots:
     void run();
     
+protected slots :
+    void addData(dtkAbstractData* data, int layer);
+    void removeData(dtkAbstractData* data, int layer);
+
+    void addMeshToView();
+
 private:
     medMeshToolsToolBoxPrivate *d;
 };

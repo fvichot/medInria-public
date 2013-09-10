@@ -123,3 +123,20 @@ void vtkImageToIsosurface::SetParameters (int  val, double color[4])
   this->Actor->GetProperty()->SetOpacity (color[3]);
   
 }
+
+
+void vtkImageToIsosurface::SetParameters (int  val, int delta, double color[4])
+{
+  double dval = (double)val;
+
+  this->Thresholder->ThresholdBetween (dval-(delta/2.0), dval+(delta/2.0));
+  this->Thresholder->SetInValue (dval);
+  this->Thresholder->SetOutValue (0.0);
+  this->ContourFilter->SetValue(0, dval-0.5);
+
+  this->Actor->GetProperty()->SetColor ( color[0],
+                                     color[1],
+                                     color[2] );
+  this->Actor->GetProperty()->SetOpacity (color[3]);
+
+}
