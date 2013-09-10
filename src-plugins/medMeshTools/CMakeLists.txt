@@ -76,8 +76,8 @@ target_link_libraries(${PROJECT_NAME}
   dtkCore
   medCore
   medGui
-  vtkCommon
-  vtkHelpers)
+  ${VTK_LIBRARIES}
+  ${ITK_LIBRARIES})
 
 #not useful if plugin in the medInria-plugins directory
 dtk_build_doc(medMeshToolsPlugin)
