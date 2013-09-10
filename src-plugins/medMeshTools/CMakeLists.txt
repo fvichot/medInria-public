@@ -76,6 +76,7 @@ target_link_libraries(${PROJECT_NAME}
   dtkCore
   medCore
   medGui
+  vtkDataManagement
   ${VTK_LIBRARIES}
   ${ITK_LIBRARIES})
 
