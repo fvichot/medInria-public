@@ -42,6 +42,7 @@ public:
     medVisualizationLayoutToolBox *layoutToolBox;
 
     medSegmentationSelectorToolBox *segmentationToolBox;
+    medToolBox * meshToolBox;
 };
 
 // /////////////////////////////////////////////////////////////////
@@ -75,6 +76,8 @@ medWorkspace(parent), d(new medSegmentationWorkspacePrivate)
 
     connect(this,SIGNAL(setLayoutTab(const QString &)), d->layoutToolBox, SLOT(setTab(const QString &)));
 
+    d->meshToolBox           = medToolBoxFactory::instance()->createToolBox("medMeshToolsToolBox", parent);
+
     connect ( this, SIGNAL(layoutModeChanged(const QString &)),
         stackedViewContainers(), SLOT(changeCurrentContainerType(const QString &)));
     connect ( stackedViewContainers(), SIGNAL(currentChanged(const QString &)),
@@ -95,6 +98,7 @@ medWorkspace(parent), d(new medSegmentationWorkspacePrivate)
     }
 
     this->addToolBox( d->segmentationToolBox );
+    this->addToolBox( d->meshToolBox );
 }
 
 medSegmentationWorkspace::~medSegmentationWorkspace(void)
