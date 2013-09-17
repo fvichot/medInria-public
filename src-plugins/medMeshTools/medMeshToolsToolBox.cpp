@@ -43,7 +43,12 @@ public:
     dtkSmartPointer <dtkAbstractProcess> process;
     medProgressionStack * progression_stack;
     medAbstractView * view;
-    medSliderSpinboxPair * slider;
+    medSliderSpinboxPair * thresholdSlider;
+    QDoubleSpinBox * reductionSpinBox;
+    QCheckBox * decimateCheckbox;
+    QCheckBox * smoothCheckbox;
+    QSpinBox * iterationsSpinBox;
+    QDoubleSpinBox * relaxationSpinBox;
 };
 
 medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
@@ -51,22 +56,79 @@ medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
  , d(new medMeshToolsToolBoxPrivate)
 {
     this->setTitle("medMeshTools");
-    
-    QWidget *widget = new QWidget(this);
-    d->slider = new medSliderSpinboxPair(this);
-    d->slider->setMinimum(0);
-    d->slider->setMaximum(2000);
-    QPushButton *runButton = new QPushButton(tr("Run"), this);
+
+    QWidget *displayWidget = new QWidget(this);
+
+    d->thresholdSlider = new medSliderSpinboxPair(displayWidget);
+    d->thresholdSlider->setMinimum(0);
+    d->thresholdSlider->setMaximum(2000);
+
+    QLabel * thresholdLabel = new QLabel("Threshold : ", displayWidget);
+    QHBoxLayout *thresholdLayout = new QHBoxLayout;
+    thresholdLayout->addWidget(thresholdLabel);
+    thresholdLayout->addWidget(d->thresholdSlider);
+
+    d->decimateCheckbox = new QCheckBox("Decimate mesh", displayWidget);
+    d->decimateCheckbox->setChecked(true);
+
+    d->reductionSpinBox = new QDoubleSpinBox(displayWidget);
+    d->reductionSpinBox->setRange(0.0, 1.0);
+    d->reductionSpinBox->setSingleStep(0.01);
+    d->reductionSpinBox->setDecimals(2);
+    d->reductionSpinBox->setValue(0.8);
+
+    connect(d->decimateCheckbox, SIGNAL(toggled(bool)), d->reductionSpinBox, SLOT(setEnabled(bool)));
+
+    QLabel * reductionLabel = new QLabel("Reduction target : ", displayWidget);
+    QHBoxLayout *reductionLayout = new QHBoxLayout;
+    reductionLayout->addWidget(reductionLabel);
+    reductionLayout->addWidget(d->reductionSpinBox);
+
+    d->smoothCheckbox = new QCheckBox("Smooth mesh", displayWidget);
+    d->smoothCheckbox->setChecked(true);
+
+    d->iterationsSpinBox = new QSpinBox(displayWidget);
+    d->iterationsSpinBox->setRange(0, 100);
+    d->iterationsSpinBox->setSingleStep(1);
+    d->iterationsSpinBox->setValue(30);
+
+    QLabel * iterationsLabel = new QLabel("Iterations : ", displayWidget);
+    QHBoxLayout * iterationsLayout = new QHBoxLayout;
+    iterationsLayout->addWidget(iterationsLabel);
+    iterationsLayout->addWidget(d->iterationsSpinBox);
+
+    d->relaxationSpinBox = new QDoubleSpinBox(displayWidget);
+    d->relaxationSpinBox->setRange(0.0, 1.0);
+    d->relaxationSpinBox->setSingleStep(0.01);
+    d->relaxationSpinBox->setDecimals(2);
+    d->relaxationSpinBox->setValue(0.2);
+
+    QLabel * relaxationLabel = new QLabel("Relaxation factor : ", displayWidget);
+    QHBoxLayout * relaxationLayout = new QHBoxLayout;
+    relaxationLayout->addWidget(relaxationLabel);
+    relaxationLayout->addWidget(d->relaxationSpinBox);
+
+    QPushButton * runButton = new QPushButton(tr("Run"), displayWidget);
     
     // progression stack
+    QWidget *widget = new QWidget(displayWidget);
     d->progression_stack = new medProgressionStack(widget);
     QHBoxLayout *progressStackLayout = new QHBoxLayout;
     progressStackLayout->addWidget(d->progression_stack);
     
-    this->addWidget(d->slider);
-    this->addWidget(runButton);
-    this->addWidget(d->progression_stack);
+    QVBoxLayout *displayLayout = new QVBoxLayout(displayWidget);
+
+    displayLayout->addLayout(thresholdLayout);
+    displayLayout->addWidget(d->decimateCheckbox);
+    displayLayout->addLayout(reductionLayout);
+    displayLayout->addWidget(d->smoothCheckbox);
+    displayLayout->addLayout(iterationsLayout);
+    displayLayout->addLayout(relaxationLayout);
+    displayLayout->addWidget(runButton);
+    displayLayout->addLayout(progressStackLayout);
     
+    this->addWidget(displayWidget);
+
     d->view = 0;
 
     connect(runButton, SIGNAL(clicked()), this, SLOT(run()));
@@ -82,9 +144,9 @@ bool medMeshToolsToolBox::registered()
 {
     return medToolBoxFactory::instance()->
     registerToolBox<medMeshToolsToolBox>("medMeshToolsToolBox",
-                               tr("Mesh ToolBox"),
-                               tr("Tools for meshes"),
-                               QStringList()<< "mesh" << "view");
+                                         tr("Mesh ToolBox"),
+                                         tr("Tools for meshes"),
+                                         QStringList()<< "mesh" << "view");
 }
 
 dtkPlugin* medMeshToolsToolBox::plugin()
@@ -158,6 +220,7 @@ void medMeshToolsToolBox::removeData(dtkAbstractData* data, int layer)
     }
 }
 
+
 void medMeshToolsToolBox::addMeshToView() {
     qDebug() << "Adding mesh to view";
 
@@ -183,7 +246,12 @@ void medMeshToolsToolBox::run()
     
     d->process->setInput( static_cast<dtkAbstractData*>(d->view->data()));
     
-    d->process->setParameter(d->slider->value(), 0); // iso value
+    d->process->setParameter((double)(d->thresholdSlider->value()), 0); // iso value
+    d->process->setParameter((double)(d->decimateCheckbox->isChecked()), 1); // decimation
+    d->process->setParameter(d->reductionSpinBox->value(), 2); // reduction
+    d->process->setParameter((double)(d->smoothCheckbox->isChecked()), 3); // smooth
+    d->process->setParameter((double)(d->iterationsSpinBox->value()), 4); // iterations
+    d->process->setParameter(d->relaxationSpinBox->value(), 5); // relaxation factor
     
     medRunnableProcess *runProcess = new medRunnableProcess;
     runProcess->setProcess (d->process);

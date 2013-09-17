@@ -37,7 +37,7 @@ public slots:
     void setInput(dtkAbstractData *data);
     
     //! Parameters are set through here, channel allows to handle multiple parameters
-    void setParameter(int data, int channel);
+    void setParameter(double data, int channel);
     
     //! Method to actually start the filter
     int update();

@@ -47,6 +47,12 @@ public:
     dtkSmartPointer <dtkAbstractData> output;
     double isoValue;
     double targetReduction;
+    bool decimate;
+    bool smooth;
+    int iterations;
+    double relaxationFactor;
+
+
     template <class PixelType> int update();
 };
 
@@ -64,26 +70,6 @@ template <class PixelType> int medMeshToolsPrivate::update()
 
     vtkImageData * vtkImage = filter->GetOutput();
 
-
-//    vtkImageToIsosurface * surfacer = vtkImageToIsosurface::New();
-
-//    surfacer->SetInput(vtkImage);
-
-//    double colors[4] = {0.5, 0.5, 0.5, 0.5};
-//    surfacer->SetParameters(isoValue, 50, colors);
-
-////    vtkSmartPointer<vtkMarchingCubes> surfacer =
-////      vtkSmartPointer<vtkMarchingCubes>::New();
-
-////    surfacer->SetInput(filter->GetOutput());
-////    surfacer->ComputeNormalsOn();
-////    surfacer->SetValue(0, 400);
-//    surfacer->Update();
-
-//    qDebug() << surfacer->GetPolyData();
-
-
-
     vtkContourFilter* contour = vtkContourFilter::New();
     contour->SetInput( vtkImage );
     contour->SetValue(0, isoValue);
@@ -95,21 +81,24 @@ template <class PixelType> int medMeshToolsPrivate::update()
     contourTrian->PassLinesOn();
     contourTrian->Update();
 
-    // Decimate the mesh if required
-    vtkDecimatePro* contourDecimated = vtkDecimatePro::New();
-    contourDecimated->SetInputConnection(contourTrian->GetOutputPort());
-    contourDecimated->SetTargetReduction(targetReduction);
-    contourDecimated->SplittingOff();
-    contourDecimated->PreserveTopologyOn();
-    contourDecimated->Update();
+    if (decimate) {
+        // Decimate the mesh if required
+        vtkDecimatePro* contourDecimated = vtkDecimatePro::New();
+        contourDecimated->SetInputConnection(contourTrian->GetOutputPort());
+        contourDecimated->SetTargetReduction(targetReduction);
+        contourDecimated->SplittingOff();
+        contourDecimated->PreserveTopologyOn();
+        contourDecimated->Update();
+    }
 
-
-    // Smooth the mesh if required
-    vtkSmoothPolyDataFilter* contourSmoothed = vtkSmoothPolyDataFilter::New();
-    contourSmoothed->SetInputConnection(contourTrian->GetOutputPort());
-    contourSmoothed->SetNumberOfIterations(30);
-    contourSmoothed->SetRelaxationFactor(0.2);
-    contourSmoothed->Update();
+    if(smooth) {
+        // Smooth the mesh if required
+        vtkSmoothPolyDataFilter* contourSmoothed = vtkSmoothPolyDataFilter::New();
+        contourSmoothed->SetInputConnection(contourTrian->GetOutputPort());
+        contourSmoothed->SetNumberOfIterations(iterations);
+        contourSmoothed->SetRelaxationFactor(relaxationFactor);
+        contourSmoothed->Update();
+    }
 
 
 //    contour->Delete();
@@ -190,12 +179,26 @@ void medMeshTools::setInput ( dtkAbstractData *data )
     d->input = data;
 }    
 
-void medMeshTools::setParameter ( int  data, int channel )
+void medMeshTools::setParameter ( double data, int channel )
 {
     switch (channel) {
         case 0:
-            d->isoValue = (int)data;
-            qDebug() << d->isoValue;
+            d->isoValue = data;
+            break;
+        case 1:
+            d->decimate = (data > 0) ? true : false;
+            break;
+        case 2:
+            d->targetReduction = data;
+            break;
+        case 3:
+            d->smooth = (data > 0) ? true : false;
+            break;
+        case 4:
+            d->iterations = data;
+            break;
+        case 5:
+            d->relaxationFactor = data;
             break;
     }
 }
