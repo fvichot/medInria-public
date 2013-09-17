@@ -46,7 +46,6 @@ public:
     QColor color; // The color used to represent this view in other views.
 
     QHash<QString, unsigned int> DataTypes;
-
 };
 
 medAbstractView::medAbstractView(medAbstractView *parent) : dtkAbstractView(parent), d (new medAbstractViewPrivate)
@@ -149,6 +148,16 @@ QWidget *medAbstractView::receiverWidget(void)
 {
     DTK_DEFAULT_IMPLEMENTATION;
 
+    return NULL;
+}
+
+void * medAbstractView::getView2D()
+{
+    return NULL;
+}
+
+void * medAbstractView::getRenderWindow()
+{
     return NULL;
 }
 

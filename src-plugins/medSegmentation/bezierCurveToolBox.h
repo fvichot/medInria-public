@@ -27,6 +27,10 @@
 #include <QVector3D>
 #include <QTextEdit>
 
+#include <vtkSmartPointer.h>
+#include <vtkContourWidget.h>
+#include <vtkRenderWindowInteractor.h> 
+
 #include <vector>
 
 class medAbstractData;
@@ -73,7 +77,8 @@ public slots:
 
     //void activateBezierCurve(bool);
     void onAddNewCurve();
-
+    void onPenMode();
+    void generateBinaryImage();
 protected:
     
     //void setData( dtkAbstractData *data );
@@ -92,7 +97,12 @@ private:
     
     //QPushButton * bezierCurve,
     QPushButton * addNewCurve;
+    QPushButton * generateBinaryImage_button;
+    QCheckBox * penMode_CheckBox;
     bool newCurve;
+    bool penMode;
+    vtkSmartPointer<vtkRenderWindowInteractor> curveInteractor;
+    QList<vtkSmartPointer<vtkContourWidget> > * listOfCurves;
 };
 
 

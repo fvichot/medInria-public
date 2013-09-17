@@ -35,9 +35,7 @@
 #include <QtCore>
 #include <QColorDialog>
 
-#include <algorithm>
-#include <set>
-
+#include <vtkSmartPointer.h>
 #include <vtkContourWidget.h>
 #include <vtkOrientedGlyphContourRepresentation.h>
 #include <vtkProperty.h>
@@ -47,12 +45,28 @@
 #include <vtkPlane.h>
 #include <vtkWidgetEventTranslator.h>
 #include <vtkEvent.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkImageView2D.h>
+#include <vtkImageActor.h>
+
+#include <vtkSphereSource.h>
+
+//
+#include <vtkThinPlateSplineTransform.h>
+#include <vtkMetaImageWriter.h>
+#include <vtkPolyDataToImageStencil.h>
+#include <vtkImageStencil.h>
+#include <vtkLinearExtrusionFilter.h>
+#include <vtkImageData.h>
+
+#include <vtkBalloonRepresentation.h>
+#include <vtkBalloonWidget.h>
+#include <vtkPropCollection.h>
 
 
 bezierCurveToolBox::bezierCurveToolBox(QWidget *parent ) :
-    medSegmentationAbstractToolBox( parent)/*,
-    m_MinValueImage(0),
-    m_MaxValueImage(500),*/
+    medSegmentationAbstractToolBox( parent)
 {
     QWidget *displayWidget = new QWidget(this);
     this->addWidget(displayWidget);
@@ -61,20 +75,30 @@ bezierCurveToolBox::bezierCurveToolBox(QWidget *parent ) :
 
     QVBoxLayout * layout = new QVBoxLayout(displayWidget);
    
-    //bezierCurve = new QPushButton(tr("Bezier Curve (Prototype)"),displayWidget);
-    //bezierCurve->setToolTip(tr("activate the bezier curve widget (This is an alpha version (not stable at all, you may need to reboot the software))"));
-    //bezierCurve->setCheckable(true);
     addNewCurve = new QPushButton(tr("Add new Curve"),displayWidget);
     addNewCurve->setToolTip(tr("Start a new curve"));
     connect(addNewCurve,SIGNAL(clicked()),this,SLOT(onAddNewCurve()));
-    //connect(bezierCurve,SIGNAL(toggled(bool)),this,SLOT(activateBezierCurve(bool)));
+    
+    penMode_CheckBox = new QCheckBox(tr("pen mode"),displayWidget);
+    penMode_CheckBox->setToolTip(tr("Activate continuous draw"));
+    connect(penMode_CheckBox,SIGNAL(stateChanged(int)),this,SLOT(onPenMode()));
+
+    generateBinaryImage_button = new QPushButton(tr("Generate Binary Image"),displayWidget);
+    generateBinaryImage_button->hide();
+    connect(generateBinaryImage_button,SIGNAL(clicked()),this,SLOT(generateBinaryImage()));
+
+    currentView = NULL;
     newCurve = false;
-    /*--------------------------------(-_-)*---------------HEAD SHOT--------------*/
+    penMode = false;
 
     QHBoxLayout * ButtonLayout = new QHBoxLayout();
-    //ButtonLayout->addWidget(bezierCurve);
     layout->addLayout( ButtonLayout );
     layout->addWidget(addNewCurve);
+    layout->addWidget(generateBinaryImage_button);
+    layout->addWidget(penMode_CheckBox);
+
+    listOfCurves = new QList<vtkSmartPointer<vtkContourWidget> >;
+    curveInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 }
 
 bezierCurveToolBox::~bezierCurveToolBox(){}
@@ -319,7 +343,7 @@ void bezierCurveToolBox::update(dtkAbstractView *view)
         currentView->disconnect(this,0);
         clear();
     }*/
-
+    
     currentView = medView;
 
     //QObject::connect(d->currentView, SIGNAL(dataAdded(dtkAbstractData*, int)),
@@ -342,36 +366,138 @@ void bezierCurveToolBox::update(dtkAbstractView *view)
 //    }
 //}
 
-//void bezierCurveToolBox::activateBezierCurve(bool checked)
-//{
-//    if (checked)
-//    {
-//            setCursorOn(false);
-//            m_magicWandButton->setChecked(false);
-//            m_strokeButton->setChecked(false);
-//            addNewCurve->show();
-//            /*m_viewFilter = ( new ClickAndMoveEventFilter(this->segmentationToolBox(), this) );
-//            this->segmentationToolBox()->addViewEventFilter( m_viewFilter );*/
-//    }
-//    else
-//    {
-//        addNewCurve->hide();
-//        newCurve = false;
-//    }
-//
-//    /*if (currentView)
-//        if (checked)
-//            currentView->setProperty("vtkWidget","ContourWidget");
-//        else
-//            currentView->setProperty("vtkWidget","None");*/
-//}
-
 void bezierCurveToolBox::onAddNewCurve()
 {
+    if (!currentView)
+        return;
+        
     newCurve = true;
-    
-    if (currentView)
-        currentView->setProperty("vtkWidget","ContourWidget");
+    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+
+
+    //if (!listOfCurves->isEmpty())
+    //{
+    //    // Create the widget
+    //    vtkSmartPointer<vtkBalloonRepresentation> balloonRep = vtkSmartPointer<vtkBalloonRepresentation>::New();
+    //    balloonRep->SetBalloonLayoutToImageRight();
+ 
+    //    vtkSmartPointer<vtkBalloonWidget> balloonWidget =vtkSmartPointer<vtkBalloonWidget>::New();
+    //    balloonWidget->SetInteractor(curveInteractor);
+    //    balloonWidget->SetRepresentation(balloonRep);
+    //    vtkSmartPointer<vtkPropCollection> test = vtkSmartPointer<vtkPropCollection>::New();
+    //    listOfCurves->at(0)->GetRepresentation()->GetActors(test);
+    //    
+    //    balloonWidget->AddBalloon(test->GetNextProp(),"this is a bezier curve"); //,view2d->GetImageInput(0)
+    //    balloonWidget->EnabledOn();
+    //    balloonWidget->Render();
+    //    view2d->SetRenderWindow(/*static_cast<vtkRenderWindow*>*/(view2d->GetRenderWindow()));
+    //    view2d->GetRenderWindow()->Render();
+    //    curveInteractor->Start();
+    //}
+        
+    vtkSmartPointer<vtkOrientedGlyphContourRepresentation> contourRep = vtkSmartPointer<vtkOrientedGlyphContourRepresentation>::New();
+    contourRep->GetLinesProperty()->SetColor(0, 0, 1); //set color to purple
+    contourRep->GetLinesProperty()->SetLineWidth(3);//set color to purple
+        
+    //contourRep->AlwaysOnTopOn();
+    vtkSmartPointer<vtkContourWidget> contourWidget = vtkSmartPointer<vtkContourWidget>::New();
+        
+
+    /* vtkSmartPointer< vtkSphereSource > ss =
+	vtkSmartPointer< vtkSphereSource >::New();
+	ss->SetRadius(0.5);*/
+        
+    curveInteractor->SetRenderWindow(view2d->GetRenderWindow());
+    contourWidget->SetInteractor(/*d->view2d->GetInteractor()*/curveInteractor);
+    contourWidget->SetRepresentation(contourRep);
+    contourWidget->On();
+
+    if (penMode)
+        contourWidget->ContinuousDrawOn();
+    //contourWidget->AllowNodePickingOn();
+    //contourWidget->FollowCursorOn();
+    vtkSmartPointer<vtkBoundedPlanePointPlacer> placer = vtkSmartPointer<vtkBoundedPlanePointPlacer>::New();
+        
+    placer->RemoveAllBoundingPlanes();
+    qDebug() << "view2d->GetImageActor()->GetCenter() = " << view2d->GetImageActor()->GetCenter()[0] << " " << view2d->GetImageActor()->GetCenter()[1] << " " << view2d->GetImageActor()->GetCenter()[2] ;
+    if (currentView->property("Orientation")=="Axial")
+    {
+        placer->SetProjectionNormalToZAxis();
+        placer->SetProjectionPosition(view2d->GetImageActor()->GetCenter()[2]);
+    }
+    if (currentView->property("Orientation")=="Coronal")
+    {
+        placer->SetProjectionNormalToYAxis();
+        placer->SetProjectionPosition(view2d->GetImageActor()->GetCenter()[1]);
+    }
+    if (currentView->property("Orientation")=="Sagittal")
+    {
+        placer->SetProjectionNormalToXAxis();
+        placer->SetProjectionPosition(view2d->GetImageActor()->GetCenter()[0]);
+    }
+
+    contourWidget->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
+    contourRep->SetPointPlacer(placer);
+
+    //contourWidget->EnabledOn();
+    //contourWidget->ProcessEventsOn();
+  
+    contourWidget->Render();
+    view2d->SetRenderWindow(/*static_cast<vtkRenderWindow*>*/(view2d->GetRenderWindow()));
+    listOfCurves->append(contourWidget);
+
+    curveInteractor->Initialize();
+    curveInteractor->Start();
+}
+
+void bezierCurveToolBox::generateBinaryImage()
+{
+    if (listOfCurves->isEmpty())
+        return;
+    // Generate binary image
+    vtkSmartPointer<vtkPolyData> polyData = dynamic_cast<vtkOrientedGlyphContourRepresentation * >(listOfCurves->at(0)->GetRepresentation())->GetContourRepresentationAsPolyData();
+
+    vtkSmartPointer<vtkImageData> whiteImage = vtkSmartPointer<vtkImageData>::New();
+    double bounds[6];
+    polyData->GetBounds(bounds);
+    double spacing[3]; // desired volume spacing
+    whiteImage->SetScalarTypeToUnsignedChar();
+    whiteImage->AllocateScalars();
+    vtkSmartPointer<vtkLinearExtrusionFilter> extruder =
+    vtkSmartPointer<vtkLinearExtrusionFilter>::New();
+    extruder->SetInput(polyData);
+    extruder->SetScaleFactor(1.);
+    extruder->SetExtrusionTypeToNormalExtrusion();
+    extruder->SetVector(0, 0, 1);
+    extruder->Update();
+    // polygonal data --> image stencil:l
+    vtkSmartPointer<vtkPolyDataToImageStencil> pol2stenc =
+    vtkSmartPointer<vtkPolyDataToImageStencil>::New();
+    pol2stenc->SetTolerance(0); // important if extruder->SetVector(0, 0, 1) !!!
+    pol2stenc->SetInputConnection(extruder->GetOutputPort());
+    pol2stenc->SetOutputOrigin( static_cast<vtkImageView2D *>(currentView->getView2D())->GetImageActor()->GetCenter());
+    //pol2stenc->SetOutputSpacing(spacing);
+    pol2stenc->SetOutputWholeExtent(whiteImage->GetExtent());
+    pol2stenc->Update();
+ 
+    // cut the corresponding white image and set the background:
+    vtkSmartPointer<vtkImageStencil> imgstenc =
+    vtkSmartPointer<vtkImageStencil>::New(); 
+      
+    imgstenc->SetInput(whiteImage);
+    imgstenc->SetStencil(pol2stenc->GetOutput());
+    imgstenc->ReverseStencilOff();
+    imgstenc->SetBackgroundValue(0);
+    imgstenc->Update();
+    vtkSmartPointer<vtkMetaImageWriter> imageWriter =
+    vtkSmartPointer<vtkMetaImageWriter>::New();
+    imageWriter->SetFileName("labelImage.mhd");
+    imageWriter->SetInputConnection(imgstenc->GetOutputPort());
+    imageWriter->Write();
 }
 
 
+void bezierCurveToolBox::onPenMode()
+{
+    penMode = penMode_CheckBox->isChecked();
+}
