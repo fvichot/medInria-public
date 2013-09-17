@@ -29,6 +29,7 @@
 #include <vtkMarchingCubes.h>
 #include <vtkTriangleFilter.h>
 #include <vtkSmartPointer.h>
+#include <vtkAlgorithmOutput.h>
 
 //#include <vtkActor.h>
 //#include <vtkPolyDataMapper.h>
@@ -81,64 +82,41 @@ template <class PixelType> int medMeshToolsPrivate::update()
     contourTrian->PassLinesOn();
     contourTrian->Update();
 
+    vtkAlgorithmOutput * outputPort = contourTrian->GetOutputPort();
+    vtkPolyDataAlgorithm * lastAlgo = contourTrian;
+
+    vtkDecimatePro* contourDecimated = 0;
     if (decimate) {
         // Decimate the mesh if required
-        vtkDecimatePro* contourDecimated = vtkDecimatePro::New();
-        contourDecimated->SetInputConnection(contourTrian->GetOutputPort());
+        contourDecimated = vtkDecimatePro::New();
+        contourDecimated->SetInputConnection(outputPort);
         contourDecimated->SetTargetReduction(targetReduction);
         contourDecimated->SplittingOff();
         contourDecimated->PreserveTopologyOn();
         contourDecimated->Update();
+        outputPort = contourDecimated->GetOutputPort();
+        lastAlgo = contourDecimated;
     }
 
+    vtkSmoothPolyDataFilter* contourSmoothed = 0;
     if(smooth) {
         // Smooth the mesh if required
-        vtkSmoothPolyDataFilter* contourSmoothed = vtkSmoothPolyDataFilter::New();
-        contourSmoothed->SetInputConnection(contourTrian->GetOutputPort());
+        contourSmoothed = vtkSmoothPolyDataFilter::New();
+        contourSmoothed->SetInputConnection(outputPort);
         contourSmoothed->SetNumberOfIterations(iterations);
         contourSmoothed->SetRelaxationFactor(relaxationFactor);
         contourSmoothed->Update();
+        outputPort = contourSmoothed->GetOutputPort();
+        lastAlgo = contourSmoothed;
     }
 
-
-//    contour->Delete();
-//    contourTrian->Delete();
-//    contourDecimated->Delete();
-//    contourSmoothed->Delete();
-
-
-
-
     vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
-    smesh->SetDataSet(contourSmoothed->GetOutput());
+    smesh->SetDataSet(lastAlgo->GetOutput());
 
-//    smesh->Write("/tmp/test.vtk");
-
-//    vtkSmartPointer<vtkRenderer> renderer =
-//      vtkSmartPointer<vtkRenderer>::New();
-//    renderer->SetBackground(.1, .2, .3);
-
-//    vtkSmartPointer<vtkRenderWindow> renderWindow =
-//      vtkSmartPointer<vtkRenderWindow>::New();
-//    renderWindow->AddRenderer(renderer);
-//    vtkSmartPointer<vtkRenderWindowInteractor> interactor =
-//      vtkSmartPointer<vtkRenderWindowInteractor>::New();
-//    interactor->SetRenderWindow(renderWindow);
-
-//    vtkSmartPointer<vtkPolyDataMapper> mapper =
-//      vtkSmartPointer<vtkPolyDataMapper>::New();
-//    mapper->SetInputConnection(surfacer->GetOutputPort());
-//    mapper->ScalarVisibilityOff();
-
-//    vtkSmartPointer<vtkActor> actor =
-//      vtkSmartPointer<vtkActor>::New();
-//    actor->SetMapper(mapper);
-
-//    renderer->AddActor(actor);
-
-//    renderWindow->Render();
-//    interactor->Start();
-
+    contour->Delete();
+    contourTrian->Delete();
+    if (contourDecimated) contourDecimated->Delete();
+    if (contourSmoothed) contourSmoothed->Delete();
 
     output->setData(smesh);
 
