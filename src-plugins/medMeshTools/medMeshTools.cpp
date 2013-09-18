@@ -82,19 +82,17 @@ template <class PixelType> int medMeshToolsPrivate::update()
     contourTrian->PassLinesOn();
     contourTrian->Update();
 
-    vtkAlgorithmOutput * outputPort = contourTrian->GetOutputPort();
     vtkPolyDataAlgorithm * lastAlgo = contourTrian;
 
     vtkDecimatePro* contourDecimated = 0;
     if (decimate) {
         // Decimate the mesh if required
         contourDecimated = vtkDecimatePro::New();
-        contourDecimated->SetInputConnection(outputPort);
+        contourDecimated->SetInputConnection(lastAlgo->GetOutputPort());
         contourDecimated->SetTargetReduction(targetReduction);
         contourDecimated->SplittingOff();
         contourDecimated->PreserveTopologyOn();
         contourDecimated->Update();
-        outputPort = contourDecimated->GetOutputPort();
         lastAlgo = contourDecimated;
     }
 
@@ -102,11 +100,10 @@ template <class PixelType> int medMeshToolsPrivate::update()
     if(smooth) {
         // Smooth the mesh if required
         contourSmoothed = vtkSmoothPolyDataFilter::New();
-        contourSmoothed->SetInputConnection(outputPort);
+        contourSmoothed->SetInputConnection(lastAlgo->GetOutputPort());
         contourSmoothed->SetNumberOfIterations(iterations);
         contourSmoothed->SetRelaxationFactor(relaxationFactor);
         contourSmoothed->Update();
-        outputPort = contourSmoothed->GetOutputPort();
         lastAlgo = contourSmoothed;
     }
 
