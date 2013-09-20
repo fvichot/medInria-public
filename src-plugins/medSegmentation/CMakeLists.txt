@@ -86,6 +86,7 @@ target_link_libraries(${PROJECT_NAME}
   medGui
   ITKCommon
   vtkImageView
+  vtkWidgetsAddOn
   )
 
 dtk_build_doc(msegPlugin)

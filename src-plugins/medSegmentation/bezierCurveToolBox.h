@@ -30,12 +30,13 @@
 #include <vtkSmartPointer.h>
 #include <vtkContourWidget.h>
 #include <vtkRenderWindowInteractor.h> 
-
+#include <vtkOrientedGlyphFocalPlaneContourRepresentation.h>
 #include <vector>
 
 class medAbstractData;
 class medAbstractView;
 class medAnnotationData;
+class bezierObserver;
 
 class dtkAbstractProcessFactory;
 
@@ -49,6 +50,8 @@ public:
     /*typedef itk::Image<unsigned char, 3> MaskType;
     typedef itk::Image<unsigned char,2> MaskSliceType;*/
     
+    typedef QList<QPair<vtkSmartPointer<vtkContourWidget> , unsigned int> > listOfPair_CurveSlice;
+
     bezierCurveToolBox( QWidget *parent );
     ~bezierCurveToolBox();
 
@@ -69,6 +72,10 @@ public:
 
     void setCurrentView(medAbstractView * view);
     void update(dtkAbstractView * view);
+
+    listOfPair_CurveSlice * getCoronalListOfCurves();
+    listOfPair_CurveSlice * getSagittalListOfCurves();
+    listOfPair_CurveSlice * getAxialListOfCurves();
        
 
 public slots:
@@ -102,8 +109,9 @@ private:
     bool newCurve;
     bool penMode;
     vtkSmartPointer<vtkRenderWindowInteractor> curveInteractor;
-    QList<vtkSmartPointer<vtkContourWidget> > * listOfCurves;
+    listOfPair_CurveSlice  * listOfCurvesForAxial; 
+    listOfPair_CurveSlice  * listOfCurvesForSagittal;
+    listOfPair_CurveSlice  * listOfCurvesForCoronal;
+
+    bezierObserver * observer;
 };
-
-
-
