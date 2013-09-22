@@ -78,10 +78,6 @@
 
 #include <vtkWidgetEvent.h>
 
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// bezierObserver: links a QSlider with the CurrentPointChangedEvent of a vtkImageView instance.
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class bezierObserver : public vtkCommand
 {
 public:
@@ -95,6 +91,7 @@ public:
     void setView ( vtkImageView2D *view )
     {
         this->view = view;
+        view->AddObserver(vtkImageView2D::SliceChangedEvent,this);
     }
 
     void setToolBox ( bezierCurveToolBox * toolBox )
@@ -136,33 +133,39 @@ void bezierObserver::Execute ( vtkObject *caller, unsigned long event, void *cal
     if (!this->view || !toolBox)
         return;
 
-    vtkContourWidget * contour = dynamic_cast<vtkContourWidget*>(caller);
-
     switch ( event )
     {
-        case vtkWidgetEvent::AddPoint:
+    case vtkCommand::StartInteractionEvent:
         {
+            vtkContourWidget * contour = dynamic_cast<vtkContourWidget*>(caller);
             switch (view->GetViewOrientation())
             {    
-                case 0:
+            case 0:
                 {
                     toolBox->getSagittalListOfCurves()->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,view->GetSlice()));
                     break;
                 }
-                case 1:
+            case 1:
                 {
                     toolBox->getCoronalListOfCurves()->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,view->GetSlice()));
                     break;
                 }
-                case 2:
-                    toolBox->getAxialListOfCurves()->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,view->GetSlice()));
+            case 2:
+                toolBox->getAxialListOfCurves()->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,view->GetSlice()));
             }
+            break;
+        }
+    case vtkImageView2D::SliceChangedEvent:
+        {
+            toolBox->hideContour();
+            toolBox->showContour();
+            break;
         }
     }
 }
 
 bezierCurveToolBox::bezierCurveToolBox(QWidget *parent ) :
-    medSegmentationAbstractToolBox( parent)
+medSegmentationAbstractToolBox( parent)
 {
     QWidget *displayWidget = new QWidget(this);
     this->addWidget(displayWidget);
@@ -170,11 +173,11 @@ bezierCurveToolBox::bezierCurveToolBox(QWidget *parent ) :
     this->setTitle(this->s_name(this));
 
     QVBoxLayout * layout = new QVBoxLayout(displayWidget);
-   
+
     addNewCurve = new QPushButton(tr("Add new Curve"),displayWidget);
     addNewCurve->setToolTip(tr("Start a new curve"));
     connect(addNewCurve,SIGNAL(clicked()),this,SLOT(onAddNewCurve()));
-    
+
     penMode_CheckBox = new QCheckBox(tr("pen mode"),displayWidget);
     penMode_CheckBox->setToolTip(tr("Activate continuous draw"));
     connect(penMode_CheckBox,SIGNAL(stateChanged(int)),this,SLOT(onPenMode()));
@@ -199,6 +202,10 @@ bezierCurveToolBox::bezierCurveToolBox(QWidget *parent ) :
 
     observer = bezierObserver::New();
     observer->setToolBox(this);
+
+    currentContour = NULL;
+    currentOrientation = -1;
+    currentSlice = 0;
 }
 
 bezierCurveToolBox::~bezierCurveToolBox(){}
@@ -433,19 +440,15 @@ void bezierCurveToolBox::update(dtkAbstractView *view)
         return;
     }
 
-    medAbstractView * medView = dynamic_cast<medAbstractView *> (view);
-    
-    if ( !medView )
-        return;
-
-   /* if ((currentView) && (currentView != medView) )
+    /* if ((currentView) && (currentView != medView) )
     {
-        currentView->disconnect(this,0);
-        clear();
+    currentView->disconnect(this,0);
+    clear();
     }*/
-    
-    currentView = medView;
+
+    currentView = dynamic_cast<medAbstractView *> (view);
     observer->setView(static_cast<vtkImageView2D *>(currentView->getView2D()));
+
     //QObject::connect(d->currentView, SIGNAL(dataAdded(dtkAbstractData*, int)),
     //                 this, SLOT(addData(dtkAbstractData*, int)),
     //                 Qt::UniqueConnection);
@@ -655,7 +658,7 @@ void bezierCurveToolBox::onAddNewCurve()
 {
     if (!currentView)
         return;
-        
+
     newCurve = true;
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
 
@@ -664,7 +667,7 @@ void bezierCurveToolBox::onAddNewCurve()
     //    // Create the widget
     //    vtkSmartPointer<vtkBalloonRepresentation> balloonRep = vtkSmartPointer<vtkBalloonRepresentation>::New();
     //    balloonRep->SetBalloonLayoutToImageRight();
- 
+
     //    vtkSmartPointer<vtkBalloonWidget> balloonWidget =vtkSmartPointer<vtkBalloonWidget>::New();
     //    balloonWidget->SetInteractor(view2d->GetInteractor());
     //    balloonWidget->SetRepresentation(balloonRep);
@@ -677,32 +680,29 @@ void bezierCurveToolBox::onAddNewCurve()
     //    view2d->GetRenderWindow()->Render();
     //    balloonWidget->On();
     //} 
-        
-    vtkSmartPointer<vtkContourWidget> contourWidget = vtkSmartPointer<vtkContourWidget>::New();
-    contourWidget->SetInteractor(view2d->GetInteractor());
-       
+
+    currentContour = vtkSmartPointer<vtkContourWidget>::New();
+    currentContour->SetInteractor(view2d->GetInteractor());
+
     vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
     contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
     contourRep->GetLinesProperty()->SetLineWidth(3);
-    contourWidget->SetRepresentation(contourRep);
+    currentContour->SetRepresentation(contourRep);
 
     if (penMode)
-        contourWidget->ContinuousDrawOn();
+        currentContour->ContinuousDrawOn();
 
-    contourWidget->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
-    
-    //contourWidget->AddObserver(vtkWidgetEvent::AddPoint,observer); 
-    //listOfCurvesForAxial->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contourWidget,view2d->GetSlice()));
-    // TODO Ajouter le contour dans une variable classe temporaire afin de ne pas la perdre apres la derniere ligne de la fonction
-    contourWidget->On();
-    
+    currentContour->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
+    currentContour->AddObserver(vtkCommand::StartInteractionEvent,observer); 
+
+    currentContour->On();
 }
 
 
 void bezierCurveToolBox::generateBinaryImage()
 {
- /*   if (listOfCurves->isEmpty())
-        return;*/
+    /*   if (listOfCurves->isEmpty())
+    return;*/
     // Generate binary image
     //vtkSmartPointer<vtkPolyData> polyData = dynamic_cast<vtkOrientedGlyphContourRepresentation * >(listOfCurves->at(0)->GetRepresentation())->GetContourRepresentationAsPolyData();
 
@@ -728,7 +728,7 @@ void bezierCurveToolBox::generateBinaryImage()
     ////pol2stenc->SetOutputSpacing(spacing);
     //pol2stenc->SetOutputWholeExtent(whiteImage->GetExtent());
     //pol2stenc->Update();
- 
+
     //// cut the corresponding white image and set the background:
     //vtkSmartPointer<vtkImageStencil> imgstenc =
     //vtkSmartPointer<vtkImageStencil>::New(); 
@@ -764,4 +764,76 @@ bezierCurveToolBox::listOfPair_CurveSlice * bezierCurveToolBox::getCoronalListOf
 bezierCurveToolBox::listOfPair_CurveSlice * bezierCurveToolBox::getAxialListOfCurves()
 {
     return listOfCurvesForAxial;
+}
+
+// this method shows the contours present on the currentOrientation and currentSlice. This method updates the currentOrientation and currentSlice variables 
+// before showing the contours
+
+void bezierCurveToolBox::showContour()
+{
+    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+
+    currentOrientation = view2d->GetViewOrientation();
+    currentSlice = view2d->GetSlice();
+
+    listOfPair_CurveSlice * list;
+
+    switch (view2d->GetViewOrientation())
+    {    
+    case 0:
+        {
+            list = listOfCurvesForSagittal;
+            break;
+        }
+    case 1:
+        {
+            list = listOfCurvesForCoronal;
+            break;
+        }
+    case 2:
+        list = listOfCurvesForAxial;
+    }
+
+    for(int i=0;i<list->size();i++)
+    {
+        if (list->at(i).second==view2d->GetSlice())
+            list->at(i).first->On();
+    }
+}
+
+// this method hides the contours present in the currentOrientation and currentSlice. This method updates the currentOrientation and currentSlice only 
+// if they were not initialized after construction of the instance of the class
+void bezierCurveToolBox::hideContour()
+{
+    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+
+    if (currentOrientation == -1 && !currentSlice)
+    {
+        currentOrientation = view2d->GetViewOrientation(); // First time
+        currentSlice = view2d->GetSlice();
+    }
+
+    listOfPair_CurveSlice * list;
+
+    switch (currentOrientation)
+    {    
+    case 0:
+        {
+            list = listOfCurvesForSagittal;
+            break;
+        }
+    case 1:
+        {
+            list = listOfCurvesForCoronal;
+            break;
+        }
+    case 2:
+        list = listOfCurvesForAxial;
+    }
+
+    for(int i=0;i<list->size();i++)
+    {
+        if (list->at(i).second==currentSlice)
+            list->at(i).first->Off();
+    }
 }

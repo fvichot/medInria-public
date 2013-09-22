@@ -86,6 +86,9 @@ public slots:
     void onAddNewCurve();
     void onPenMode();
     void generateBinaryImage();
+    void showContour();
+    void hideContour();
+
 protected:
     
     //void setData( dtkAbstractData *data );
@@ -100,7 +103,7 @@ private:
     dtkSmartPointer<medAbstractData> m_imageData;*/
     
     //MaskType::Pointer m_itkMask;
-    medAbstractView * currentView;
+    dtkSmartPointer<medAbstractView> currentView;
     
     //QPushButton * bezierCurve,
     QPushButton * addNewCurve;
@@ -112,6 +115,11 @@ private:
     listOfPair_CurveSlice  * listOfCurvesForAxial; 
     listOfPair_CurveSlice  * listOfCurvesForSagittal;
     listOfPair_CurveSlice  * listOfCurvesForCoronal;
+
+    vtkSmartPointer<vtkContourWidget> currentContour;
+
+    char currentOrientation;
+    unsigned int currentSlice;
 
     bezierObserver * observer;
 };

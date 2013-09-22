@@ -65,6 +65,7 @@ public:
     typedef QHash<QByteArray, AlgorithmInfo > AlgInfoContainerType;
     AlgInfoContainerType algInfo;
 
+    dtkSmartPointer<medAbstractView> currentView;
 };
 
 medSegmentationSelectorToolBox::medSegmentationSelectorToolBox( medWorkspace * workspace, QWidget *parent) : medToolBox(parent), d(new medSegmentationSelectorToolBoxPrivate)
@@ -119,6 +120,8 @@ medSegmentationSelectorToolBox::medSegmentationSelectorToolBox( medWorkspace * w
             medMessageController::instance(),SLOT(showError(const QString&,unsigned int)));
     connect(this,SIGNAL(showInfo(const QString&,unsigned int)),
             medMessageController::instance(),SLOT(showInfo(const QString&,unsigned int)));
+
+    d->currentView = NULL;
 }
 
 medSegmentationSelectorToolBox::~medSegmentationSelectorToolBox(void)
@@ -175,6 +178,7 @@ void medSegmentationSelectorToolBox::onToolBoxChosen(const QByteArray& id)
     }
     d->customToolBox = toolBox;
     toolBox->show();
+    toolBox->update(d->currentView);
     emit addToolBox(toolBox);
 }
 
@@ -311,6 +315,7 @@ void medSegmentationSelectorToolBox::removeViewEventFilter( medViewEventFilter *
 void medSegmentationSelectorToolBox::update( dtkAbstractView *view )
 {
     medToolBox::update(view);
+    d->currentView = dynamic_cast<medAbstractView*>(view);
 }
 
 void medSegmentationSelectorToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
