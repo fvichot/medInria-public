@@ -1243,12 +1243,14 @@ void v3dView::onOrientationPropertySet ( const QString &value )
 
     // force a correct display of the 2D axis for planar views
     d->currentView->InvokeEvent ( vtkImageView::CurrentPointChangedEvent, NULL ); // seems not needed anymore
+    
 
     // update slider position
     if ( vtkImageView2D *view2d = vtkImageView2D::SafeDownCast ( d->currentView ) )
     {
         unsigned int zslice = view2d->GetSlice();
         d->slider->setValue ( zslice );
+        view2d->InvokeEvent(vtkImageView2D::SliceChangedEvent,NULL);
     }
 }
 

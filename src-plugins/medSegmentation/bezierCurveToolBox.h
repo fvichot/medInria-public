@@ -89,11 +89,15 @@ public slots:
     void showContour();
     void hideContour();
 
+    void copyContours(); // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
+    void pasteContours();
+
 protected:
     
     //void setData( dtkAbstractData *data );
 
      //void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData );
+    listOfPair_CurveSlice * getListOfCurrentOrientation();
     
 private:
    
@@ -118,8 +122,12 @@ private:
 
     vtkSmartPointer<vtkContourWidget> currentContour;
 
-    char currentOrientation;
+    QList<vtkSmartPointer<vtkPolyData>> * ListOfContours; // buffer for copy/paste
+
+    int currentOrientation;
     unsigned int currentSlice;
 
     bezierObserver * observer;
+
+    QShortcut *copy_shortcut, *paste_shortcut;
 };

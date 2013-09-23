@@ -32,6 +32,8 @@ vtkStandardNewMacro(vtkContourOverlayRepresentation);
 //----------------------------------------------------------------------
 vtkContourOverlayRepresentation::vtkContourOverlayRepresentation()
 {
+    this->InteractionOffset[0] = 0.5;
+    this->InteractionOffset[1] = 0.5;
 }
 
 //----------------------------------------------------------------------
