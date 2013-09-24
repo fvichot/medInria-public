@@ -32,6 +32,7 @@
 #include <vtkRenderWindowInteractor.h> 
 #include <vtkOrientedGlyphFocalPlaneContourRepresentation.h>
 #include <vector>
+#include <vtkBalloonWidget.h>
 
 class medAbstractData;
 class medAbstractView;
@@ -90,7 +91,11 @@ public slots:
     void hideContour();
 
     void copyContours(); // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
+    void pasteContours(int slice1,int slice2);
     void pasteContours();
+
+    void propagateCurve();
+    //void interpolate();
 
 protected:
     
@@ -109,10 +114,15 @@ private:
     //MaskType::Pointer m_itkMask;
     dtkSmartPointer<medAbstractView> currentView;
     
-    //QPushButton * bezierCurve,
     QPushButton * addNewCurve;
     QPushButton * generateBinaryImage_button;
+    QPushButton * propagate;
+    QPushButton * interpolate;
     QCheckBox * penMode_CheckBox;
+
+    QLabel * propagateLabel;
+    QSpinBox * bound1,* bound2;
+
     bool newCurve;
     bool penMode;
     vtkSmartPointer<vtkRenderWindowInteractor> curveInteractor;
@@ -121,6 +131,7 @@ private:
     listOfPair_CurveSlice  * listOfCurvesForCoronal;
 
     vtkSmartPointer<vtkContourWidget> currentContour;
+    vtkSmartPointer<vtkBalloonWidget> currentBalloon;
 
     QList<vtkSmartPointer<vtkPolyData>> * ListOfContours; // buffer for copy/paste
 
@@ -130,4 +141,6 @@ private:
     bezierObserver * observer;
 
     QShortcut *copy_shortcut, *paste_shortcut;
+    
+    friend class bezierObserver;
 };
