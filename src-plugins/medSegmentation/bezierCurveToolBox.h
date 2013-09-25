@@ -95,7 +95,10 @@ public slots:
     void pasteContours();
 
     void propagateCurve();
-    //void interpolate();
+    void interpolateCurve();
+    QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
+
+    void reorderPolygon(vtkPolyData * poly);
 
 protected:
     
