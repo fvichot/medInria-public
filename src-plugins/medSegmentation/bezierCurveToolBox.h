@@ -106,6 +106,7 @@ protected:
 
      //void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData );
     listOfPair_CurveSlice * getListOfCurrentOrientation();
+    void resampleCurve(vtkPolyData * poly,int nbPoints);
     
 private:
    

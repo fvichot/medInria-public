@@ -72,6 +72,7 @@
 #include <vtkWidgetEvent.h>
 #include <vtkDecimatePolylineFilter.h>
 #include <vtkParametricSpline.h>
+#include <vtkCellArray.h>
 
 class bezierObserver : public vtkCommand
 {
@@ -511,6 +512,7 @@ void bezierCurveToolBox::onAddNewCurve()
     vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
     contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
     contourRep->GetLinesProperty()->SetLineWidth(3);
+    contourRep->GetProperty()->SetPointSize(4);
 
     currentContour = vtkSmartPointer<vtkContourWidget>::New();
     currentContour->SetRepresentation(contourRep);
@@ -739,6 +741,7 @@ void bezierCurveToolBox::pasteContours(int slice1,int slice2)
             vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
             contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
             contourRep->GetLinesProperty()->SetLineWidth(3);
+            contourRep->GetProperty()->SetPointSize(4);
         
             contour->SetRepresentation(contourRep);
         
@@ -750,14 +753,12 @@ void bezierCurveToolBox::pasteContours(int slice1,int slice2)
             vtkSmartPointer<vtkDecimatePolylineFilter> filter = vtkSmartPointer<vtkDecimatePolylineFilter>::New();
             filter->SetInput(ListOfContours->at(i));
             contour->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
-            //contour->Initialize(ListOfContours->at(i));
-            //qDebug() << "test " << contourRep->GetNumberOfNodes();
-            //double number = 10;
-            //qDebug() << "reduction ratio " << (100-(number*(double)(100)/(double)(contourRep->GetNumberOfNodes())))/100;
-            //filter->SetTargetReduction((100-(number*(double)(100)/(double)(contourRep->GetNumberOfNodes())))/100);
+
+            qDebug() << "Number of lines in the copied polyData : " << ListOfContours->at(i)->GetNumberOfLines();
+            
             filter->Update();
             contour->Initialize(filter->GetOutput());
-            contourRep->SetClosedLoop(1); // not sure whether it is needed or not
+            contourRep->SetClosedLoop(1); 
             if (currentSlice==j)
                 contour->On();
 
@@ -789,6 +790,7 @@ void bezierCurveToolBox::interpolateCurve()
     listOfPair_CurveSlice * list = getListOfCurrentOrientation();
     int maxSlice = 0;
     int minSlice = 9998;
+    
     for(int i=0;i<list->size();i++)
     {
         if (list->at(i).second>maxSlice)
@@ -799,37 +801,60 @@ void bezierCurveToolBox::interpolateCurve()
     
     vtkSmartPointer<vtkPolyData> curve1;
     vtkSmartPointer<vtkPolyData> curve2;
+    int curve1NbNode, curve2NbNode;
 
     for(int i=0;i<list->size();i++)
     {
         if (list->at(i).second==maxSlice)
+        {
             curve1 = list->at(i).first->GetContourRepresentation()->GetContourRepresentationAsPolyData();
+            curve1NbNode = list->at(i).first->GetContourRepresentation()->GetNumberOfNodes();
+        }
         if (list->at(i).second==minSlice)
+        {
             curve2 = list->at(i).first->GetContourRepresentation()->GetContourRepresentationAsPolyData();
+            curve2NbNode = list->at(i).first->GetContourRepresentation()->GetNumberOfNodes();
+        }
     }
 
-    QList<vtkPolyData *> listPolyData = generateIntermediateCurves(curve1,curve2,maxSlice-minSlice);
+    QList<vtkPolyData *> listPolyData = generateIntermediateCurves(curve1,curve2,maxSlice-minSlice-1);
+
+    int number = ceil(4/3.0 * (double)(curve2NbNode));
+    if (curve1NbNode>curve2NbNode)
+        number = ceil(4/3.0 * (double)(curve1NbNode));
 
     for (int i = minSlice+1;i<maxSlice;i++)
     {
-        vtkSmartPointer<vtkContourWidget> contour = vtkSmartPointer<vtkContourWidget>::New();
-        
         vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
         contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
         contourRep->GetLinesProperty()->SetLineWidth(3);
+        contourRep->GetProperty()->SetPointSize(4);
+        
+        vtkSmartPointer<vtkContourWidget> contour = vtkSmartPointer<vtkContourWidget>::New();
         
         contour->SetRepresentation(contourRep);
         
+        contour->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
         contourRep->SetRenderer(view2d->GetRenderer());
         contour->SetInteractor(view2d->GetInteractor());
         
-        //vtkSmartPointer<vtkDecimatePolylineFilter> filter = vtkSmartPointer<vtkDecimatePolylineFilter>::New();
-        contour->GetEventTranslator()->SetTranslation(vtkCommand::RightButtonPressEvent,NULL);
-        contour->Initialize(listPolyData.at(i-(minSlice+1)));
-        //filter->SetInput(listPolyData.at(i-(minSlice+1)));
-        //filter->Update();
-        //contour->Initialize(filter->GetOutput());
-        contourRep->SetClosedLoop(1); // not sure whether it is needed or not
+        contour->Initialize(listPolyData.at(i-(minSlice+1))); 
+        
+        int nbPoints = contourRep->GetNumberOfNodes();
+        int div = floor(nbPoints/(double)number);
+        bool first = true;
+        for (int k = nbPoints-1;k>=0;k--)
+        {
+            if (k%div!=0)
+                contourRep->DeleteNthNode(k);
+            else
+                if (first) // delete the last node, no need for that normally
+                {
+                    contourRep->DeleteNthNode(k);
+                    first=false;
+                }
+        }
+        contourRep->SetClosedLoop(1); 
         if (currentSlice==i)
             contour->On();
         list->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,i));
@@ -853,32 +878,16 @@ QList<vtkPolyData* > bezierCurveToolBox::generateIntermediateCurves(vtkSmartPoin
         endCurve = curve1;
         curve2ToCurve1 = true;
     }
-    
-    vtkSmartPointer<vtkParametricSpline> startSpline =vtkSmartPointer<vtkParametricSpline>::New();
-    vtkSmartPointer<vtkParametricSpline> endSpline =vtkSmartPointer<vtkParametricSpline>::New();
+    //int nbpoints = max;
+    resampleCurve(startCurve,max);
+    resampleCurve(endCurve,max);
 
-    startSpline->SetPoints(startCurve->GetPoints());
-    endSpline->SetPoints(endCurve->GetPoints());
-
-    vtkPoints * points = vtkPoints::New();
-    /*vtkPoints * endPoints = vtkPoints::New();*/
-    double p[3];
-    double u[3];
-    for(int j=0;j<max;j++)
-    {
-        u[0]=u[1]=u[2]=j/(double)max;
-        startSpline->Evaluate(u,p,NULL);
-        points->InsertNextPoint(p);
-    }
-
-    reorderPolygon(endCurve);
-    startCurve->SetPoints(points);
     reorderPolygon(startCurve);
-    qDebug() << "nb points end curve = " << endCurve->GetNumberOfPoints();
-    qDebug() << "nb points start curve = " << startCurve->GetNumberOfPoints();
+    reorderPolygon(endCurve);
+    
     vtkSmartPointer<vtkPoints>  bufferPoints = vtkPoints::New(); 
     QList<vtkPolyData*> list;
-    for(int i=0;i<nb;i++)
+    for(int i=1;i<=nb;i++)
     {
         vtkPolyData * poly = vtkPolyData::New();
         bufferPoints->Reset();
@@ -889,22 +898,22 @@ QList<vtkPolyData* > bezierCurveToolBox::generateIntermediateCurves(vtkSmartPoin
             endCurve->GetPoint(k,p2);
             if (curve2ToCurve1)
             {
-                p3[0]= p1[0] +(p2[0]-p1[0])*((i+1)/(double)(nb+1));
-                p3[1]= p1[1] +(p2[1]-p1[1])*((i+1)/(double)(nb+1));
-                p3[2]= p1[2] +(p2[2]-p1[2])*((i+1)/(double)(nb+1));
+                p3[0]= p1[0] +(p2[0]-p1[0])*((i)/(double)(nb+1));
+                p3[1]= p1[1] +(p2[1]-p1[1])*((i)/(double)(nb+1));
+                p3[2]= p1[2] +(p2[2]-p1[2])*((i)/(double)(nb+1));
             }
             else
             {
-                p3[0]= p2[0] +(p1[0]-p2[0])*((i+1)/(double)(nb+1));
-                p3[1]= p2[1] +(p1[1]-p2[1])*((i+1)/(double)(nb+1));
-                p3[2]= p2[2] +(p1[2]-p2[2])*((i+1)/(double)(nb+1));
+                p3[0]= p2[0] +(p1[0]-p2[0])*((i)/(double)(nb+1));
+                p3[1]= p2[1] +(p1[1]-p2[1])*((i)/(double)(nb+1));
+                p3[2]= p2[2] +(p1[2]-p2[2])*((i)/(double)(nb+1));
             }
-            
             bufferPoints->InsertNextPoint(p3);
         }
         vtkPoints * polyPoints =vtkPoints::New();
         polyPoints->DeepCopy(bufferPoints);
         poly->SetPoints(polyPoints);
+        poly->Allocate(); // THE TRIANGLE STRIP SEG FAULT STILL EXISTS !!!
         list.append(poly);
     }
     return list;
@@ -924,7 +933,8 @@ void bezierCurveToolBox::reorderPolygon(vtkPolyData * poly)
     for(int i=0;i<poly->GetNumberOfPoints();i++)
     {
         worldPoint = poly->GetPoint(i);
-        vtkInteractorObserver::ComputeWorldToDisplay(view2d->GetRenderer(),worldPoint[0], worldPoint[1], worldPoint[2], displayPoint); // a voir si normalization necessaire
+        vtkInteractorObserver::ComputeWorldToDisplay(view2d->GetRenderer(),worldPoint[0], worldPoint[1], worldPoint[2], displayPoint); 
+        
         if (displayPoint[0]<xmin)
         {
             xmin =  displayPoint[0];
@@ -965,4 +975,23 @@ void bezierCurveToolBox::reorderPolygon(vtkPolyData * poly)
         }
     }
     poly->SetPoints(reorderedPoints);
+}
+
+void bezierCurveToolBox::resampleCurve(vtkPolyData * poly,int nbPoints)
+{
+    vtkSmartPointer<vtkParametricSpline> spline =vtkSmartPointer<vtkParametricSpline>::New();
+    poly->GetPoints()->InsertNextPoint(poly->GetPoints()->GetPoint(0));
+    spline->SetPoints(poly->GetPoints());
+    
+    vtkPoints * points = vtkPoints::New();
+    double p[3];
+    double u[3];
+    for(int j=0;j<nbPoints+1;j++)
+    {
+        u[0]=u[1]=u[2]=j/(double)(nbPoints+1);
+        spline->Evaluate(u,p,NULL);
+        points->InsertNextPoint(p);
+    }
+    
+    poly->SetPoints(points);
 }
