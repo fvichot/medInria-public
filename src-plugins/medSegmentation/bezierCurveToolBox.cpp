@@ -50,8 +50,6 @@
 #include <vtkImageView2D.h>
 #include <vtkImageActor.h>
 
-#include <vtkSphereSource.h>
-
 //
 #include <vtkThinPlateSplineTransform.h>
 #include <vtkMetaImageWriter.h>
@@ -73,6 +71,8 @@
 #include <vtkDecimatePolylineFilter.h>
 #include <vtkParametricSpline.h>
 #include <vtkCellArray.h>
+#include <vtkPolyLine.h>
+#include <vtkPointData.h>
 
 class bezierObserver : public vtkCommand
 {
@@ -185,7 +185,7 @@ medSegmentationAbstractToolBox( parent)
     connect(penMode_CheckBox,SIGNAL(stateChanged(int)),this,SLOT(onPenMode()));
 
     generateBinaryImage_button = new QPushButton(tr("Generate Binary Image"),displayWidget);
-    generateBinaryImage_button->hide();
+    
     connect(generateBinaryImage_button,SIGNAL(clicked()),this,SLOT(generateBinaryImage()));
 
     currentView = NULL;
@@ -545,50 +545,57 @@ void bezierCurveToolBox::onAddNewCurve()
 }
 
 
-void bezierCurveToolBox::generateBinaryImage()
+void bezierCurveToolBox::generateBinaryImage(vtkPolyData * pd)
 {
-    /*   if (listOfCurves->isEmpty())
-    return;*/
-    // Generate binary image
-    //vtkSmartPointer<vtkPolyData> polyData = dynamic_cast<vtkOrientedGlyphContourRepresentation * >(listOfCurves->at(0)->GetRepresentation())->GetContourRepresentationAsPolyData();
+    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
 
-    //vtkSmartPointer<vtkImageData> whiteImage = vtkSmartPointer<vtkImageData>::New();
-    //double bounds[6];
-    //polyData->GetBounds(bounds);
-    //double spacing[3]; // desired volume spacing
-    //whiteImage->SetScalarTypeToUnsignedChar();
-    //whiteImage->AllocateScalars();
-    //vtkSmartPointer<vtkLinearExtrusionFilter> extruder =
-    //vtkSmartPointer<vtkLinearExtrusionFilter>::New();
-    //extruder->SetInput(polyData);
-    //extruder->SetScaleFactor(1.);
-    //extruder->SetExtrusionTypeToNormalExtrusion();
-    //extruder->SetVector(0, 0, 1);
-    //extruder->Update();
-    //// polygonal data --> image stencil:l
-    //vtkSmartPointer<vtkPolyDataToImageStencil> pol2stenc =
-    //vtkSmartPointer<vtkPolyDataToImageStencil>::New();
-    //pol2stenc->SetTolerance(0); // important if extruder->SetVector(0, 0, 1) !!!
-    //pol2stenc->SetInputConnection(extruder->GetOutputPort());
-    //pol2stenc->SetOutputOrigin( static_cast<vtkImageView2D *>(currentView->getView2D())->GetImageActor()->GetCenter());
-    ////pol2stenc->SetOutputSpacing(spacing);
-    //pol2stenc->SetOutputWholeExtent(whiteImage->GetExtent());
-    //pol2stenc->Update();
+    vtkSmartPointer<vtkImageData> whiteImage = vtkSmartPointer<vtkImageData>::New();    
+    whiteImage->SetSpacing(view2d->GetImageInput(0)->GetSpacing());
+    whiteImage->SetDimensions(view2d->GetImageInput(0)->GetDimensions());
+    whiteImage->SetExtent(view2d->GetImageInput(0)->GetExtent());
+    whiteImage->SetOrigin(view2d->GetImageInput(0)->GetOrigin());
+    
+    whiteImage->SetScalarTypeToUnsignedChar();
+    whiteImage->AllocateScalars();
 
-    //// cut the corresponding white image and set the background:
-    //vtkSmartPointer<vtkImageStencil> imgstenc =
-    //vtkSmartPointer<vtkImageStencil>::New(); 
-    //  
-    //imgstenc->SetInput(whiteImage);
-    //imgstenc->SetStencil(pol2stenc->GetOutput());
-    //imgstenc->ReverseStencilOff();
-    //imgstenc->SetBackgroundValue(0);
-    //imgstenc->Update();
-    //vtkSmartPointer<vtkMetaImageWriter> imageWriter =
-    //vtkSmartPointer<vtkMetaImageWriter>::New();
-    //imageWriter->SetFileName("labelImage.mhd");
-    //imageWriter->SetInputConnection(imgstenc->GetOutputPort());
-    //imageWriter->Write();
+    // fill the image with foreground voxels:
+    unsigned char inval = 255;
+    unsigned char outval = 0;
+    vtkIdType count = whiteImage->GetNumberOfPoints();
+    for (vtkIdType i = 0; i < count; ++i)
+    {
+        whiteImage->GetPointData()->GetScalars()->SetTuple1(i, inval);
+    }
+
+    // polygonal data --> image stencil:
+    vtkSmartPointer<vtkPolyDataToImageStencil> pol2stenc = vtkSmartPointer<vtkPolyDataToImageStencil>::New();
+
+    pol2stenc->SetInput(pd);
+
+    pol2stenc->SetOutputOrigin(whiteImage->GetOrigin());
+    pol2stenc->SetOutputSpacing(whiteImage->GetSpacing());
+    pol2stenc->SetOutputWholeExtent(whiteImage->GetExtent());
+    
+    pol2stenc->Update();
+
+    // cut the corresponding white image and set the background:
+    vtkSmartPointer<vtkImageStencil> imgstenc = vtkSmartPointer<vtkImageStencil>::New();
+
+    imgstenc->SetInput(whiteImage);
+    imgstenc->SetStencil(pol2stenc->GetOutput());
+    
+    imgstenc->ReverseStencilOff();
+    imgstenc->SetBackgroundValue(outval);
+    imgstenc->Update();
+
+    vtkSmartPointer<vtkMetaImageWriter> writer = 
+        vtkSmartPointer<vtkMetaImageWriter>::New();
+    writer->SetFileName("GenerateBinaryImage.mhd");
+
+    writer->SetInput(imgstenc->GetOutput());
+
+    writer->Write();  
+    
 }
 
 
@@ -789,7 +796,7 @@ void bezierCurveToolBox::interpolateCurve()
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     listOfPair_CurveSlice * list = getListOfCurrentOrientation();
     int maxSlice = 0;
-    int minSlice = 9998;
+    int minSlice = 999999;
     
     for(int i=0;i<list->size();i++)
     {
@@ -860,6 +867,7 @@ void bezierCurveToolBox::interpolateCurve()
         list->append(QPair<vtkSmartPointer<vtkContourWidget>,unsigned int>(contour,i));
     }
     currentView->update();
+    getCoordinatesOfROIPolygon(listPolyData.at(0));
 }
 
 QList<vtkPolyData* > bezierCurveToolBox::generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb)
@@ -890,6 +898,10 @@ QList<vtkPolyData* > bezierCurveToolBox::generateIntermediateCurves(vtkSmartPoin
     for(int i=1;i<=nb;i++)
     {
         vtkPolyData * poly = vtkPolyData::New();
+        vtkCellArray * cells = vtkCellArray::New();
+        vtkPolyLine * polyLine = vtkPolyLine::New();
+        polyLine->GetPointIds()->SetNumberOfIds(startCurve->GetNumberOfPoints());
+        
         bufferPoints->Reset();
         for(int k=0;k<startCurve->GetNumberOfPoints();k++)
         {
@@ -909,11 +921,15 @@ QList<vtkPolyData* > bezierCurveToolBox::generateIntermediateCurves(vtkSmartPoin
                 p3[2]= p2[2] +(p1[2]-p2[2])*((i)/(double)(nb+1));
             }
             bufferPoints->InsertNextPoint(p3);
+            polyLine->GetPointIds()->SetId(k,k);
         }
+        cells->InsertNextCell(polyLine);
+
         vtkPoints * polyPoints =vtkPoints::New();
         polyPoints->DeepCopy(bufferPoints);
         poly->SetPoints(polyPoints);
-        poly->Allocate(); // THE TRIANGLE STRIP SEG FAULT STILL EXISTS !!!
+        poly->SetLines(cells);
+        
         list.append(poly);
     }
     return list;
@@ -995,3 +1011,18 @@ void bezierCurveToolBox::resampleCurve(vtkPolyData * poly,int nbPoints)
     
     poly->SetPoints(points);
 }
+
+QList<unsigned int*> bezierCurveToolBox::getCoordinatesOfROIPolygon(vtkPolyData * poly)
+{
+    for(int i = 0;i<poly->GetNumberOfPoints();i++)
+    {
+        double * point = poly->GetPoint(i);
+        qDebug() << "point = " << point[0] << " " << point[1] << " " << point[2];   
+    }
+
+   
+    return QList<unsigned int*>();
+}
+
+
+

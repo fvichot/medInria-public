@@ -86,7 +86,7 @@ public slots:
     //void activateBezierCurve(bool);
     void onAddNewCurve();
     void onPenMode();
-    void generateBinaryImage();
+    void generateBinaryImage(vtkPolyData * pd);
     void showContour();
     void hideContour();
 
@@ -99,6 +99,7 @@ public slots:
     QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
 
     void reorderPolygon(vtkPolyData * poly);
+    QList<unsigned int*> getCoordinatesOfROIPolygon(vtkPolyData * poly);
 
 protected:
     
