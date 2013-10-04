@@ -77,7 +77,7 @@ public:
     listOfPair_CurveSlice * getCoronalListOfCurves();
     listOfPair_CurveSlice * getSagittalListOfCurves();
     listOfPair_CurveSlice * getAxialListOfCurves();
-       
+    int PointInPolygon (double x[3], int numPts, double *pts, double bounds[6], double *n);
 
 public slots:
 
@@ -86,7 +86,8 @@ public slots:
     //void activateBezierCurve(bool);
     void onAddNewCurve();
     void onPenMode();
-    void generateBinaryImage(vtkPolyData * pd);
+    //void generateBinaryImage(vtkSmartPointer<vtkPolyData> pd);
+    void generateBinaryImage(QList<QPair<vtkPolygon*,unsigned int> > polys);
     void showContour();
     void hideContour();
 
@@ -99,7 +100,7 @@ public slots:
     QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
 
     void reorderPolygon(vtkPolyData * poly);
-    QList<unsigned int*> getCoordinatesOfROIPolygon(vtkPolyData * poly);
+    QList<QPair<vtkPolygon*,unsigned int> > createImagePolygons(QList<QPair<vtkPolyData*,unsigned int> > &listPoly);
 
 protected:
     
@@ -108,7 +109,8 @@ protected:
      //void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData );
     listOfPair_CurveSlice * getListOfCurrentOrientation();
     void resampleCurve(vtkPolyData * poly,int nbPoints);
-    
+    void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData ); // copy of a function in painttoolbox
+    void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
 private:
    
     /*dtkSmartPointer<medImageMaskAnnotationData> m_maskAnnotationData;
