@@ -34,6 +34,8 @@
 #include <vector>
 #include <vtkBalloonWidget.h>
 
+#include <itkImage.h>
+
 class medAbstractData;
 class medAbstractView;
 class medAnnotationData;
@@ -48,10 +50,11 @@ class MEDVIEWSEGMENTATIONPLUGIN_EXPORT bezierCurveToolBox : public medSegmentati
     Q_OBJECT;
 public:
 
-    /*typedef itk::Image<unsigned char, 3> MaskType;
-    typedef itk::Image<unsigned char,2> MaskSliceType;*/
+    typedef itk::Image<unsigned char, 3> MaskType;
+    //typedef itk::Image<unsigned char,2> MaskSliceType;*/
+    typedef QPair<unsigned int,unsigned int> PlaneIndexSlicePair;
+    typedef QList<QPair<vtkSmartPointer<vtkContourWidget> , PlaneIndexSlicePair> > listOfPair_CurveSlice;
     
-    typedef QList<QPair<vtkSmartPointer<vtkContourWidget> , unsigned int> > listOfPair_CurveSlice;
 
     bezierCurveToolBox( QWidget *parent );
     ~bezierCurveToolBox();
@@ -87,7 +90,8 @@ public slots:
     void onAddNewCurve();
     void onPenMode();
     //void generateBinaryImage(vtkSmartPointer<vtkPolyData> pd);
-    void generateBinaryImage(QList<QPair<vtkPolygon*,unsigned int> > polys);
+    void generateBinaryImage();
+    void binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
     void showContour();
     void hideContour();
 
@@ -100,7 +104,7 @@ public slots:
     QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
 
     void reorderPolygon(vtkPolyData * poly);
-    QList<QPair<vtkPolygon*,unsigned int> > createImagePolygons(QList<QPair<vtkPolyData*,unsigned int> > &listPoly);
+    QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly);
 
 protected:
     
@@ -111,6 +115,8 @@ protected:
     void resampleCurve(vtkPolyData * poly,int nbPoints);
     void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData ); // copy of a function in painttoolbox
     void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
+    int computePlaneIndex();
+
 private:
    
     /*dtkSmartPointer<medImageMaskAnnotationData> m_maskAnnotationData;
