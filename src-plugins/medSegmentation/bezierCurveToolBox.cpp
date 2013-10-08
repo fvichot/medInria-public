@@ -512,7 +512,7 @@ void bezierCurveToolBox::showContour()
 // if they were not initialized after construction of the instance of the class
 void bezierCurveToolBox::hideContour()
 {
-    if (!currentView)
+    if (currentView==NULL)
         return;
 
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
@@ -632,7 +632,7 @@ void bezierCurveToolBox::pasteContours(int slice1,int slice2)
             if (currentSlice==j)
                 contour->On();
 
-            list->append(QPair<vtkSmartPointer<vtkContourWidget>,PlaneIndexSlicePair>(contour,j));
+            list->append(QPair<vtkSmartPointer<vtkContourWidget>,PlaneIndexSlicePair>(contour,PlaneIndexSlicePair(j,computePlaneIndex())));
         }
     }
     currentView->update();
@@ -952,19 +952,19 @@ QList<QPair<vtkPolygon*,bezierCurveToolBox::PlaneIndexSlicePair> > bezierCurveTo
                 break;
             }
         }
-
+        
         for(int j=0;j<nb;j++)
         {
             double * point = listPoly.at(i).first->GetPoint(j);
             int imagePoint[3];
             double imagePointDouble[3];
             
-            view2d->GetImageCoordinatesFromWorldCoordinates(point,imagePoint);
-           
+            view2d->GetImageCoordinatesFromWorldCoordinates(point,imagePoint); // HUGE PROBLEM THIS ONE GETTHE IMAGE COORDINATES IN THE ACTUAL ORIENTATION
+            //qDebug() << " imagePoint[0] : " << imagePoint[0] << " imagePoint[1] : " << imagePoint[1] << " imagePoint[2] : " << imagePoint[2] ;
             imagePointDouble[x]= (double)imagePoint[x];
             imagePointDouble[y]= (double)imagePoint[y];
 
-            imagePointDouble[z]= (double)listPoly.at(i).second.second;
+            imagePointDouble[z]= (double)listPoly.at(i).second.first;
 
             if (imagePointDouble[x]==imagePreviousPoint[x] && imagePointDouble[y]==imagePreviousPoint[y] && imagePointDouble[z]==imagePreviousPoint[z])
                 continue;
@@ -977,8 +977,9 @@ QList<QPair<vtkPolygon*,bezierCurveToolBox::PlaneIndexSlicePair> > bezierCurveTo
             imagePreviousPoint[y] = imagePointDouble[y];
             imagePreviousPoint[z] = imagePointDouble[z];
         }
-        qDebug() << "number of points " << points->GetNumberOfPoints();
-        qDebug() << "nb " << nb;
+        
+        //qDebug() << "number of points " << points->GetNumberOfPoints();
+        //qDebug() << "nb " << nb;
         polygon->Initialize(points->GetNumberOfPoints(),ids,points);
 
         listPolygon.append(QPair<vtkPolygon*,PlaneIndexSlicePair>(polygon,listPoly.at(i).second));
@@ -1044,7 +1045,7 @@ void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInd
 
                 pointTest[x]=i;
                 pointTest[y]=j;
-                pointTest[z]=polys[k].second.second;
+                pointTest[z]=polys[k].second.first;
 
                 int val =PointInPolygon(pointTest,polys[k].first->GetPoints()->GetNumberOfPoints(),static_cast<double*>(polys[k].first->GetPoints()->GetData()->GetVoidPointer(0)),
                     bounds,n);
@@ -1052,7 +1053,7 @@ void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInd
                 if (val)
                 {
                     MaskType::IndexType index;
-                    index[x]=i;index[y]=j;index[z]=polys[k].second.second;
+                    index[x]=i;index[y]=j;index[z]=polys[k].second.first;
                     m_itkMask->SetPixel(index,1);
                 }
             }
@@ -1201,4 +1202,198 @@ int bezierCurveToolBox::computePlaneIndex()
         }
     }
     return planeIndex;
+}
+
+
+#define VTK_POLYGON_CERTAIN 1
+#define VTK_POLYGON_UNCERTAIN 0
+#define VTK_POLYGON_RAY_TOL 1.e-03 //Tolerance for ray firing
+#define VTK_POLYGON_MAX_ITER 10    //Maximum iterations for ray-firing
+#define VTK_POLYGON_VOTE_THRESHOLD 2
+#define VTK_POLYGON_FAILURE -1
+#define VTK_POLYGON_OUTSIDE 0
+#define VTK_POLYGON_INSIDE 1
+#define VTK_POLYGON_INTERSECTION 2
+#define VTK_POLYGON_ON_LINE 3
+
+
+#ifndef TRUE
+#define FALSE 0
+#define TRUE 1
+#endif
+
+//----------------------------------------------------------------------------
+// Determine whether point is inside polygon. Function uses ray-casting
+// to determine if point is inside polygon. Works for arbitrary polygon shape
+// (e.g., non-convex). Returns 0 if point is not in polygon; 1 if it is.
+// Can also return -1 to indicate degenerate polygon. Note: a point in
+// bounding box check is NOT performed prior to in/out check. You may want
+// to do this to improve performance.
+int bezierCurveToolBox::PointInPolygon (double x[3], int numPts, double *pts, 
+                                double bounds[6], double *n)
+{
+  double *x1, *x2, xray[3], u, v;
+  double rayMag, mag=1, ray[3];
+  int testResult, rayOK, status, numInts, i;
+  int iterNumber;
+  int maxComp, comps[2];
+  int deltaVotes;
+
+  // do a quick bounds check
+  if ( x[0] < bounds[0] || x[0] > bounds[1] ||
+       x[1] < bounds[2] || x[1] > bounds[3] ||
+       x[2] < bounds[4] || x[2] > bounds[5])
+    {
+    return VTK_POLYGON_OUTSIDE;
+    }
+  
+  //
+  //  Define a ray to fire.  The ray is a random ray normal to the
+  //  normal of the face.  The length of the ray is a function of the
+  //  size of the face bounding box.
+  //
+  for (i=0; i<3; i++)
+    {
+    ray[i] = ( bounds[2*i+1] - bounds[2*i] )*1.1 +
+      fabs((bounds[2*i+1] + bounds[2*i])/2.0 - x[i]);
+    }
+
+  if ( (rayMag = vtkMath::Norm(ray)) == 0.0 )
+    {
+    return VTK_POLYGON_OUTSIDE;
+    }
+
+  //  Get the maximum component of the normal.
+  //
+  if ( fabs(n[0]) > fabs(n[1]) )
+    {
+    if ( fabs(n[0]) > fabs(n[2]) ) 
+      {
+      maxComp = 0;
+      comps[0] = 1;
+      comps[1] = 2;
+      } 
+    else 
+      {
+      maxComp = 2;
+      comps[0] = 0;
+      comps[1] = 1;
+      }
+    }
+  else
+    {
+    if ( fabs(n[1]) > fabs(n[2]) ) 
+      {
+      maxComp = 1;
+      comps[0] = 0;
+      comps[1] = 2;
+      } 
+    else 
+      {
+      maxComp = 2;
+      comps[0] = 0;
+      comps[1] = 1;
+      }
+    }
+
+  //  Check that max component is non-zero
+  //
+  if ( n[maxComp] == 0.0 )
+    {
+    return VTK_POLYGON_FAILURE;
+    }
+
+  //  Enough information has been acquired to determine the random ray.
+  //  Random rays are generated until one is satisfactory (i.e.,
+  //  produces a ray of non-zero magnitude).  Also, since more than one
+  //  ray may need to be fired, the ray-firing occurs in a large loop.
+  //
+  //  The variable iterNumber counts the number of iterations and is
+  //  limited by the defined variable VTK_POLYGON_MAX_ITER.
+  //
+  //  The variable deltaVotes keeps track of the number of votes for
+  //  "in" versus "out" of the face.  When delta_vote > 0, more votes
+  //  have counted for "in" than "out".  When delta_vote < 0, more votes
+  //  have counted for "out" than "in".  When the delta_vote exceeds or
+  //  equals the defined variable VTK_POLYGON_VOTE_THRESHOLD, than the
+  //  appropriate "in" or "out" status is returned.
+  //
+  for (deltaVotes = 0, iterNumber = 1;
+       (iterNumber < VTK_POLYGON_MAX_ITER)
+         && (abs(deltaVotes) < VTK_POLYGON_VOTE_THRESHOLD);
+       iterNumber++) 
+    {
+    //
+    //  Generate ray
+    //
+    for (rayOK = FALSE; rayOK == FALSE; ) 
+      {
+      ray[comps[0]] = vtkMath::Random(-rayMag, rayMag);
+      ray[comps[1]] = vtkMath::Random(-rayMag, rayMag);
+      ray[maxComp] = -(n[comps[0]]*ray[comps[0]] + 
+                        n[comps[1]]*ray[comps[1]]) / n[maxComp];
+      if ( (mag = vtkMath::Norm(ray)) > rayMag*VTK_TOL )
+        {
+        rayOK = TRUE;
+        }
+      }
+
+    //  The ray must be appropriately sized.
+    //
+    for (i=0; i<3; i++)
+      {
+      xray[i] = x[i] + (rayMag/mag)*ray[i];
+      }
+
+    //  The ray may now be fired against all the edges
+    //
+    for (numInts=0, testResult=VTK_POLYGON_CERTAIN, i=0; i<numPts; i++) 
+      {
+      x1 = pts + 3*i;
+      x2 = pts + 3*((i+1)%numPts);
+      if (x1[0]==x2[0] && x1[1]==x2[1] && x1[2]==x2[2])
+          continue;
+
+      //   Fire the ray and compute the number of intersections.  Be careful
+      //   of degenerate cases (e.g., ray intersects at vertex).
+      //
+      if ((status=vtkLine::Intersection(x,xray,x1,x2,u,v)) == VTK_POLYGON_INTERSECTION) 
+        {
+        if ( (VTK_POLYGON_RAY_TOL < v) && (v < 1.0-VTK_POLYGON_RAY_TOL) )
+          {
+          numInts++;
+          }
+        else
+          {
+          testResult = VTK_POLYGON_UNCERTAIN;
+          }
+        } 
+      else if ( status == VTK_POLYGON_ON_LINE )
+        {
+        testResult = VTK_POLYGON_UNCERTAIN;
+        }
+      }
+    if ( testResult == VTK_POLYGON_CERTAIN ) 
+      {
+      if ( (numInts % 2) == 0)
+          {
+          --deltaVotes;
+          }
+      else
+        {
+        ++deltaVotes;
+        }
+      }
+    } //try another ray
+
+  //   If the number of intersections is odd, the point is in the polygon.
+  //
+  if ( deltaVotes < 0 )
+    {
+    return VTK_POLYGON_OUTSIDE;
+    }
+  else
+    {
+    return VTK_POLYGON_INSIDE;
+    }
 }

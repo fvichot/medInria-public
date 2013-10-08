@@ -80,8 +80,7 @@ public:
     listOfPair_CurveSlice * getCoronalListOfCurves();
     listOfPair_CurveSlice * getSagittalListOfCurves();
     listOfPair_CurveSlice * getAxialListOfCurves();
-    int PointInPolygon (double x[3], int numPts, double *pts, double bounds[6], double *n);
-
+    
 public slots:
 
     //void onViewClosed();
@@ -116,6 +115,8 @@ protected:
     void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData ); // copy of a function in painttoolbox
     void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
     int computePlaneIndex();
+    int PointInPolygon (double x[3], int numPts, double *pts, 
+                                double bounds[6], double *n);
 
 private:
    
@@ -125,7 +126,7 @@ private:
     dtkSmartPointer<medAbstractData> m_imageData;*/
     
     //MaskType::Pointer m_itkMask;
-    dtkSmartPointer<medAbstractView> currentView;
+    medAbstractView * currentView;
     
     QPushButton * addNewCurve;
     QPushButton * generateBinaryImage_button;
