@@ -229,6 +229,7 @@ medSegmentationAbstractToolBox( parent)
     ListOfContours = new QList<vtkSmartPointer<vtkPolyData> >();
 
     propagate = new QPushButton("Propagate",this);
+
     interpolate = new QPushButton("Interpolate",this);
     
     propagateLabel = new QLabel("Curve propagation : Define the interval");
@@ -236,7 +237,7 @@ medSegmentationAbstractToolBox( parent)
     bound2 = new QSpinBox(this);
     bound1->setMaximum(500); // TODO : depends on the currentView see how to update them with the view !! 
     bound2->setMaximum(500);
-    
+
     layout->addWidget(propagateLabel);
     layout->addWidget(bound1);
     layout->addWidget(bound2);
@@ -512,7 +513,7 @@ void bezierCurveToolBox::showContour()
 // if they were not initialized after construction of the instance of the class
 void bezierCurveToolBox::hideContour()
 {
-    if (currentView==NULL)
+    if (!currentView)
         return;
 
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
@@ -883,28 +884,32 @@ void bezierCurveToolBox::generateBinaryImage()
     listOfPair_CurveSlice * listAxial = getAxialListOfCurves();
     listOfPair_CurveSlice * listSagittal = getSagittalListOfCurves();
     listOfPair_CurveSlice * listCoronal = getCoronalListOfCurves();
-    QList<QPair<vtkPolyData *,PlaneIndexSlicePair> > listTest = QList<QPair<vtkPolyData *,PlaneIndexSlicePair> >();
+    QList<QPair<vtkPolyData *,PlaneIndexSlicePair> > list1 = QList<QPair<vtkPolyData *,PlaneIndexSlicePair> >();
     
+    int currentOrientation = view2d->GetViewOrientation();
+    view2d->SetViewOrientation(2); // we set the view Orientation to the orientation of the next bezierCurve list to retreive the polyData with world coordinates based on the display from the orientation.
     for (int i =0;i<listAxial->size();i++)
     {
         vtkContourRepresentation * contourRep = listAxial->at(i).first->GetContourRepresentation();
-        listTest.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listAxial->at(i).second));
+        
+        list1.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listAxial->at(i).second));
     }
-
+    view2d->SetViewOrientation(0);
     for (int i =0;i<listSagittal->size();i++)
     {
+        
         vtkContourRepresentation * contourRep = listSagittal->at(i).first->GetContourRepresentation();
-        listTest.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listSagittal->at(i).second));
+        list1.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listSagittal->at(i).second));
     }
-    
+    view2d->SetViewOrientation(1);
     for (int i =0;i<listCoronal->size();i++)
     {
         vtkContourRepresentation * contourRep = listCoronal->at(i).first->GetContourRepresentation();
-        listTest.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listCoronal->at(i).second));
+        list1.append(QPair<vtkPolyData*,PlaneIndexSlicePair>(contourRep->GetContourRepresentationAsPolyData(),listCoronal->at(i).second));
     }
-
-    QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > listTest2 = createImagePolygons(listTest);
-    binaryImageFromPolygon(listTest2);
+    view2d->SetViewOrientation(currentOrientation);
+    QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > list2 = createImagePolygons(list1);
+    binaryImageFromPolygon(list2);
 }
 
 
@@ -922,64 +927,62 @@ QList<QPair<vtkPolygon*,bezierCurveToolBox::PlaneIndexSlicePair> > bezierCurveTo
         
         const int nb = listPoly.at(i).first->GetNumberOfPoints();
         
-        //points->SetNumberOfPoints(nb);
         vtkIdType ids[1000];
         double imagePreviousPoint[3] ={0,0,0};
         unsigned int nbPoint = 0;
-
-        unsigned int x,y,z;
+        
+        unsigned int x1,y1,z1;
         switch (listPoly.at(i).second.second)
         {
         case 0 :
             {
-                x=1;
-                y=2;
-                z=0;
+                x1=1;
+                y1=2;
+                z1=0;
                 break;
             }
         case 1 :
             {
-                x=0;
-                y=2;
-                z=1;
+                x1=0;
+                y1=2;
+                z1=1;
                 break;
             }
         case 2 :
             {
-                x=0;
-                y=1;
-                z=2;
+                x1=0;
+                y1=1;
+                z1=2;
                 break;
             }
         }
-        
+
         for(int j=0;j<nb;j++)
         {
             double * point = listPoly.at(i).first->GetPoint(j);
+            
             int imagePoint[3];
             double imagePointDouble[3];
             
-            view2d->GetImageCoordinatesFromWorldCoordinates(point,imagePoint); // HUGE PROBLEM THIS ONE GETTHE IMAGE COORDINATES IN THE ACTUAL ORIENTATION
-            //qDebug() << " imagePoint[0] : " << imagePoint[0] << " imagePoint[1] : " << imagePoint[1] << " imagePoint[2] : " << imagePoint[2] ;
-            imagePointDouble[x]= (double)imagePoint[x];
-            imagePointDouble[y]= (double)imagePoint[y];
+            view2d->GetImageCoordinatesFromWorldCoordinates(point,imagePoint); 
+            
+            imagePointDouble[x1]= (double)imagePoint[x1];
+            imagePointDouble[y1]= (double)imagePoint[y1];
 
-            imagePointDouble[z]= (double)listPoly.at(i).second.first;
+            imagePointDouble[z1]= (double)listPoly.at(i).second.first;
 
-            if (imagePointDouble[x]==imagePreviousPoint[x] && imagePointDouble[y]==imagePreviousPoint[y] && imagePointDouble[z]==imagePreviousPoint[z])
+            if (imagePointDouble[x1]==imagePreviousPoint[x1] && imagePointDouble[y1]==imagePreviousPoint[y1] && imagePointDouble[z1]==imagePreviousPoint[z1])
                 continue;
             
             points->InsertNextPoint(imagePointDouble);
             ids[nbPoint]=nbPoint;
             nbPoint++;
 
-            imagePreviousPoint[x] = imagePointDouble[x];
-            imagePreviousPoint[y] = imagePointDouble[y];
-            imagePreviousPoint[z] = imagePointDouble[z];
+            imagePreviousPoint[x1] = imagePointDouble[x1];
+            imagePreviousPoint[y1] = imagePointDouble[y1];
+            imagePreviousPoint[z1] = imagePointDouble[z1];
         }
         
-        //qDebug() << "number of points " << points->GetNumberOfPoints();
-        //qDebug() << "nb " << nb;
         polygon->Initialize(points->GetNumberOfPoints(),ids,points);
 
         listPolygon.append(QPair<vtkPolygon*,PlaneIndexSlicePair>(polygon,listPoly.at(i).second));

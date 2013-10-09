@@ -126,7 +126,7 @@ private:
     dtkSmartPointer<medAbstractData> m_imageData;*/
     
     //MaskType::Pointer m_itkMask;
-    medAbstractView * currentView;
+    dtkSmartPointer<medAbstractView> currentView;
     
     QPushButton * addNewCurve;
     QPushButton * generateBinaryImage_button;

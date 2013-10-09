@@ -174,7 +174,7 @@ void medSegmentationSelectorToolBox::onToolBoxChosen(const QByteArray& id)
     if (d->customToolBox)
     {
         emit removeToolBox(d->customToolBox);
-        //delete d->customToolBox;
+        delete d->customToolBox;
     }
     d->customToolBox = toolBox;
     toolBox->show();
