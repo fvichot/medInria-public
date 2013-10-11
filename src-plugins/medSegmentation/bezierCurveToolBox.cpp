@@ -61,7 +61,7 @@
 #include <vtkCamera.h>
 
 #include <vtkBalloonRepresentation.h>
-#include <vtkBalloonWidget.h>
+#include <vtkConstantBalloonWidget.h>
 #include <vtkOrientedGlyphFocalPlaneContourRepresentation.h>
 #include <vtkContourOverlayRepresentation.h>
 #include <vtkContourRepresentation.h>
@@ -430,7 +430,7 @@ void bezierCurveToolBox::onAddNewCurve()
 
     vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
     contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
-    contourRep->GetLinesProperty()->SetLineWidth(3);
+    contourRep->GetLinesProperty()->SetLineWidth(1);
     contourRep->GetProperty()->SetPointSize(4);
 
     currentContour = vtkSmartPointer<vtkContourWidget>::New();
@@ -450,17 +450,16 @@ void bezierCurveToolBox::onAddNewCurve()
 
      //Create balloonWidget
     vtkSmartPointer<vtkBalloonRepresentation> balloonRep = vtkSmartPointer<vtkBalloonRepresentation>::New();
-    balloonRep->SetBalloonLayoutToImageRight();
+    balloonRep->SetBalloonLayoutToTextRight();
 
-    currentBalloon = vtkSmartPointer<vtkBalloonWidget>::New();
+    currentBalloon = vtkSmartPointer<vtkConstantBalloonWidget>::New();
     currentBalloon->SetInteractor(view2d->GetInteractor());
     currentBalloon->SetRepresentation(balloonRep);
     currentBalloon->AddBalloon(contourRep,"Area : ??\nMean : ?? SDev : ?? Sum : ??\nMin : ?? Max : ?? \nLength : ??"); //,view2d->GetImageInput(0)
     currentBalloon->On();
     currentBalloon->SetTimerDuration(0);
-    //currentBalloon->InvokeEvent(
-        //balloonRep->Pick();
-    balloonRep->VisibilityOn();
+    currentBalloon->AttachToRightNode(contourRep);
+    //balloonRep->VisibilityOn();
 }
 
 void bezierCurveToolBox::onPenMode()
@@ -611,7 +610,7 @@ void bezierCurveToolBox::pasteContours(int slice1,int slice2)
         
             vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
             contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
-            contourRep->GetLinesProperty()->SetLineWidth(3);
+            contourRep->GetLinesProperty()->SetLineWidth(1);
             contourRep->GetProperty()->SetPointSize(4);
         
             contour->SetRepresentation(contourRep);
@@ -840,7 +839,7 @@ void bezierCurveToolBox::interpolateCurve()
     {
         vtkSmartPointer<vtkContourOverlayRepresentation> contourRep = vtkSmartPointer<vtkContourOverlayRepresentation>::New();
         contourRep->GetLinesProperty()->SetColor(0, 0, 1); 
-        contourRep->GetLinesProperty()->SetLineWidth(3);
+        contourRep->GetLinesProperty()->SetLineWidth(1);
         contourRep->GetProperty()->SetPointSize(4);
         
         vtkSmartPointer<vtkContourWidget> contour = vtkSmartPointer<vtkContourWidget>::New();
