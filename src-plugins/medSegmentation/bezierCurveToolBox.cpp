@@ -1277,6 +1277,8 @@ void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair>
     vtkTable * table = vtkTable::New();
     vtkDoubleArray * arrX = vtkDoubleArray::New(); // contains grayscale
     vtkDoubleArray * arrY = vtkDoubleArray::New(); // contains numberofpixels
+    arrX->SetName("NumberOfPixels"); // incoherent right !! just little hack TODO : stop being lazy and solve correctly the problem !!
+    arrY->SetName("Grayscale");
     QList<double> keys = map.keys();
     for(int i=0;i<keys.size();i++)
     {
