@@ -35,11 +35,15 @@
 #include <vtkConstantBalloonWidget.h>
 
 #include <itkImage.h>
+#include <medAbstractRoi.h>
+#include <bezierPolygonRoi.h>
+#include <medRoiManagementToolBox.h>
+#include <medHistogramToolBox.h>
 
 class medAbstractData;
 class medAbstractView;
 class medAnnotationData;
-class bezierObserver;
+class contourWidgetObserver;
 
 class dtkAbstractProcessFactory;
 
@@ -54,6 +58,8 @@ public:
     //typedef itk::Image<unsigned char,2> MaskSliceType;*/
     typedef QPair<unsigned int,unsigned int> PlaneIndexSlicePair;
     typedef QList<QPair<vtkSmartPointer<vtkContourWidget> , PlaneIndexSlicePair> > listOfPair_CurveSlice;
+    typedef QList<medAbstractRoi*> * ListRois;
+    typedef QHash<medAbstractView*,QList<int> *> MapPlaneIndex;
     
 
     bezierCurveToolBox( QWidget *parent );
@@ -77,40 +83,36 @@ public:
     void setCurrentView(medAbstractView * view);
     void update(dtkAbstractView * view);
 
-    listOfPair_CurveSlice * getCoronalListOfCurves();
-    listOfPair_CurveSlice * getSagittalListOfCurves();
-    listOfPair_CurveSlice * getAxialListOfCurves();
-    
 public slots:
 
     //void onViewClosed();
 
     //void activateBezierCurve(bool);
     void onAddNewCurve();
-    void onPenMode();
+
     //void generateBinaryImage(vtkSmartPointer<vtkPolyData> pd);
     void generateBinaryImage();
-    void binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
-    void showContour();
-    void hideContour();
+    
+    //void copyContours(); // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
+    //void pasteContours(int slice1,int slice2);
+    //void pasteContours();
 
-    void copyContours(); // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
-    void pasteContours(int slice1,int slice2);
-    void pasteContours();
-
-    void propagateCurve();
+    //void propagateCurve();
+    
     void interpolateCurve();
-    QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
+    
+    void ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon);
 
-    void reorderPolygon(vtkPolyData * poly);
-    QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly);
+    void computeStatistics();
 
 protected:
-    
-    //void setData( dtkAbstractData *data );
+    void binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
+    void reorderPolygon(vtkPolyData * poly);
+    QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
+    QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly);
+    void setData( dtkAbstractData *data );
 
-     //void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData );
-    listOfPair_CurveSlice * getListOfCurrentOrientation();
+    QList<medAbstractRoi*> * getListOfView(medAbstractView * view);
     void resampleCurve(vtkPolyData * poly,int nbPoints);
     void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData ); // copy of a function in painttoolbox
     void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
@@ -132,19 +134,14 @@ private:
     QPushButton * generateBinaryImage_button;
     QPushButton * propagate;
     QPushButton * interpolate;
-    QCheckBox * penMode_CheckBox;
 
     QLabel * propagateLabel;
     QSpinBox * bound1,* bound2;
 
-    bool newCurve;
-    bool penMode;
-    vtkSmartPointer<vtkRenderWindowInteractor> curveInteractor;
-    listOfPair_CurveSlice  * listOfCurvesForAxial; 
-    listOfPair_CurveSlice  * listOfCurvesForSagittal;
-    listOfPair_CurveSlice  * listOfCurvesForCoronal;
+    /*QHash<medAbstractView*,ListRois> viewsRoisMap;*/
+    MapPlaneIndex viewsPlaneIndex;
 
-    vtkSmartPointer<vtkContourWidget> currentContour;
+    bezierPolygonRoi * currentBezierRoi;
     vtkSmartPointer<vtkConstantBalloonWidget> currentBalloon;
 
     QList<vtkSmartPointer<vtkPolyData> > * ListOfContours; // buffer for copy/paste
@@ -152,9 +149,12 @@ private:
     int currentOrientation;
     unsigned int currentSlice;
 
-    bezierObserver * observer;
+    contourWidgetObserver * observer;
 
     QShortcut *copy_shortcut, *paste_shortcut;
     
-    friend class bezierObserver;
+    medRoiManagementToolBox *roiToolBox;
+    medHistogramToolBox * histogramToolBox;
+
+    friend class contourWidgetObserver;
 };

@@ -184,6 +184,13 @@ void v3dViewObserver::Execute ( vtkObject *caller, unsigned long event, void *ca
     }
     break;
 
+    case vtkImageView2D::SliceChangedEvent:
+    {
+        int slice = this->view->view2d()->GetSlice();
+        this->view->emitViewSliceChangedEvent(slice);
+    }
+    break;
+
     case vtkCommand::InteractionEvent:
     {
         double *pos = this->view->renderer3d()->GetActiveCamera()->GetPosition();
@@ -584,6 +591,7 @@ v3dView::v3dView() : medAbstractView(), d ( new v3dViewPrivate )
     //d->view2d->GetInteractorStyle()->AddObserver(vtkImageView2DCommand::SliceMoveEvent, d->observer, 0);
     d->view2d->AddObserver ( vtkImageView::CurrentPointChangedEvent, d->observer, 0 );
     d->view2d->AddObserver ( vtkImageView::WindowLevelChangedEvent,  d->observer, 0 );
+    d->view2d->AddObserver ( vtkImageView2D::SliceChangedEvent, d->observer, 0 );
     d->view2d->GetInteractorStyle()->AddObserver ( vtkImageView2DCommand::CameraZoomEvent, d->observer, 0 );
     d->view2d->GetInteractorStyle()->AddObserver ( vtkImageView2DCommand::CameraPanEvent, d->observer, 0 );
     d->view2d->AddObserver ( vtkImageView2DCommand::CameraPanEvent, d->observer, 0);

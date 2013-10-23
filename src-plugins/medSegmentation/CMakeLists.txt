@@ -87,6 +87,7 @@ target_link_libraries(${PROJECT_NAME}
   ITKCommon
   vtkImageView
   vtkWidgetsAddOn
+  QVTK
   )
 
 dtk_build_doc(msegPlugin)
