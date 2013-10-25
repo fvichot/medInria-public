@@ -119,7 +119,6 @@ protected:
     int computePlaneIndex();
     int PointInPolygon (double x[3], int numPts, double *pts, 
                                 double bounds[6], double *n);
-
 private:
    
     /*dtkSmartPointer<medImageMaskAnnotationData> m_maskAnnotationData;
