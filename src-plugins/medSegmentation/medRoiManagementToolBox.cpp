@@ -102,7 +102,7 @@ medRoiManagementToolBox::medRoiManagementToolBox(QWidget *parent) : medToolBox(p
     d->listOfPages.append(d->ListCurrentSliceRois);
     d->listOfPages.append(d->ListPolygonRois);
     d->listOfPages.append(d->ListBrushRois);
-
+    d->currentPageIndex = 0;
     saveCurrentPageIndex(0);
 
     d->viewsRoisMap = new QHash<medAbstractView*,ListRois>();

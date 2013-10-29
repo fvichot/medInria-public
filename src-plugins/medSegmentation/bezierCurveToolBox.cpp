@@ -206,8 +206,8 @@ medSegmentationAbstractToolBox( parent)
 
     QHBoxLayout * ButtonLayout = new QHBoxLayout();
     layout->addLayout( ButtonLayout );
-    layout->addWidget(addNewCurve);
-    layout->addWidget(generateBinaryImage_button);
+    ButtonLayout->addWidget(addNewCurve);
+    ButtonLayout->addWidget(generateBinaryImage_button);
 
     observer = contourWidgetObserver::New();
     observer->setToolBox(this);
@@ -237,7 +237,7 @@ medSegmentationAbstractToolBox( parent)
     layout->addWidget(bound1);
     layout->addWidget(bound2);
     layout->addWidget(propagate);*/
-    layout->addWidget(interpolate);
+    ButtonLayout->addWidget(interpolate);
     
     roiToolBox = new medRoiManagementToolBox(this);
     layout->addWidget(roiToolBox);
@@ -971,28 +971,22 @@ void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInd
         double *img = fillConcavePolygon(nbPoints,pt,win,1);
         // recuperer info stocke ds img.
 
-
         int sizeX = win->x1-win->x0;
         int sizeY = win->y1-win->y0;
-        for (int i=0;i<sizeX;i++)
-            for(int j=0;j<sizeY;j++)
-                if (img[i*sizeY+j])
-                {
-                    MaskType::IndexType index;
-                    index[x]=i+win->x0;index[y]=j+win->y0;index[z]=polys[k].second.first;
-                    m_itkMask->SetPixel(index,1);
-                }
+        if (img)
+            for (int i=0;i<sizeX;i++)
+                for(int j=0;j<sizeY;j++)
+                    if (img[i*sizeY+j]==1)
+                    {
+                        MaskType::IndexType index;
+                        index[x]=i+win->x0;index[y]=j+win->y0;index[z]=polys[k].second.first;
+                        m_itkMask->SetPixel(index,1);
+                    }
             
-
-
         free(img);
         free(pt);
-        free(win);
-                
-
-
-
-
+        delete win;
+        
         /**********************-TEST WITH GRAPHICGEMS CODE OVER--------------------------------*/
         /*for(int i=bounds[bx];i<=bounds[bx+1];i++)
         {
@@ -1018,7 +1012,6 @@ void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInd
     }
     this->setOutputMetadata(dynamic_cast<medAbstractData*>(this->segmentationToolBox()->viewData(currentView)), m_maskData);
     medDataManager::instance()->importNonPersistent( m_maskData.data());
-    qDebug() <<"works until now";
 }
 
 void bezierCurveToolBox::initializeMaskData( medAbstractData * imageData, medAbstractData * maskData )
@@ -1255,6 +1248,7 @@ void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair>
     double std = 0;
     double sum=0;
     double sumSqr=0;
+
     QMap<double,int> map;
     //vtkDoubleArray table;
     for(int i=bounds[bx];i<=bounds[bx+1];i++)
@@ -1293,6 +1287,15 @@ void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair>
     }
     mean = sum/nbmean;
     std = sqrt((sumSqr - mean*mean*nbmean)/(nbmean-1));
+
+    Statistics stats;
+    stats.max = maxpoly;
+    stats.min = minpoly;
+    stats.std = std;
+    stats.mean = mean;
+    stats.sum  = sum;
+    stats.perimeter = 0; // todo
+    //stats.area = nbmean * spacing TODO
 
    /* vtkPoints * pointsPlot = vtkPoints::New();
     double maxValue = -1;

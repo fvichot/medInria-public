@@ -21,6 +21,7 @@ public:
     unsigned char orientation;
     unsigned int idSlice;
     bool isSelected;
+    Statistics stats;
 };
 
 medAbstractRoi::medAbstractRoi( dtkAbstractObject *parent )
@@ -72,4 +73,7 @@ void medAbstractRoi::unselect()
     d->isSelected = false;
 }
 
-
+void medAbstractRoi::setStatistics(Statistics s)
+{
+    d->stats = s;
+}

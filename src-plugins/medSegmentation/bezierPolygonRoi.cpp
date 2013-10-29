@@ -223,3 +223,5 @@ void bezierPolygonRoi::unselect()
     medAbstractRoi::unselect();
 }
 
+void bezierPolygonRoi::computeStatistics(){}
+

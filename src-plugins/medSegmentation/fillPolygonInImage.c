@@ -134,7 +134,7 @@ static inline double * fillConcavePolygon(int nvert,Point2 *point,Window *win,do
 {
     int k, y0, y1, y, i, j, xl, xr;
     int *ind;		/* list of vertex indices, sorted by pt[ind[j]].y */
-    const int nbPixels = (win->x1 - win->x1) * (win->y1 - win->y0) ;
+    const int nbPixels = (win->x1 - win->x0) * (win->y1 - win->y0) ;
     double * img = static_cast<double*>(calloc(nbPixels,sizeof(double)));
     n = nvert;
     pt = point;

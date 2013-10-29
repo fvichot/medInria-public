@@ -19,6 +19,18 @@
 
 class medAbstractRoiPrivate;
 
+class Statistics
+{
+public:
+    double max;
+    double min;
+    double mean;
+    double sum;
+    double std;
+    double area;
+    double perimeter;
+};
+
 /**
  * 
  */
@@ -43,6 +55,8 @@ public:
     void setOrientation(unsigned char orientation);
 
     bool isSelected();
+    virtual void computeStatistics() = 0;
+    void setStatistics(Statistics s); 
 
 public slots:
 
