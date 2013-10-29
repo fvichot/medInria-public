@@ -53,7 +53,8 @@ include(${QT_USE_FILE})
 set(${PROJECT_NAME}_HEADERS_MOC
   cliSupportWorkspacePlugin.h
   cliSupportWorkspace.h
-  cliSupportToolBox.h)
+  cliSupportToolBox.h
+  cliSupportUiLoader.h)
 
 set(${PROJECT_NAME}_HEADERS
   ${${PROJECT_NAME}_HEADERS_MOC})
@@ -61,7 +62,8 @@ set(${PROJECT_NAME}_HEADERS
 set(${PROJECT_NAME}_SOURCES
   cliSupportWorkspacePlugin.cpp
   cliSupportWorkspace.cpp
-  cliSupportToolBox.cpp)
+  cliSupportToolBox.cpp
+  cliSupportUiLoader.cpp)
 
 ## #################################################################
 ## Build rules

@@ -11,6 +11,8 @@
 #include <ctkCmdLineModuleRunException.h>
 #include <ctkException.h>
 
+#include <cliSupportUiLoader.h>
+
 
 QStringList pathSplitter(const QString & path)
 {
@@ -72,7 +74,7 @@ public:
     QString path;
     ctkCmdLineModuleManager * manager;
     ctkCmdLineModuleBackendLocalProcess * backend;
-    ctkCmdLineModuleFrontendQtGui * frontend;
+    cliSupportFrontendQtGui * frontend;
     ctkCmdLineModuleFutureWatcher * futureWatcher;
     QHash<QString, ctkCmdLineModuleReference> modules;
 
@@ -272,8 +274,6 @@ void cliSupportToolBox::update(dtkAbstractView * view)
 
     qDebug() << "CLI update called";
     d->view = view;
-
-    //    connect(d->view, SIGNAL(propertySet(QString,QString)), this, SLOT(updateLandmarksRenderer(QString,QString)));
 }
 
 
@@ -287,7 +287,7 @@ void cliSupportToolBox::moduleSelected(int index)
     delete d->frontend;
     delete d->moduleGui;
 
-    d->frontend = new ctkCmdLineModuleFrontendQtGui(ref);
+    d->frontend = new cliSupportFrontendQtGui(ref);
     d->moduleGui = qobject_cast<QWidget*>(d->frontend->guiHandle());
     d->gridLayout->addWidget(d->moduleGui, 1, 0);
 }
