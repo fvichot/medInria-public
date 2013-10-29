@@ -35,6 +35,7 @@ public:
     ~medRoiManagementToolBox();
 
     QHash<medAbstractView*,ListRois> * getRois();
+    /*QList<medAbstractRoi*> getSelectedRois();*/
 
 signals:
     

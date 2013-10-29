@@ -436,8 +436,8 @@ void bezierCurveToolBox::onAddNewCurve()
 
     vtkContourWidget * currentContour = currentBezierRoi->getContour();
        
-    currentContour->AddObserver(vtkCommand::StartInteractionEvent,observer); 
-    currentContour->AddObserver(vtkCommand::EndInteractionEvent,observer);
+    currentContour->AddObserver(vtkCommand::StartInteractionEvent,observer); // todo put this observer in bezierPolygonRoi manage the adding to the roimanagementtoolbox through it and
+    currentContour->AddObserver(vtkCommand::EndInteractionEvent,observer);  // roi managementtoolbox should be called via static function
     
     currentContour->On();
     currentOrientation = view2d->GetViewOrientation(); 
@@ -1155,7 +1155,7 @@ int bezierCurveToolBox::computePlaneIndex()
     return planeIndex;
 }
 
-void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon)
+RoiStatistics bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon)
 {
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     
@@ -1288,15 +1288,16 @@ void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair>
     mean = sum/nbmean;
     std = sqrt((sumSqr - mean*mean*nbmean)/(nbmean-1));
 
-    Statistics stats;
+    RoiStatistics stats;
     stats.max = maxpoly;
     stats.min = minpoly;
     stats.std = std;
     stats.mean = mean;
     stats.sum  = sum;
-    stats.perimeter = 0; // todo
-    //stats.area = nbmean * spacing TODO
-
+    stats.perimeter = 0; // todo : spacing[x]*spacing[y]*(nbpixel on contour)
+    double * spacing = view2d->GetInput()->GetSpacing();
+    stats.area = nbmean * spacing[x]*spacing[y];
+    qDebug() << " stats.area : " << stats.area;
    /* vtkPoints * pointsPlot = vtkPoints::New();
     double maxValue = -1;
     QList<double> keys = map.keys();
@@ -1340,6 +1341,7 @@ void bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair>
     Histogram->GetMin(min);
     qDebug() << "nbpixel : " << Histogram->GetVoxelCount() << " mean from histogram : " << meanHisto[0] << " min " << min[0] << " max " << max[0];*/
     qDebug() << "nbpixel : " << nbmean << " mean From point in polygon : " << mean << " min " << minpoly << " max " << maxpoly;
+    return stats;
 }
 
 void bezierCurveToolBox::computeStatistics()
@@ -1365,9 +1367,10 @@ void bezierCurveToolBox::computeStatistics()
     view2d->SetViewOrientation(orientation);
     
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > listPolygon = createImagePolygons(listPolyData);
-    ComputeHistogram(listPolygon[0]);
+    RoiStatistics stats = ComputeHistogram(listPolygon[0]);
+    polyRoi->setRoiStatistics(stats);
+    histogramToolBox->setStatistics(stats.area,stats.perimeter,stats.mean,stats.std,stats.sum,stats.min,stats.max);
 }
-
 
 #define VTK_POLYGON_CERTAIN 1
 #define VTK_POLYGON_UNCERTAIN 0

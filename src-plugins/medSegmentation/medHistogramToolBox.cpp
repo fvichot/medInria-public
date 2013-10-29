@@ -37,6 +37,87 @@
 #include <vtkPen.h>
 #include <vtkAxis.h>
 
+class statisticsLabel : public QWidget
+{
+public:
+    statisticsLabel(QWidget * parent):QWidget(parent)
+    {
+        /*this->setColumnCount(7);
+        this->setRowCount(1);
+        QStringList list;
+        list.append("Area");
+        list.append("Perimeter");
+        list.append("Mean");
+        list.append("SDev");
+        list.append("Sum");
+        list.append("Min");
+        list.append("Max");
+        this->setHorizontalHeaderLabels(list);
+        for(int i=0;i<this->columnCount();i++)
+        {
+            this->setItem(0,i,new QTableWidgetItem());
+        }*/
+        area = new QLabel();
+        max = new QLabel();
+        min = new QLabel();
+        mean = new QLabel();
+        std = new QLabel();
+        sum = new QLabel();
+        perimeter = new QLabel();
+        
+        QWidget * firstLine = new QWidget();
+        QWidget * secondLine = new QWidget();
+        QWidget * thirdLine = new QWidget();
+        QHBoxLayout *firstLineLayout =  new QHBoxLayout(firstLine);
+        QHBoxLayout *secondLineLayout = new QHBoxLayout(secondLine);
+        QHBoxLayout *thirdLineLayout = new QHBoxLayout(thirdLine);
+        
+        firstLineLayout->addWidget(area);
+        firstLineLayout->addWidget(perimeter);
+        firstLine->setLayout(firstLineLayout);
+
+        secondLineLayout->addWidget(mean);
+        secondLineLayout->addWidget(std);
+        secondLineLayout->addWidget(sum);
+        secondLine->setLayout(secondLineLayout);
+    
+        thirdLineLayout->addWidget(min);
+        thirdLineLayout->addWidget(max);
+        thirdLine->setLayout(thirdLineLayout);
+        
+        QVBoxLayout * layout = new QVBoxLayout(this);
+        layout->addWidget(firstLine);
+        layout->addWidget(secondLine);
+        layout->addWidget(thirdLine);
+        this->setLayout(layout);
+        //setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
+        //setMaximumSize(320,200);
+        //this->adjustSize();
+    }
+    
+    QLabel *area,*max,*min,*mean,*std,*sum,*perimeter;
+
+    void setLabels(double area,double perimeter,double mean,double std,double sum,double min,double max)
+    {
+        //this->itemAt(0,0)->setText(QString::number(area/100.0)+ " cm2 "); // TODO : changes the metric according to the value of area or perimeter
+        //this->itemAt(0,1)->setText(QString::number(perimeter/10.0)+ " cm ");
+        //this->itemAt(0,2)->setText(QString::number(mean));
+        //this->itemAt(0,3)->setText(QString::number(std));
+        //this->itemAt(0,4)->setText(QString::number(sum));
+        //this->itemAt(0,5)->setText(QString::number(min));
+        //this->itemAt(0,6)->setText(QString::number(max));
+
+        this->area->setText("Area: " + QString::number(area/100.0)+ " cm2"); // TODO : changes the metric according to the value of area or perimeter
+        this->perimeter->setText("Perimeter: " + QString::number(perimeter/10.0)+ " cm");
+        this->mean->setText("Mean: " + QString::number(mean));
+        this->std->setText("StDev: " + QString::number(std));
+        this->sum->setText("Sum: " + QString::number(sum));
+        this->min->setText("Min: " + QString::number(min));
+        this->max->setText("Max: " + QString::number(max));
+    }
+};
+
+
 class medHistogramToolBoxPrivate
 {
 public:
@@ -48,7 +129,10 @@ public:
     vtkXYPlotActor * plot;
     vtkXYPlotWidget * plotWidget;
     vtkChartXY * chart;
+    statisticsLabel * statisticsLabel;
 };
+
+
 
 medHistogramToolBox::medHistogramToolBox(QWidget *parent) : medToolBox(parent), d(new medHistogramToolBoxPrivate)
 {
@@ -63,7 +147,7 @@ medHistogramToolBox::medHistogramToolBox(QWidget *parent) : medToolBox(parent), 
 
     d->vtkWidget = new QVTKWidget (displayWidget);
     
-    d->vtkWidget->setSizePolicy ( QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding );
+    //d->vtkWidget->setSizePolicy ( QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding );
     d->vtkWidget->setMinimumSize(320,240);
     d->vtkWidget->setFocusPolicy ( Qt::NoFocus );
 
@@ -81,8 +165,6 @@ medHistogramToolBox::medHistogramToolBox(QWidget *parent) : medToolBox(parent), 
     d->plot->SetYTitle( "Number of pixels" );
     d->plot->SetXValuesToValue();  
     
-    //d->plot->adu
-    
     d->view->GetRenderer()->AddActor(d->plot);
 
     d->plotWidget = vtkXYPlotWidget::New();
@@ -91,6 +173,9 @@ medHistogramToolBox::medHistogramToolBox(QWidget *parent) : medToolBox(parent), 
     d->chart = vtkChartXY::New();
     d->view->GetScene()->AddItem(d->chart);
 
+    d->statisticsLabel = new statisticsLabel(this);
+
+    layout->addWidget(d->statisticsLabel);
     layout->addWidget(d->vtkWidget);
 }
 
@@ -130,4 +215,9 @@ void medHistogramToolBox::setChartInput(vtkTable * table)
     d->chart->RecalculateBounds();
     d->chart->SetForceAxesToBounds(1);
     d->chart->Update();
+}
+
+void medHistogramToolBox::setStatistics(double area,double perimeter,double mean,double std,double sum,double min,double max)
+{
+    d->statisticsLabel->setLabels(area,perimeter,mean,std,sum,min,max);
 }

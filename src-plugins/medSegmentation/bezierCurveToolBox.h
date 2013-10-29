@@ -101,7 +101,7 @@ public slots:
     
     void interpolateCurve();
     
-    void ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon);
+    RoiStatistics ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon);
 
     void computeStatistics();
 

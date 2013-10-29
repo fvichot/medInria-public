@@ -47,7 +47,7 @@ public:
     virtual QString type();
     virtual void select();
     virtual void unselect();
-    virtual void computeStatistics();
+    virtual void computeRoiStatistics();
 
 public slots:
     

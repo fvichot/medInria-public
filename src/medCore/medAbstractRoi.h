@@ -19,7 +19,7 @@
 
 class medAbstractRoiPrivate;
 
-class Statistics
+class RoiStatistics
 {
 public:
     double max;
@@ -55,8 +55,8 @@ public:
     void setOrientation(unsigned char orientation);
 
     bool isSelected();
-    virtual void computeStatistics() = 0;
-    void setStatistics(Statistics s); 
+    virtual void computeRoiStatistics() = 0;
+    virtual void setRoiStatistics(RoiStatistics s); 
 
 public slots:
 

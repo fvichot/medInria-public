@@ -46,6 +46,7 @@ public:
 
     void setPlotInput(vtkDataSet * data,double xmax,double ymax);
     void setChartInput(vtkTable * table);
+    void setStatistics(double area,double perimeter,double mean,double std,double sum,double min,double max);
 
 private:
     medHistogramToolBoxPrivate *d;

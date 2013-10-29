@@ -260,3 +260,16 @@ void medRoiManagementToolBox::deleteRoi(unsigned int index)
     d->currentView->update();
     updateDisplay();
 }
+
+//QList<medAbstractRoi*> medRoiManagementToolBox::getSelectedRois()
+//{
+//    if (!d->currentView)
+//        return;
+//    ListRois list = d->viewsRoisMap->value(d->currentView);
+//    QList<medAbstractRoi*> listOfSelectedRois;
+//    for(int i=0;i<d->roisSelected.size();i++)
+//    {
+//        listOfSelectedRois.append(list[d->roisSelected[i]]);
+//    }
+//    return listOfSelectedRois;
+//}

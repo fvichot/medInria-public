@@ -76,6 +76,10 @@ void BezierRoiObserver::Execute ( vtkObject *caller, unsigned long event, void *
             roi->showOrHide(roi->getView()->GetViewOrientation(),roi->getView()->GetSlice());
             break;
         }
+        case vtkCommand::EndInteractionEvent:
+        {
+            emit roi->selected(); // will trigger the computation of new statistics
+        }
     }
 }
 
@@ -118,6 +122,7 @@ bezierPolygonRoi::bezierPolygonRoi(vtkImageView2D * view, medAbstractRoi *parent
     d->observer = BezierRoiObserver::New();
     d->observer->setRoi(this);
     d->view->AddObserver(vtkImageView2D::SliceChangedEvent,d->observer,0);
+    d->contour->AddObserver(vtkCommand::EndInteractionEvent,d->observer,0);
 }
 
 
@@ -223,5 +228,4 @@ void bezierPolygonRoi::unselect()
     medAbstractRoi::unselect();
 }
 
-void bezierPolygonRoi::computeStatistics(){}
-
+void bezierPolygonRoi::computeRoiStatistics(){}
