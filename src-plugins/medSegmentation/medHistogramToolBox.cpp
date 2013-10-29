@@ -37,10 +37,10 @@
 #include <vtkPen.h>
 #include <vtkAxis.h>
 
-class statisticsLabel : public QWidget
+class StatisticsLabel : public QWidget
 {
 public:
-    statisticsLabel(QWidget * parent):QWidget(parent)
+    StatisticsLabel(QWidget * parent):QWidget(parent)
     {
         /*this->setColumnCount(7);
         this->setRowCount(1);
@@ -129,7 +129,7 @@ public:
     vtkXYPlotActor * plot;
     vtkXYPlotWidget * plotWidget;
     vtkChartXY * chart;
-    statisticsLabel * statisticsLabel;
+    StatisticsLabel * stats;
 };
 
 
@@ -173,9 +173,9 @@ medHistogramToolBox::medHistogramToolBox(QWidget *parent) : medToolBox(parent), 
     d->chart = vtkChartXY::New();
     d->view->GetScene()->AddItem(d->chart);
 
-    d->statisticsLabel = new statisticsLabel(this);
+    d->stats = new StatisticsLabel(this);
 
-    layout->addWidget(d->statisticsLabel);
+    layout->addWidget(d->stats);
     layout->addWidget(d->vtkWidget);
 }
 
@@ -219,5 +219,5 @@ void medHistogramToolBox::setChartInput(vtkTable * table)
 
 void medHistogramToolBox::setStatistics(double area,double perimeter,double mean,double std,double sum,double min,double max)
 {
-    d->statisticsLabel->setLabels(area,perimeter,mean,std,sum,min,max);
+    d->stats->setLabels(area,perimeter,mean,std,sum,min,max);
 }
