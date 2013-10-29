@@ -26,6 +26,8 @@
 #include <medAbstractView.h>
 #include <medRunnableProcess.h>
 #include <medJobManager.h>
+#include <medDataManager.h>
+#include <medMetaDataKeys.h>
 
 #include <medAbstractDataImage.h>
 
@@ -227,7 +229,13 @@ void medMeshToolsToolBox::addMeshToView() {
     dtkSmartPointer<dtkAbstractData> ptr;
     dtkAbstractData * data = d->process->output();
     ptr.takePointer(data);
+
+    ptr->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
+    ptr->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
+    ptr->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
     d->view->setSharedDataPointer(ptr);
+
+    medDataManager::instance()->importNonPersistent( ptr.data() );
 }
 
 
