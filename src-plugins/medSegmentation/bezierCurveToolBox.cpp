@@ -967,8 +967,8 @@ void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInd
             pt[i].x = pointsArray->GetPoint(i)[0];
             pt[i].y = pointsArray->GetPoint(i)[1];
         }
-
-        double *img = fillConcavePolygon(nbPoints,pt,win,1);
+        double *img;
+//        double *img = fillConcavePolygon(nbPoints,pt,win,1);
         // recuperer info stocke ds img.
 
         int sizeX = win->x1-win->x0;

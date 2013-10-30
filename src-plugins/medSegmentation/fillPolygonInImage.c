@@ -126,10 +126,10 @@ int compare_active(const void *arg1,const void* arg2)
 }
 
 
-//concave(nvert, point, win, spanproc)
-//    int nvert;			/* number of vertices */
-//Point2 *point;			/* vertices of polygon */
-//Window *win;			/* screen clipping window */
+concave(nvert, point, win, spanproc)
+    int nvert;			/* number of vertices */
+Point2 *point;			/* vertices of polygon */
+Window *win;			/* screen clipping window */
 static inline double * fillConcavePolygon(int nvert,Point2 *point,Window *win,double value)	
 {
     int k, y0, y1, y, i, j, xl, xr;
@@ -194,3 +194,307 @@ static inline double * fillConcavePolygon(int nvert,Point2 *point,Window *win,do
     }
     return img;
 }
+
+//#define MAXVERTICAL     100000
+//struct Edge
+//{
+//    // osirix code
+//    Edge *next;
+//    long yTop, yBot;
+//    long xNowWhole, xNowNum, xNowDen, xNowDir;
+//    long xNowNumStep;
+//};
+//
+//template <typename T> int sgn(T val) {
+//    return (T(0) < val) - (val < T(0));
+//}
+//
+//static inline void drawEdge( Point2 *p, int n,Edge *edgeTable[])
+//{
+//    memset( edgeTable, 0, sizeof(char*) * MAXVERTICAL);
+//
+//    for ( int i = 0; i < n; i++)
+//        {
+//        Point2 *p1, *p2, *p3;
+//        Edge *e;
+//        p1 = &p[ i];
+//        p2 = &p[ (i + 1) % n];
+//        if (p1->y == p2->y)
+//            continue;   /* Skip horiz. edges */
+//        /* Find next vertex not level with p2 */
+//        for ( int j = (i + 2) % n; ; j = (j + 1) % n)
+//                {
+//            p3 = &p[ j];
+//            if (p2->y != p3->y)
+//                break;
+//        }
+//        e = static_cast<Edge*>(malloc( sizeof(Edge)));
+//        e->xNowNumStep = abs(p1->x - p2->x);
+//        if ( p2->y > p1->y)
+//                {
+//            e->yTop = p1->y;
+//            e->yBot = p2->y;
+//            e->xNowWhole = p1->x;
+//            e->xNowDir = sgn(p2->x - p1->x);
+//            e->xNowDen = e->yBot - e->yTop;
+//            e->xNowNum = (e->xNowDen >> 1); //<=> e->xNowDen/2
+//            if ( p3->y > p2->y)
+//                e->yBot--;
+//        }
+//                else
+//                {
+//            e->yTop = p2->y;
+//            e->yBot = p1->y;
+//            e->xNowWhole = p2->x;
+//            e->xNowDir = sgn((p1->x) - (p2->x));
+//            e->xNowDen = e->yBot - e->yTop;
+//            e->xNowNum = (e->xNowDen >> 1);
+//            if ((p3->y) < (p2->y))
+//                        {
+//                e->yTop++;
+//                e->xNowNum += e->xNowNumStep;
+//                while (e->xNowNum >= e->xNowDen)
+//                                {
+//                    e->xNowWhole += e->xNowDir;
+//                    e->xNowNum -= e->xNowDen;
+//                }
+//            }
+//        }
+//        e->next = edgeTable[ e->yTop];
+//        edgeTable[ e->yTop] = e;
+//    }
+//}
+//
+///* DrawRuns first uses an insertion sort to order the X
+// * coordinates of each active edge.  It updates the X coordinates
+// * for each edge as it does this.
+// * Then it draws a run between each pair of coordinates,
+// * using the specified fill pattern.
+// *
+// * This routine is very slow and it would not be that
+// * difficult to speed it way up.
+// */
+//static DCMPix **restoreImageCache = nil;
+//
+//static inline void DrawRuns( Edge *active,long curY,float *pix,long w,long h,float min,float max,BOOL outside,float newVal,BOOL addition,BOOL compute,float *imax,float *imin,long *count,
+//    float *itotal,float *idev,float imean,long orientation,long stackNo,        // Only if X/Y orientation
+//    BOOL restore)                
+//{
+//    long                        xCoords[ 4096];
+//    float                        *curPix, val, temp;
+//    long                        numCoords = 0;
+//    long                        start, end, ims = w * h;
+//
+//    for ( Edge *e = active; e != NULL; e = e->next)
+//    {
+//        long i;
+//        for ( i = numCoords; i > 0 &&
+//            xCoords[i - 1] > e->xNowWhole; i--)
+//            xCoords[i] = xCoords[i - 1];
+//        xCoords[i] = e->xNowWhole;
+//        numCoords++;
+//        e->xNowNum += e->xNowNumStep;
+//        while (e->xNowNum >= e->xNowDen)
+//        {
+//            e->xNowWhole += e->xNowDir;
+//            e->xNowNum -= e->xNowDen;
+//        }
+//    }
+//
+//    if (numCoords % 2)  /* Protect from degenerate polygons */
+//        xCoords[numCoords] = xCoords[numCoords - 1], numCoords++;
+//
+//    for ( long i = 0; i < numCoords; i += 2)
+//    {
+//        // ** COMPUTE
+//        if( compute)
+//        {
+//            start = xCoords[i];                if( start < 0) start = 0;                if( start >= w) start = w;
+//            end = xCoords[i + 1];        if( end < 0) end = 0;                        if( end >= w) end = w;
+//
+//            switch( orientation)
+//            {
+//            case 1:                curPix = &pix[ (curY * ims) + start + stackNo *w];                        break;
+//            case 0:                curPix = &pix[ (curY * ims) + (start * w) + stackNo];                break;
+//            case 2:                curPix = &pix[ (curY * w) + start];                                                        break;
+//            }
+//
+//            long x = end - start;
+//
+//
+//            while( x-- >= 0)
+//            {
+//                val = *curPix;
+//
+//                if( imax)
+//                {
+//                    if( val > *imax) *imax = val;
+//                    if( val < *imin) *imin = val;
+//
+//                    *itotal += val;
+//
+//                    (*count)++;
+//                }
+//
+//                if( idev)
+//                {
+//                    temp = imean - val;
+//                    temp *= temp;
+//                    *idev += temp;
+//                }
+//
+//                if( orientation) curPix ++;
+//                else curPix += w;
+//            }
+//
+//        }
+//
+//        // ** DRAW
+//        else
+//        {
+//            if( outside)        // OUTSIDE
+//            {
+//                if( i == 0)
+//                {
+//                    start = 0;                        if( start < 0) start = 0;                if( start >= w) start = w;
+//                    end = xCoords[i];        if( end < 0) end = 0;                        if( end >= w) end = w;
+//                    i--;
+//                }
+//                else
+//                {
+//                    start = xCoords[i]+1;                if( start < 0) start = 0;                if( start >= w) start = w;
+//
+//                    if( i == numCoords-1)
+//                    {
+//                        end = w;
+//                    }
+//                    else end = xCoords[i+1];
+//
+//                    if( end < 0) end = 0;                        if( end >= w) end = w;
+//                }
+//
+//
+//
+//                switch( orientation)
+//                {
+//                case 1:                curPix = &pix[ (curY * ims) + start + stackNo *w];                break;
+//                case 0:                curPix = &pix[ (curY * ims) + (start * w) + stackNo];                break;
+//                case 2:                curPix = &pix[ (curY * w) + start];                                                        break;
+//                }
+//
+//                long x = end - start;
+//
+//                if( addition)
+//                {
+//                    while( x-- > 0)
+//                    {
+//                        if( *curPix >= min && *curPix <= max) *curPix += newVal;
+//
+//                        if( orientation) curPix ++;
+//                        else curPix += w;
+//                    }
+//                }
+//                else
+//                {
+//                    while( x-- > 0)
+//                    {
+//                        if( *curPix >= min && *curPix <= max) *curPix = newVal;
+//
+//                        if( orientation) curPix ++;
+//                        else curPix += w;
+//                    }
+//                }
+//                long x = end - start;
+//
+//                while( x-- > 0)
+//                {
+//                    unsigned char*  rgbPtr = (unsigned char*) curPix;
+//
+//                    if( addition)
+//                    {
+//                        if( rgbPtr[ 1] >= min && rgbPtr[ 1] <= max) rgbPtr[ 1] += newVal;
+//                        if( rgbPtr[ 2] >= min && rgbPtr[ 2] <= max) rgbPtr[ 2] += newVal;
+//                        if( rgbPtr[ 3] >= min && rgbPtr[ 3] <= max) rgbPtr[ 3] += newVal;
+//                    }
+//                    else
+//                    {
+//                        if( rgbPtr[ 1] >= min && rgbPtr[ 1] <= max) rgbPtr[ 1] = newVal;
+//                        if( rgbPtr[ 2] >= min && rgbPtr[ 2] <= max) rgbPtr[ 2] = newVal;
+//                        if( rgbPtr[ 3] >= min && rgbPtr[ 3] <= max) rgbPtr[ 3] = newVal;
+//                    }
+//
+//                    if( orientation) curPix ++;
+//                    else curPix += w;
+//                }
+//            }
+//        }
+//    else                // INSIDE
+//    {
+//        float        *restorePtr = NULL;
+//
+//        start = xCoords[i];                if( start < 0) start = 0;                if( start >= w) start = w;
+//        end = xCoords[i + 1];        if( end < 0) end = 0;                        if( end >= w) end = w;
+//
+//        switch( orientation)
+//        {
+//        case 0:                curPix = &pix[ (curY * ims) + (start * w) + stackNo];                if( restore && restoreImageCache) restorePtr = &[restoreImageCache[ curY] fImage][(start * w) + stackNo];                        break;
+//        case 1:                curPix = &pix[ (curY * ims) + start + stackNo *w];                        if( restore && restoreImageCache) restorePtr = &[restoreImageCache[ curY] fImage][start + stackNo *w];                                break;
+//        case 2:                curPix = &pix[ (curY * w) + start];                                                        if( restore && restoreImageCache) restorePtr = &[restoreImageCache[ stackNo] fImage][(curY * w) + start];                        break;
+//        }
+//
+//        long x = end - start;
+//
+//        if( x >= 0)
+//        {
+//            if( restore && restoreImageCache)
+//            {
+//
+//                if( orientation)
+//                {
+//                    while( x-- >= 0)
+//                    {
+//                        *curPix = *restorePtr;
+//
+//                        curPix ++;
+//                        restorePtr ++;
+//                    }
+//                }
+//                else
+//                {
+//                    while( x-- >= 0)
+//                    {
+//                        *curPix = *restorePtr;
+//
+//                        curPix += w;
+//                        restorePtr += w;
+//                    }
+//                }
+//
+//            }
+//            else
+//            {
+//                if( addition)
+//                {
+//                    while( x-- >= 0)
+//                    {
+//                        if( *curPix >= min && *curPix <= max) *curPix += newVal;
+//
+//                        if( orientation) curPix ++;
+//                        else curPix += w;
+//                    }
+//                }
+//                else
+//                {
+//                    while( x-- >= 0)
+//                    {
+//                        if( *curPix >= min && *curPix <= max) *curPix = newVal;
+//
+//                        if( orientation) curPix ++;
+//                        else curPix += w;
+//
+//                    }
+//                }
+//            }
+//        }
+//        }
+//    }
