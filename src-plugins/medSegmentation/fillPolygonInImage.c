@@ -126,10 +126,10 @@ int compare_active(const void *arg1,const void* arg2)
 }
 
 
-concave(nvert, point, win, spanproc)
-    int nvert;			/* number of vertices */
-Point2 *point;			/* vertices of polygon */
-Window *win;			/* screen clipping window */
+//concave(nvert, point, win, spanproc)
+//    int nvert;			/* number of vertices */
+//Point2 *point;			/* vertices of polygon */
+//Window *win;			/* screen clipping window */
 static inline double * fillConcavePolygon(int nvert,Point2 *point,Window *win,double value)	
 {
     int k, y0, y1, y, i, j, xl, xr;

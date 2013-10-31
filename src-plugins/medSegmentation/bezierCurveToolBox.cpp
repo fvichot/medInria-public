@@ -93,6 +93,7 @@
 #include <vtkImageExtractComponents.h>
 #include <vtkDoubleArray.h>
 #include <fillPolygonInImage.c>
+#include <itkContourExtractor2DImageFilter.h>
 
 class contourWidgetObserver : public vtkCommand
 {
@@ -1371,6 +1372,24 @@ void bezierCurveToolBox::computeStatistics()
     polyRoi->setRoiStatistics(stats);
     histogramToolBox->setStatistics(stats.area,stats.perimeter,stats.mean,stats.std,stats.sum,stats.min,stats.max);
 }
+
+
+bezierPolygonRoi * convertBrushRoiToPolygon(medAbstractRoi *)
+{
+    itk::ContourExtractor2DImageFilter<itk::Image<unsigned char,2> > * extractor = itk::ContourExtractor2DImageFilter<itk::Image<unsigned char,2> >::New();
+
+
+    return NULL;
+}
+
+
+
+
+
+
+
+
+
 
 #define VTK_POLYGON_CERTAIN 1
 #define VTK_POLYGON_UNCERTAIN 0

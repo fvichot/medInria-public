@@ -30,7 +30,8 @@ class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medRoiManagementToolBox : public medToolB
 public:
 
     typedef QList<medAbstractRoi*> * ListRois;
-
+    typedef QList<medSeriesOfRoi*> * ListOfSeriesOfRois;
+    
     medRoiManagementToolBox(QWidget *parent = 0);
     ~medRoiManagementToolBox();
 
@@ -42,7 +43,7 @@ signals:
 public slots:
     // Override base class
     void update (dtkAbstractView *view);
-    void addRoi(medAbstractView * view, medAbstractRoi * roi);
+    void addRoi(medAbstractView * view, medAbstractRoi * roi,QString seriesName = "");
     void updateDisplay();
     void clearDisplay();
     void saveCurrentPageIndex(int);
@@ -54,4 +55,18 @@ private:
     medRoiManagementToolBoxPrivate *d;
 };
 
+class medSeriesOfRoi 
+{
+public:
+    typedef QList<medAbstractRoi*> * ListRois;
+    
+    medSeriesOfRoi(QString name,ListRois rois,medRoiManagementToolBox * toolbox):name(name),rois(rois),toolbox(toolbox){};
+    ~medSeriesOfRoi();
 
+    QString getName(){return name;};
+    ListRois getIndices(){return rois;};
+private:
+    QString name;
+    ListRois rois; // indices of roi in Series
+    medRoiManagementToolBox * toolbox;
+};
