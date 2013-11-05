@@ -27,7 +27,7 @@ class MEDGUI_EXPORT medDropSite : public QLabel
 
 public:
      medDropSite(QWidget *parent = 0);
-    ~medDropSite();
+    virtual ~medDropSite();
 
     QSize sizeHint() const;
 

@@ -297,6 +297,7 @@ void cliSupportToolBox::runCurrentModule()
 {
     d->moduleProgress->setEnabled(true);
     d->moduleRun->setEnabled(false);
+    d->frontend->preRun();
     ctkCmdLineModuleFuture future = d->manager->run(d->frontend);
     d->futureWatcher = new ctkCmdLineModuleFutureWatcher();
     d->futureWatcher->setFuture(future);
@@ -311,6 +312,7 @@ void cliSupportToolBox::runCurrentModule()
 
 void cliSupportToolBox::moduleFinished()
 {
+    d->frontend->postRun();
     d->moduleProgress->setEnabled(false);
     d->moduleRun->setEnabled(true);
 }
