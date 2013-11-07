@@ -66,7 +66,7 @@ cliSupportWorkspace::cliSupportWorkspace(QWidget *parent) : medWorkspace(parent)
     connect ( stackedViewContainers(), SIGNAL(currentChanged(const QString &)),
               this, SLOT(connectToolboxesToCurrentContainer(const QString &)));
 
-    d->cliToolBox = new cliSupportToolBox( parent );
+    d->cliToolBox = new cliSupportToolBox(parent, this);
     this->addToolBox( d->cliToolBox );
 }
 

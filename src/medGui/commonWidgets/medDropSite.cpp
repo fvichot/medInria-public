@@ -22,6 +22,7 @@
 class medDropSitePrivate
 {
 public:
+    QStringList acceptedTypes;
     medDataIndex index;
     bool canAutomaticallyChangeAppereance;
 };
@@ -32,6 +33,10 @@ medDropSite::medDropSite(QWidget *parent) : QLabel(parent), d(new medDropSitePri
     setAcceptDrops(true);
     setBackgroundRole(QPalette::Base);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setText("Either drop an image from the database, or select a file by clicking here");
+    setAlignment(Qt::AlignCenter | Qt::AlignHCenter);
+    setWordWrap(true);
+//    font().setPointSize(9);
     d->index = medDataIndex();
     d->canAutomaticallyChangeAppereance = true;
 }
@@ -53,6 +58,16 @@ void medDropSite::setCanAutomaticallyChangeAppereance(bool can)
     d->canAutomaticallyChangeAppereance = can;
 }
 
+void medDropSite::setAcceptedTypes(const QStringList & types)
+{
+    d->acceptedTypes = types;
+}
+
+QStringList medDropSite::acceptedTypes() const
+{
+    return d->acceptedTypes;
+}
+
 medDataIndex medDropSite::index(void) const
 {
     return d->index;
@@ -62,7 +77,14 @@ void medDropSite::dragEnterEvent(QDragEnterEvent *event)
 {
     setBackgroundRole(QPalette::Highlight);
 
-    event->acceptProposedAction();
+    QString type;
+    medDataIndex index( medDataIndex::readMimeData(event->mimeData()) );
+    if (index.isValid()) {
+//        type = medDataManaindex;
+    }
+
+    if (acceptedTypes().isEmpty() || acceptedTypes().contains(type))
+        event->acceptProposedAction();
 }
 
 void medDropSite::dragMoveEvent(QDragMoveEvent *event)

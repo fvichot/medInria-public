@@ -90,9 +90,6 @@ target_link_libraries(${PROJECT_NAME}
   ${CTK_target_libraries}
   )
 
-#not useful if plugin in the medInria-plugins directory
-dtk_build_doc(cliSupportWorkspacePlugin)
-
 ## #################################################################
 ## Source file layout in development environments like Visual Studio
 ## #################################################################

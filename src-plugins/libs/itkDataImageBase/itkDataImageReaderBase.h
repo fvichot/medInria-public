@@ -13,13 +13,13 @@
 
 #pragma once
 
-#include <dtkCore/dtkAbstractDataReader.h>
+#include <medAbstractDataReader.h>
 
 #include "itkDataImageBaseExport.h"
 #include "itkImageIOBase.h"
 
 class ITKDATAIMAGEBASE_EXPORT itkDataImageReaderBase:
-        public dtkAbstractDataReader
+        public medAbstractDataReader
 {
     Q_OBJECT
 
@@ -42,6 +42,8 @@ public slots:
     virtual bool read (const QStringList& paths);
 
     virtual void setProgress (int value);
+
+    virtual QStringList supportedFileExtensions() const;
 
 protected:
 

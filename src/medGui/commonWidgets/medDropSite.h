@@ -39,7 +39,9 @@ public:
      */
     void setCanAutomaticallyChangeAppereance(bool can);
 
-public:
+    void setAcceptedTypes(const QStringList & types);
+    QStringList acceptedTypes() const;
+
     medDataIndex index() const;
 
 public slots:

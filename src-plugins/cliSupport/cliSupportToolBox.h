@@ -7,12 +7,13 @@ class dtkAbstractView;
 class dtkAbstractData;
 class cliSupportToolBoxPrivate;
 class medDataIndex;
+class medWorkspace;
 
 class cliSupportToolBox : public medToolBox
 {
     Q_OBJECT
 public:
-     cliSupportToolBox(QWidget *parent);
+     cliSupportToolBox(QWidget *parent, medWorkspace * workspace = 0);
     ~cliSupportToolBox();
 
 

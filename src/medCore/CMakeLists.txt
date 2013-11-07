@@ -26,6 +26,7 @@ set(${PROJECT_NAME}_DEVEL_HEADERS_MOC
   medAbstractDataSource.h
   medAbstractDataSourceFactory.h
   medAbstractData.h
+  medAbstractDataReader.h
   medAbstractDataImage.h
   medAbstractDataMesh.h
   medAbstractDataSourceFactory.h
@@ -91,6 +92,7 @@ set(${PROJECT_NAME}_SOURCES
   medAbstractDataSourceFactory.cpp
   medAbstractViewFiberInteractor.cpp
   medAbstractData.cpp
+  medAbstractDataReader.cpp
   medAbstractDataImage.cpp
   medAbstractDataMesh.cpp
   medAttachedData.cpp

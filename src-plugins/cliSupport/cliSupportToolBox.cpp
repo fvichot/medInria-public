@@ -13,6 +13,8 @@
 
 #include <cliSupportUiLoader.h>
 
+#include <medWorkspace.h>
+#include <medTabbedViewContainers.h>
 
 QStringList pathSplitter(const QString & path)
 {
@@ -70,6 +72,7 @@ public:
     }
 
     dtkAbstractView * view;
+    medWorkspace * workspace;
 
     QString path;
     ctkCmdLineModuleManager * manager;
@@ -86,8 +89,11 @@ public:
 };
 
 
-cliSupportToolBox::cliSupportToolBox(QWidget *parent) : medToolBox(parent), d(new cliSupportToolBoxPrivate)
+cliSupportToolBox::cliSupportToolBox(QWidget * parent, medWorkspace * workspace)
+    : medToolBox(parent)
+    , d(new cliSupportToolBoxPrivate)
 {
+    d->workspace = workspace;
     this->setTitle("CLI Manager");
     this->init();
 }
@@ -121,7 +127,7 @@ QString cliSupportToolBox::description()
 void cliSupportToolBox::init()
 {
     QString cacheLocation = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-    d->manager = new ctkCmdLineModuleManager( ctkCmdLineModuleManager::STRICT_VALIDATION, cacheLocation);
+    d->manager = new ctkCmdLineModuleManager(ctkCmdLineModuleManager::STRICT_VALIDATION, cacheLocation);
     d->backend = new ctkCmdLineModuleBackendLocalProcess();
     d->manager->registerBackend(d->backend);
 
@@ -228,6 +234,7 @@ void cliSupportToolBox::init()
     // Another row for progress bar
     d->moduleProgress = new QProgressBar(modulePage);
     d->moduleProgress->setValue(0);
+    d->moduleProgress->setEnabled(false);
     d->gridLayout->addWidget(d->moduleProgress, 2, 0);
 
     // Another row for run button
@@ -271,7 +278,6 @@ void cliSupportToolBox::update(dtkAbstractView * view)
     if (d->view)
         QObject::disconnect(d->view, SIGNAL(propertySet(QString, QString)), this, 0);
 
-
     qDebug() << "CLI update called";
     d->view = view;
 }
@@ -287,7 +293,8 @@ void cliSupportToolBox::moduleSelected(int index)
     delete d->frontend;
     delete d->moduleGui;
 
-    d->frontend = new cliSupportFrontendQtGui(ref);
+    //TODO make medInria not suck.....
+    d->frontend = new cliSupportFrontendQtGui(ref, d->workspace);
     d->moduleGui = qobject_cast<QWidget*>(d->frontend->guiHandle());
     d->gridLayout->addWidget(d->moduleGui, 1, 0);
 }
@@ -297,6 +304,8 @@ void cliSupportToolBox::runCurrentModule()
 {
     d->moduleProgress->setEnabled(true);
     d->moduleRun->setEnabled(false);
+    d->moduleList->setEnabled(false);
+    d->moduleGui->setEnabled(false);
     d->frontend->preRun();
     ctkCmdLineModuleFuture future = d->manager->run(d->frontend);
     d->futureWatcher = new ctkCmdLineModuleFutureWatcher();
@@ -315,4 +324,6 @@ void cliSupportToolBox::moduleFinished()
     d->frontend->postRun();
     d->moduleProgress->setEnabled(false);
     d->moduleRun->setEnabled(true);
+    d->moduleList->setEnabled(true);
+    d->moduleGui->setEnabled(true);
 }

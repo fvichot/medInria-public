@@ -6,7 +6,12 @@
 
 #include <dtkCore/dtkAbstractDataFactory.h>
 
+#include <medAbstractDataReader.h>
 #include <medDataManager.h>
+#include <medWorkspace.h>
+#include <medTabbedViewContainers.h>
+#include <medAbstractData.h>
+
 
 #include <QDebug>
 #include <QScopedPointer>
@@ -66,10 +71,13 @@ QWidget * cliSupportUiLoader::createWidget(const QString &className, QWidget *pa
     ctkCmdLineModuleParameter param = modDescription.parameter(paramName);
 
     if (param.tag() == "image" && param.channel() == "input") {
-        qDebug() << "found an image input";
-        cliDataSelectorWidget * s = new cliDataSelectorWidget(param, parent);
-        _frontend->registerDataSelector(s);
-        return s;
+        cliDataInputWidget * w = new cliDataInputWidget(param, parent);
+        _frontend->addDataInput(w);
+        return w;
+    } else if (param.tag() == "image" && param.channel() == "output") {
+        cliDataOutputWidget * w = new cliDataOutputWidget(param, parent);
+        _frontend->addDataOutput(w);
+        return w;
     }
 
     return ctkCmdLineModuleQtUiLoader::createWidget(className, parent, name);
@@ -77,13 +85,14 @@ QWidget * cliSupportUiLoader::createWidget(const QString &className, QWidget *pa
 
 // ---------------------------- Frontend -------------------------------------
 
-cliSupportFrontendQtGui::cliSupportFrontendQtGui(const ctkCmdLineModuleReference & moduleRef)
+cliSupportFrontendQtGui::cliSupportFrontendQtGui(const ctkCmdLineModuleReference & moduleRef, medWorkspace *workspace)
     : ctkCmdLineModuleFrontendQtGui(moduleRef)
+    , _workspace(workspace)
 {
     ctkCmdLineModuleXslTransform * t = this->xslTransform();
 
     QStringList paramTagsList;
-    paramTagsList << "imageInput" //<< "imageOutput"
+    paramTagsList << "imageInput" << "imageOutput"
                   << "geometryInput" << "geometryOutput"
                   << "transformInput" << "transformOutput"
                   << "tableInput" << "tableOutput"
@@ -109,28 +118,53 @@ void cliSupportFrontendQtGui::preRun()
     _runDir = QDir::temp();
     while ( ! _runDir.mkdir(QString("medInria_cli_run_%1").arg(count)))
         count++;
+    _runDir.cd(QString("medInria_cli_run_%1").arg(count));
 
-    foreach(cliDataSelectorWidget * s, _selectors) {
-        dtkAbstractData * data = medDataManager::instance()->data(s->index());
+    foreach(cliDataInputWidget * w, _inputList) {
+        dtkAbstractData * data = medDataManager::instance()->data(w->index());
         if ( ! data) continue;
 
-        cliFileExporter exporter;
-        QString exportPath = exporter.exportToFile(data, _runDir.absoluteFilePath(s->parameter().name()), s->parameter().fileExtensions());
-        s->setFilePath(exportPath);
+        QStringList possibleExtensions = w->parameter().fileExtensions().replaceInStrings("*", "");
+        QString finalPath = _runDir.absoluteFilePath(w->parameter().name());
+
+        cliFileHandler exporter;
+        QString exportPath = exporter.exportToFile(data, finalPath, possibleExtensions);
+
+        w->setFilePath(exportPath);
+    }
+
+    foreach(cliDataOutputWidget * w, _outputList) {
+        QStringList possibleExtensions = w->parameter().fileExtensions().replaceInStrings("*", "");
+        QString ext = cliFileHandler::compatibleImportExtension(possibleExtensions);
+        // TODO error handling on ext being empty
+        QString outputPath = _runDir.absoluteFilePath(w->parameter().name()) + ext;
+        w->setFilePath(outputPath);
+        qDebug() << "+++++++++++++ " << outputPath;
     }
 }
 
-
 void cliSupportFrontendQtGui::postRun()
 {
+    foreach(cliDataOutputWidget * w, _outputList) {
+        cliFileHandler importer;
+        qDebug() << "============ " << w->filePath();
+        medAbstractData * data = qobject_cast<medAbstractData*>(importer.importFromFile(w->filePath()));
+        _workspace->stackedViewContainers()->current()->open(data);
+    }
 
-    //removeDir(_runDir.absolutePath());
+    removeDir(_runDir.absolutePath());
 }
 
 
-void cliSupportFrontendQtGui::registerDataSelector(cliDataSelectorWidget *selector)
+void cliSupportFrontendQtGui::addDataInput(cliDataInputWidget * input)
 {
-    _selectors.append(selector);
+    _inputList.append(input);
+}
+
+
+void cliSupportFrontendQtGui::addDataOutput(cliDataOutputWidget * output)
+{
+    _outputList.append(output);
 }
 
 
@@ -144,56 +178,109 @@ QUiLoader * cliSupportFrontendQtGui::uiLoader() const
 
 // ------------------------ Widgets ------------------------------------------
 
-cliDataSelectorWidget::cliDataSelectorWidget(ctkCmdLineModuleParameter param, QWidget * parent)
+cliDataInputWidget::cliDataInputWidget(ctkCmdLineModuleParameter param, QWidget * parent)
     : medDropSite(parent)
     , _param(param)
 {
-    connect(this, SIGNAL(objectDropped(medDataIndex)), this, SLOT(dataSelected(medDataIndex)));
 }
 
 
-cliDataSelectorWidget::~cliDataSelectorWidget()
+cliDataInputWidget::~cliDataInputWidget()
 {
 
 }
 
 
-QString cliDataSelectorWidget::filePath() const
+QString cliDataInputWidget::filePath() const
 {
     return _filePath;
 }
 
 
-void cliDataSelectorWidget::setFilePath(QString path)
+void cliDataInputWidget::setFilePath(QString path)
 {
     _filePath = path;
 }
 
 
-ctkCmdLineModuleParameter cliDataSelectorWidget::parameter() const
+ctkCmdLineModuleParameter cliDataInputWidget::parameter() const
 {
     return _param;
 }
 
 
-void cliDataSelectorWidget::dataSelected(medDataIndex index)
+cliDataOutputWidget::cliDataOutputWidget(ctkCmdLineModuleParameter param, QWidget * parent)
+    : QWidget(parent)
+    , _param(param)
 {
+    this->setLayout(new QHBoxLayout());
+    _targetList = new QComboBox(this);
+    _targetList->addItem("Open in new view", cliDataOutputWidget::OpenInNewView);
+    _targetList->addItem("Open in new tab", cliDataOutputWidget::OpenInNewTab);
+    _targetList->addItem("Output to file...", cliDataOutputWidget::OutputToFile);
+    this->layout()->addWidget(_targetList);
+}
+
+
+cliDataOutputWidget::~cliDataOutputWidget()
+{
+}
+
+
+QString cliDataOutputWidget::filePath() const
+{
+    return _filePath;
+}
+
+
+void cliDataOutputWidget::setFilePath(QString path)
+{
+    _filePath = path;
+}
+
+
+ctkCmdLineModuleParameter cliDataOutputWidget::parameter() const
+{
+    return _param;
+}
+
+
+cliDataOutputWidget::OutputTarget cliDataOutputWidget::target() const
+{
+    return (cliDataOutputWidget::OutputTarget)_targetList->itemData(_targetList->currentIndex()).toInt();
 }
 
 // --------------------- File exporter ------------------------------------
 
-cliFileExporter::cliFileExporter(QObject * parent)
+cliFileHandler::cliFileHandler(QObject * parent)
     : QObject(parent)
 {
 
 }
 
-cliFileExporter::~cliFileExporter()
+cliFileHandler::~cliFileHandler()
 {
 
 }
 
-dtkAbstractData * cliFileExporter::importFromFile(QString file)
+QString cliFileHandler::compatibleImportExtension(QStringList supportedExtensions)
+{
+    QList<QString> readers = dtkAbstractDataFactory::instance()->readers();
+    QScopedPointer<medAbstractDataReader> reader;
+    foreach(QString currentExtension, supportedExtensions) {
+        for (int i=0; i<readers.size(); i++) {
+            reader.reset(qobject_cast<medAbstractDataReader*>(dtkAbstractDataFactory::instance()->reader(readers[i])));
+
+            if ( ! reader || ! reader->supportedFileExtensions().contains(currentExtension))
+                continue;
+
+            return currentExtension;
+        }
+    }
+    return QString();
+}
+
+dtkAbstractData * cliFileHandler::importFromFile(QString file)
 {
     connect(medDataManager::instance(), SIGNAL(dataAdded(medDataIndex)),
             this, SLOT(dataImported(medDataIndex)));
@@ -205,7 +292,7 @@ dtkAbstractData * cliFileExporter::importFromFile(QString file)
     return _data;
 }
 
-QString cliFileExporter::exportToFile(dtkAbstractData * data, QString filePath, QStringList formats)
+QString cliFileHandler::exportToFile(dtkAbstractData * data, QString filePath, QStringList formats)
 {
     QList<QString> writers = dtkAbstractDataFactory::instance()->writers();
     bool written = false;
@@ -222,7 +309,6 @@ QString cliFileExporter::exportToFile(dtkAbstractData * data, QString filePath, 
             dataWriter->setData (data);
 
             finalFullPath = filePath+currentFormat;
-            qDebug() << "=============== finalFullpath:" << finalFullPath;
             if (dataWriter->canWrite(finalFullPath) && dataWriter->write(finalFullPath)) {
                 written = true;
                 break;
@@ -231,12 +317,11 @@ QString cliFileExporter::exportToFile(dtkAbstractData * data, QString filePath, 
         if (written)
             break;
     }
-    qDebug() << "+++++++++++++++++ FullPath:"<< finalFullPath;
     return finalFullPath;
 }
 
 
-void cliFileExporter::dataImported(medDataIndex index)
+void cliFileHandler::dataImported(medDataIndex index)
 {
     _data = medDataManager::instance()->data(index);
     _loopyLoop.quit();
