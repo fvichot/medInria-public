@@ -460,9 +460,9 @@ void bezierCurveToolBox::onAddNewCurve()
     //balloonRep->VisibilityOn();
 }
 
-QList<medAbstractRoi*> * bezierCurveToolBox::getListOfView(medAbstractView * view)
+QList<medSeriesOfRoi*> * bezierCurveToolBox::getListOfView(medAbstractView * view)
 {
-    return roiToolBox->getRois()->value(view);
+    return roiToolBox->getSeriesOfRoi()->value(view);
 }
 
 // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
@@ -716,7 +716,8 @@ void bezierCurveToolBox::interpolateCurve()
 
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     
-    ListRois list = getListOfView(currentView);
+    //ListRois list = getListOfView(currentView); // TODO : need to correct this thing !!
+    ListRois list;
 
     if (!list || list->isEmpty())
         return;
@@ -728,7 +729,7 @@ void bezierCurveToolBox::interpolateCurve()
     
     for(int i=0;i<list->size();i++)
     {
-        bezierPolygonRoi * polyRoi = dynamic_cast<bezierPolygonRoi*>(list->at(i));
+        bezierPolygonRoi * polyRoi = dynamic_cast<bezierPolygonRoi*>(list->at(i)); // TODO : need to test if the cast goes well we cannot be sure that the Rois are polygonRoi
         if (polyRoi->getOrientation()==orientation)
         {
             int idSlice = polyRoi->getIdSlice();
@@ -806,7 +807,8 @@ void bezierCurveToolBox::generateBinaryImage()
 
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     
-    ListRois list = getListOfView(currentView);
+    //ListRois list = getListOfView(currentView); // TODO : need to correct this thing !!
+    ListRois list;
 
     QList<QPair<vtkPolyData *,PlaneIndexSlicePair> > listPolyData = QList<QPair<vtkPolyData *,PlaneIndexSlicePair> >();
     
@@ -814,7 +816,7 @@ void bezierCurveToolBox::generateBinaryImage()
     
     for(int i=0;i<list->size();i++)
     {
-        bezierPolygonRoi * polyRoi = dynamic_cast<bezierPolygonRoi*>(list->at(i));
+        bezierPolygonRoi * polyRoi = dynamic_cast<bezierPolygonRoi*>(list->at(i));  // TODO : need to test if the cast goes well we cannot be sure that the Rois are polygonRoi
         vtkContourWidget * contour =  polyRoi->getContour();
         unsigned int orientationOfRoi = polyRoi->getOrientation();
         unsigned int idSlice = polyRoi->getIdSlice();

@@ -112,7 +112,7 @@ protected:
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly);
     void setData( dtkAbstractData *data );
 
-    QList<medAbstractRoi*> * getListOfView(medAbstractView * view);
+    QList<medSeriesOfRoi*> * getListOfView(medAbstractView * view);
     void resampleCurve(vtkPolyData * poly,int nbPoints);
     void initializeMaskData( medAbstractData * imageData, medAbstractData * maskData ); // copy of a function in painttoolbox
     void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);

@@ -21,6 +21,10 @@
 class dtkAbstractView;
 class medRoiManagementToolBoxPrivate;
 class medWorkspace;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9139638... Working on series of Roi display ...
 
 //! Roi Management toolbox
 class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medRoiManagementToolBox : public medToolBox
@@ -35,7 +39,7 @@ public:
     medRoiManagementToolBox(QWidget *parent = 0);
     ~medRoiManagementToolBox();
 
-    QHash<medAbstractView*,ListRois> * getRois();
+    QHash<medAbstractView*,ListOfSeriesOfRois> * getSeriesOfRoi();
     /*QList<medAbstractRoi*> getSelectedRois();*/
 
 signals:
@@ -55,13 +59,13 @@ private:
     medRoiManagementToolBoxPrivate *d;
 };
 
-class medSeriesOfRoi 
+class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medSeriesOfRoi 
 {
 public:
     typedef QList<medAbstractRoi*> * ListRois;
     
     medSeriesOfRoi(QString name,ListRois rois,medRoiManagementToolBox * toolbox):name(name),rois(rois),toolbox(toolbox){};
-    ~medSeriesOfRoi();
+    ~medSeriesOfRoi(){}; // delete everything
 
     QString getName(){return name;};
     ListRois getIndices(){return rois;};

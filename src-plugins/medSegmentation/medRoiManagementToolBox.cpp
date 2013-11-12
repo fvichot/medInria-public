@@ -39,8 +39,7 @@ public:
     medRoiManagementToolBoxPrivate(){};
 
     typedef QList<medAbstractRoi*> * ListRois;
-    typedef QList<medSeriesOfRoi*> * ListOfSeriesOfRois;
-
+    
     dtkSmartPointer<medAbstractView> currentView;
     medToolBoxTab * layoutToolBoxTab;
     
@@ -49,12 +48,13 @@ public:
     QTreeWidget * ListCurrentSliceRois;
     QTreeWidget * ListPolygonRois;
     QTreeWidget * ListBrushRois;
+    QTreeWidget * ListPointRois;
 
     QList<QTreeWidget*> listOfPages;
     //QList<QList<int>*> listOfIndices;
     
     //QHash<medAbstractView*,ListRois> * viewsRoisMap;
-    QHash<medAbstractView*,ListOfSeriesOfRois> * viewsRoisSeries;
+    QHash<medAbstractView*,QList<medSeriesOfRoi*> *> * viewsRoisSeries;
     QList<unsigned int> roisSelected;
 
     int currentPageIndex;
@@ -95,6 +95,12 @@ medRoiManagementToolBox::medRoiManagementToolBox(QWidget *parent) : medToolBox(p
     d->ListBrushRois->setSelectionMode(QAbstractItemView::ExtendedSelection);
     brushLayout->addWidget(d->ListBrushRois);
 
+    QWidget * pointRoisTab = new QWidget(this);
+    QVBoxLayout *pointLayout = new QVBoxLayout(pointRoisTab);
+    d->ListPointRois = new QTreeWidget(this);
+    d->ListPointRois->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    pointLayout->addWidget(d->ListPointRois);
+
     d->layoutToolBoxTab->addTab(allRoisTab, tr("All"));
     d->layoutToolBoxTab->addTab(currentSliceTab, tr("Current Slice"));
     d->layoutToolBoxTab->addTab(PolygonRoisTab, tr("Bezier"));
@@ -104,11 +110,11 @@ medRoiManagementToolBox::medRoiManagementToolBox(QWidget *parent) : medToolBox(p
     d->listOfPages.append(d->ListCurrentSliceRois);
     d->listOfPages.append(d->ListPolygonRois);
     d->listOfPages.append(d->ListBrushRois);
+    d->listOfPages.append(d->ListPointRois);
     d->currentPageIndex = 0;
     saveCurrentPageIndex(0);
 
-    //d->viewsRoisMap = new QHash<medAbstractView*,ListRois>();
-    d->viewsRoisSeries = new QHash<medAbstractView*,ListOfSeriesOfRois>();
+    d->viewsRoisSeries = new QHash<medAbstractView*,QList<medSeriesOfRoi*> *>();
 
     this->addWidget(d->toolBoxTab);
 
@@ -178,36 +184,57 @@ void medRoiManagementToolBox::updateDisplay()
     unsigned int currentSlice = view2d->GetSlice();
     unsigned char currentOrientation = view2d->GetViewOrientation();
 
-    if (d->viewsRoisMap->contains(d->currentView))
+    if (d->viewsRoisSeries->contains(d->currentView))
     {
-        ListRois list = d->viewsRoisMap->value(d->currentView);
-        ListOfSeriesOfRois = d->viewsRoisSeriess->value(d->currentView);
-        for(unsigned int i=0;i<list->size();i++)
+        ListOfSeriesOfRois listOfSeries = d->viewsRoisSeries->value(d->currentView);
+        for(unsigned int k=0;k<listOfSeries->size();k++)
         {
-            QTreeWidgetItem *item = new QTreeWidgetItem(d->ListAllRois);
-            medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
+            ListRois list = d->viewsRoisSeries->value(d->currentView)->at(k)->getIndices();
+            
+            QTreeWidgetItem * serieItem = new QTreeWidgetItem(d->ListAllRois);
+            medRoiItemWidget * widget = new medRoiItemWidget(d->viewsRoisSeries->value(d->currentView)->at(k)->getName(),k);
             connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
-            item->setSizeHint(0,widget->sizeHint());
-            d->ListAllRois->insertTopLevelItem(i,item);
-            d->ListAllRois->setItemWidget(item,0,widget);
-                        
-            if (list->at(i)->getIdSlice()==currentSlice && list->at(i)->getOrientation()==currentOrientation)
+            serieItem->setSizeHint(0,widget->sizeHint());
+            d->ListAllRois->insertTopLevelItem(k,serieItem);
+            d->ListAllRois->setItemWidget(serieItem,0,widget);
+
+            for(unsigned int i=0;i<list->size();i++)
             {
-                QTreeWidgetItem *item = new QTreeWidgetItem(d->ListCurrentSliceRois);
+                QTreeWidgetItem *item = new QTreeWidgetItem(serieItem);
                 medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
                 connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
                 item->setSizeHint(0,widget->sizeHint());
-                d->ListCurrentSliceRois->insertTopLevelItem(i,item);
-                d->ListCurrentSliceRois->setItemWidget(item,0,widget);
-            }
-            if (list->at(i)->type()=="Polygon")
-            {
-                QTreeWidgetItem *item = new QTreeWidgetItem(d->ListPolygonRois);
-                medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
-                connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
-                item->setSizeHint(0,widget->sizeHint());
-                d->ListPolygonRois->insertTopLevelItem(i,item);
-                d->ListPolygonRois->setItemWidget(item,0,widget);
+                /*d->ListAllRois->insertTopLevelItem(i,item);*/
+                d->ListAllRois->setItemWidget(item,0,widget);
+
+                if (list->at(i)->getIdSlice()==currentSlice && list->at(i)->getOrientation()==currentOrientation)
+                {
+                    QTreeWidgetItem *item = new QTreeWidgetItem(d->ListCurrentSliceRois);
+                    medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
+                    connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
+                    item->setSizeHint(0,widget->sizeHint());
+                    d->ListCurrentSliceRois->insertTopLevelItem(i,item);
+                    d->ListCurrentSliceRois->setItemWidget(item,0,widget);
+                }
+                if (list->at(i)->type()=="Polygon")
+                {
+                    QTreeWidgetItem *item = new QTreeWidgetItem(d->ListPolygonRois);
+                    medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
+                    connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
+                    item->setSizeHint(0,widget->sizeHint());
+                    d->ListPolygonRois->insertTopLevelItem(i,item);
+                    d->ListPolygonRois->setItemWidget(item,0,widget);
+                }
+
+                if (list->at(i)->type()=="SeedPoint")
+                {
+                    QTreeWidgetItem *item = new QTreeWidgetItem(d->ListPointRois);
+                    medRoiItemWidget * widget = new medRoiItemWidget(QString::number(i+1) +  " - "  + list->at(i)->type() + " - " + list->at(i)->info(),i);
+                    connect(widget,SIGNAL(deleteWidget(unsigned int)),this,SLOT(deleteRoi(unsigned int)));
+                    item->setSizeHint(0,widget->sizeHint());
+                    d->ListPointRois->insertTopLevelItem(i,item);
+                    d->ListPointRois->setItemWidget(item,0,widget);
+                }
             }
         }
     }
@@ -221,9 +248,9 @@ void medRoiManagementToolBox::clearDisplay()
     d->ListBrushRois->clear();
 }
 
-QHash<medAbstractView*,medRoiManagementToolBox::ListRois> * medRoiManagementToolBox::getRois()
+QHash<medAbstractView*,medRoiManagementToolBox::ListOfSeriesOfRois> * medRoiManagementToolBox::getSeriesOfRoi()
 {
-    return d->viewsRoisMap;
+    return d->viewsRoisSeries;
 }
 
 void medRoiManagementToolBox::saveCurrentPageIndex(int index)
@@ -248,10 +275,11 @@ void medRoiManagementToolBox::selectRois()
         medRoiItemWidget * itemWidget = dynamic_cast<medRoiItemWidget*>(treeWidget->itemWidget(treeWidgetItem.at(i),0));
         unsigned int index = itemWidget->getIndex();
 
-        if (d->viewsRoisMap->value(d->currentView)->size()>index) // check we never know
-            d->viewsRoisMap->value(d->currentView)->at(index)->select();
-        else 
-            continue;
+        // TODO MAKE iT WORK WITH SERIES
+        //if (d->viewsRoisSeries->value(d->currentView)->size()>index) // check we never know 
+        //    d->viewsRoisSeries->value(d->currentView)->at(index)->select();
+        //else 
+        //    continue;
 
         d->roisSelected.append(index);
     }
@@ -263,11 +291,11 @@ void medRoiManagementToolBox::unselectRois()
     if (!d->currentView)
         return;
 
-    for(int i=0;i<d->roisSelected.size();i++)
-        if (d->viewsRoisMap->value(d->currentView)->size()>d->roisSelected.at(i)) // check we never know
-            d->viewsRoisMap->value(d->currentView)->at(d->roisSelected.at(i))->unselect();
-        else 
-            continue;
+    //for(int i=0;i<d->roisSelected.size();i++) // TODO MAKE iT WORK WITH SERIES
+    //    if (d->viewsRoisSeries->value(d->currentView)->size()>d->roisSelected.at(i)) // check we never know
+    //        d->viewsRoisSeries->value(d->currentView)->at(d->roisSelected.at(i))->unselect();
+    //    else 
+    //        continue;
         
     d->currentView->update();
     d->roisSelected.clear();
@@ -278,7 +306,8 @@ void medRoiManagementToolBox::deleteRoi(unsigned int index)
     if (!d->currentView)
         return;
     unselectRois();
-    delete d->viewsRoisMap->value(d->currentView)->takeAt(index); // TODO : make sure that every vtkObject is deleted not sure how
+    delete d->viewsRoisSeries->value(d->currentView)->takeAt(index); // TODO : make sure that every vtkObject is deleted not sure how
+    // TODO make sure everything is deleted !! we work with series now !! 
     d->currentView->update();
     updateDisplay();
 }
