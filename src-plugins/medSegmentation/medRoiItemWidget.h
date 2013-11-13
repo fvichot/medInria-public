@@ -11,21 +11,23 @@ class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medRoiItemWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit medRoiItemWidget(QString name,unsigned int index,QWidget * parent = 0);
+    typedef QPair<unsigned int,unsigned int> PairInd;
+
+    explicit medRoiItemWidget(QString name,PairInd indexes,QWidget * parent = 0);
 
     virtual ~medRoiItemWidget();
 
-    unsigned int getIndex();
+    PairInd getIndex();
 
 signals:
-    void deleteWidget(unsigned int);
+    void deleteWidget(PairInd);
 
 protected slots:
     void emitDeleteWidget();
 
 private:
     QLabel * roiInfo;
-    unsigned int index;
+    PairInd indexes;
     unsigned int idSlice; // not sure if needed
     unsigned char orientation; // same
 };

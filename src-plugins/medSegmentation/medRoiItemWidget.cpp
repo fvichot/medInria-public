@@ -8,7 +8,7 @@
 
 #include <medRoiItemWidget.h>
 
-medRoiItemWidget::medRoiItemWidget(QString name,unsigned int index,QWidget * parent)
+medRoiItemWidget::medRoiItemWidget(QString name,PairInd indexes,QWidget * parent)
     : QWidget(parent)
 {
 
@@ -33,7 +33,7 @@ medRoiItemWidget::medRoiItemWidget(QString name,unsigned int index,QWidget * par
     layout->addStretch();
     layout->addWidget(deleteButton);
 
-    this->index = index;
+    this->indexes = indexes;
     
     connect(deleteButton, SIGNAL(clicked(bool)),this,SLOT(emitDeleteWidget()));
 }
@@ -49,12 +49,12 @@ medRoiItemWidget::~medRoiItemWidget()
 //    return size;
 //}
 
-unsigned int medRoiItemWidget::getIndex()
+medRoiItemWidget::PairInd medRoiItemWidget::getIndex()
 {
-    return index;
+    return indexes;
 }
 
 void medRoiItemWidget::emitDeleteWidget()
 {
-    emit deleteWidget(index);
+    emit deleteWidget(indexes);
 }

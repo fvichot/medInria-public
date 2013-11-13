@@ -173,7 +173,7 @@ void contourWidgetObserver::Execute ( vtkObject *caller, unsigned long event, vo
 
             QList<int> * planeIndexes= toolBox->viewsPlaneIndex.value(toolBox->currentView);
 
-            toolBox->roiToolBox->addRoi(toolBox->currentView,toolBox->currentBezierRoi);
+            toolBox->roiToolBox->addRoi(toolBox->currentView,toolBox->currentBezierRoi,"Polygon rois");
             planeIndexes->replace(view->GetViewOrientation(),toolBox->computePlaneIndex()); // save PlaneIndex for this view and orientation TODO : improve this so that we do it only once for each orientation
             toolBox->currentBezierRoi = NULL;
         }
@@ -716,9 +716,22 @@ void bezierCurveToolBox::interpolateCurve()
 
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     
-    //ListRois list = getListOfView(currentView); // TODO : need to correct this thing !!
+    typedef QList<medSeriesOfRoi*> * ListOfSeriesOfRois;
     ListRois list;
-
+    ListOfSeriesOfRois listSeries = roiToolBox->getSeriesOfRoi()->value(currentView);
+    QList<QPair<unsigned int,unsigned int> > listInd = roiToolBox->getSelectedRois();
+    if (listInd.size()!=1) // This part of the code need improvement
+        return;
+    else
+    {
+        if (listInd[0].second!=-1)
+            return;
+        else
+        {
+            list = listSeries->at(listInd[0].first)->getIndices();
+        }
+    }
+    
     if (!list || list->isEmpty())
         return;
 
@@ -794,7 +807,7 @@ void bezierCurveToolBox::interpolateCurve()
         contourRep->SetClosedLoop(1); 
                 
         polyRoi->setIdSlice(i);
-        roiToolBox->addRoi(currentView,polyRoi);
+        roiToolBox->addRoi(currentView,polyRoi,"Polygon rois");
         connect(polyRoi,SIGNAL(selected()),this,SLOT(computeStatistics()));
     }
     currentView->update();

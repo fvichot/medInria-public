@@ -21,10 +21,7 @@
 class dtkAbstractView;
 class medRoiManagementToolBoxPrivate;
 class medWorkspace;
-<<<<<<< HEAD
-=======
 
->>>>>>> 9139638... Working on series of Roi display ...
 
 //! Roi Management toolbox
 class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medRoiManagementToolBox : public medToolBox
@@ -35,6 +32,7 @@ public:
 
     typedef QList<medAbstractRoi*> * ListRois;
     typedef QList<medSeriesOfRoi*> * ListOfSeriesOfRois;
+    typedef QPair<unsigned int,unsigned int> PairInd;
     
     medRoiManagementToolBox(QWidget *parent = 0);
     ~medRoiManagementToolBox();
@@ -42,6 +40,9 @@ public:
     QHash<medAbstractView*,ListOfSeriesOfRois> * getSeriesOfRoi();
     /*QList<medAbstractRoi*> getSelectedRois();*/
 
+    medAbstractView * getCurrentView();
+    QList<PairInd> getSelectedRois();
+    
 signals:
     
 public slots:
@@ -53,7 +54,8 @@ public slots:
     void saveCurrentPageIndex(int);
     void selectRois();
     void unselectRois();
-    void deleteRoi(unsigned int);
+    void deleteRoi(PairInd);
+    void seedMode(bool checked);
 
 private:
     medRoiManagementToolBoxPrivate *d;
@@ -63,12 +65,23 @@ class MEDVIEWSEGMENTATIONPLUGIN_EXPORT medSeriesOfRoi
 {
 public:
     typedef QList<medAbstractRoi*> * ListRois;
+    typedef QPair<unsigned int,unsigned int> PairInd;
     
     medSeriesOfRoi(QString name,ListRois rois,medRoiManagementToolBox * toolbox):name(name),rois(rois),toolbox(toolbox){};
     ~medSeriesOfRoi(){}; // delete everything
 
     QString getName(){return name;};
     ListRois getIndices(){return rois;};
+
+    void Off();
+    void On();
+
+    virtual QString info();
+    
+    void select();
+    void unselect();
+    void computeStatistics();
+
 private:
     QString name;
     ListRois rois; // indices of roi in Series
