@@ -39,16 +39,20 @@ public:
 public slots:
 
     void toggleWidget();
+    void cancel();
     void dataAdded(dtkAbstractData* data, int index);
 
 private:
     v3dView * _view;
     QPushButton * _modifyButton;
+    QPushButton * _cancelButton;
+    QSpinBox * _spinBox;
     vtkSmartPointer<vtkBoxWidget> _boxWidget;
     vtkSmartPointer<vtkMyCallback> _callback;
-    vtkSmartPointer<vtkMetaDataSet> _dataset;
+    vtkMetaDataSet * _dataset;
     bool _modifying;
 };
+
 
 
 

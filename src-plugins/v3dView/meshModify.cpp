@@ -31,7 +31,7 @@
 
 #include <vtkImageView3D.h>
 #include <vtkMetaDataSet.h>
-#include <vtkTransformPolyDataFilter.h>
+#include <vtkTransformFilter.h>
 #include <vtkMetaSurfaceMesh.h>
 
 class vtkMyCallback : public vtkCommand
@@ -44,7 +44,7 @@ public:
         vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
         vtkBoxWidget * widget = reinterpret_cast<vtkBoxWidget*>(caller);
         widget->GetTransform(t);
-        for(int i = 0; i < _dataset->GetNumberOfActors(); i++) {
+        for(unsigned int i = 0; i < _dataset->GetNumberOfActors(); i++) {
             _dataset->GetActor(i)->SetUserTransform(t);
         }
 
@@ -58,17 +58,29 @@ private:
 
 meshModifyToolBox::meshModifyToolBox(QWidget * parent)
     : medToolBox(parent)
+    , _boxWidget(0)
+    , _dataset(0)
+    , _modifying(true)
 {
     this->setTitle(tr("Mesh manipulation"));
+
     QWidget * w = new QWidget(this);
     this->addWidget(w);
     w->setLayout(new QVBoxLayout);
     _modifyButton = new QPushButton("Modify");
     _modifyButton->setEnabled(false);
-    _modifying = true;
     w->layout()->addWidget(_modifyButton);
 
+    _cancelButton = new QPushButton("Cancel");
+    _cancelButton->setEnabled(false);
+    w->layout()->addWidget(_cancelButton);
+
+    _spinBox = new QSpinBox();
+    _spinBox->setRange(0,10);
+    w->layout()->addWidget(_spinBox);
+
     connect(_modifyButton, SIGNAL(clicked()), this, SLOT(toggleWidget()));
+    connect(_cancelButton, SIGNAL(clicked()), this, SLOT(cancel()));
 }
 
 
@@ -95,6 +107,9 @@ QString meshModifyToolBox::description() const
 
 void meshModifyToolBox::update(dtkAbstractView * view)
 {
+    if (_view != view)
+        cancel();
+
     v3dView * view3d = qobject_cast<v3dView*>(view);
     if (! view3d) {
         _modifyButton->setEnabled(false);
@@ -108,15 +123,18 @@ void meshModifyToolBox::update(dtkAbstractView * view)
 
 void meshModifyToolBox::toggleWidget()
 {
-    dtkAbstractData * data = _view->dataInList(_view->currentLayer());
-    if ( ! data->identifier().contains("vtkDataMesh"))
+    dtkAbstractData * data = _view->dataInList(_spinBox->value());
+
+    if ( ! _dataset && ! data->identifier().contains("vtkDataMesh"))
         return;
 
-    _dataset = reinterpret_cast<vtkMetaDataSet*>(data->data());
-    if ( ! _dataset ) return;
+    if ( ! _dataset) {
+        _dataset = reinterpret_cast<vtkMetaDataSet*>(data->data());
+        if ( ! _dataset ) return;
+    }
 
-    vtkPolyData * polydata = dynamic_cast<vtkPolyData*>(_dataset->GetDataSet());
-    if ( ! polydata ) return;
+    vtkPointSet * pointset = dynamic_cast<vtkPointSet*>(_dataset->GetDataSet());
+    if ( ! pointset ) {_dataset = 0;return;}
 
     if (_modifying) {
         _boxWidget = vtkSmartPointer<vtkBoxWidget>::New();
@@ -124,26 +142,28 @@ void meshModifyToolBox::toggleWidget()
         _boxWidget->SetPlaceFactor(1.25);
 
         double bounds[6] = {}; // init to zero
-        polydata->GetBounds(bounds);
+        pointset->GetBounds(bounds);
         _boxWidget->PlaceWidget(bounds);
         _callback = vtkSmartPointer<vtkMyCallback>::New();
         _callback->setDataSet(_dataset);
         _boxWidget->AddObserver(vtkCommand::InteractionEvent, _callback);
 
         _boxWidget->On();
+        _spinBox->setEnabled(false);
+        _cancelButton->setEnabled(true);
 
     } else {
         vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
         _boxWidget->GetTransform(t);
 
-        vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter =
-          vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-        transformFilter->SetInput(polydata);
+        vtkSmartPointer<vtkTransformFilter> transformFilter =
+          vtkSmartPointer<vtkTransformFilter>::New();
+        transformFilter->SetInput(pointset);
         transformFilter->SetTransform(t);
         transformFilter->Update();
 
-        vtkPolyData * newPolydata = vtkPolyData::New();
-        newPolydata->DeepCopy(transformFilter->GetOutput());
+        vtkPointSet * newPointset = pointset->NewInstance();
+        newPointset->DeepCopy(transformFilter->GetOutput());
 
         dtkSmartPointer<dtkAbstractData> newData = dtkAbstractDataFactory::instance()->createSmartPointer("vtkDataMesh");
 
@@ -152,22 +172,36 @@ void meshModifyToolBox::toggleWidget()
         newData->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
 
         vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
-        smesh->SetDataSet(newPolydata);
+        smesh->SetDataSet(newPointset);
         newData->setData(smesh);
         medDataManager::instance()->importNonPersistent( newData.data() );
-//        _view->setSharedDataPointer(newData);
 
-        // reset transforms on the original
-        vtkSmartPointer<vtkTransform> t_id = vtkSmartPointer<vtkTransform>::New();
-        for(int i = 0; i < _dataset->GetNumberOfActors(); i++) {
-            _dataset->GetActor(i)->SetUserTransform(t_id);
-        }
-
-        _boxWidget->Off();
+        cancel();
     }
 
     _modifying = ! _modifying;
     _modifyButton->setText(_modifying ? "Modify" : "Save");
+}
+
+
+void meshModifyToolBox::cancel()
+{
+    if (_dataset) {
+        // reset transforms on the original
+        vtkSmartPointer<vtkTransform> t_id = vtkSmartPointer<vtkTransform>::New();
+        for(unsigned int i = 0; i < _dataset->GetNumberOfActors(); i++) {
+            _dataset->GetActor(i)->SetUserTransform(t_id);
+        }
+    }
+
+    if (_boxWidget)
+        _boxWidget->Off();
+
+    _modifying = true;
+    _modifyButton->setText("Modify");
+    _spinBox->setEnabled(true);
+    _cancelButton->setEnabled(false);
+    _dataset = 0;
 }
 
 
