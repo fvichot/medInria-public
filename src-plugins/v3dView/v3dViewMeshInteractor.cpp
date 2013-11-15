@@ -379,8 +379,12 @@ void v3dViewMeshInteractor::updatePipeline (unsigned int meshLayer)
     {
         if(vtkPointSet * pointSet = vtkPointSet::SafeDownCast (d->dataList[meshLayer]->GetDataSet()))
         {
-            d->actor2dList.append(d->view->view2d()->AddDataSet(pointSet));
-            d->actor3dList.append(d->view->view3d()->AddDataSet(pointSet));
+            vtkActor* actor = d->view->view2d()->AddDataSet(pointSet);
+            d->dataList[meshLayer]->AddActor(actor);
+            d->actor2dList.append(actor);
+            actor = d->view->view3d()->AddDataSet(pointSet);
+            d->dataList[meshLayer]->AddActor(actor);
+            d->actor3dList.append(actor);
 
             d->actorPropertyList.append(v3dViewMeshInteractorPrivate::PropertySmartPointer::New());
             d->actor2dList[meshLayer]->SetProperty( d->actorPropertyList[meshLayer] );

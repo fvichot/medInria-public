@@ -20,12 +20,15 @@
 #include <medVisualizationLayoutToolBox.h>
 #include <medSettingsManager.h>
 
+#include <medToolBoxFactory.h>
+
 class medVisualizationWorkspacePrivate
 {
 public:
     medVisualizationLayoutToolBox *layoutToolBox;
     medTimeLineToolBox *timeToolBox;
     medViewPropertiesToolBox *viewPropertiesToolBox;
+    medToolBox * meshModTB;
 };
 
 medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorkspace(parent), d(new medVisualizationWorkspacePrivate)
@@ -48,10 +51,12 @@ medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorks
 
     d->viewPropertiesToolBox = new medViewPropertiesToolBox(parent);
     d->timeToolBox           = new medTimeLineToolBox(parent);
+    d->meshModTB = medToolBoxFactory::instance()->createToolBox("meshModifyToolbox");
 
 
     this->addToolBox( d->viewPropertiesToolBox );
     this->addToolBox( d->timeToolBox );
+    this->addToolBox( d->meshModTB );
 
     connect ( this, SIGNAL(layoutModeChanged(const QString&)),
               d->timeToolBox, SLOT(onStopButton()));

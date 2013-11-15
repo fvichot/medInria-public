@@ -91,6 +91,7 @@ set(${PROJECT_NAME}_HEADERS_MOC
   v3dViewAnnotationInteractor.h
   ${${PROJECT_NAME}_TTK_DEPENDENT_HEADERS_MOC}
   v3dViewSHInteractor.h
+  meshModify.h
   )
 
 set(${PROJECT_NAME}_HEADERS
@@ -113,6 +114,7 @@ set(${PROJECT_NAME}_SOURCES
   annotations/vtkSeedPointHandle.cpp
   v3dViewSHInteractor.cpp
   ${${PROJECT_NAME}_TTK_DEPENDENT_SOURCES}
+  meshModify.cpp
   )
 
 
