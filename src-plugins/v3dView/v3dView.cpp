@@ -792,7 +792,8 @@ void v3dView::setSharedDataPointer ( dtkSmartPointer<dtkAbstractData> data )
 {
     if ( !data )
         return;
-     int layer = 0, imageLayer = 0;
+
+    int layer = 0, imageLayer = 0;
      dtkAbstractData * dataInLayer;
      while ( (dataInLayer = medAbstractView::dataInList( layer )) )
      {
@@ -888,6 +889,8 @@ void v3dView::setData ( dtkAbstractData *data, int layer )
 
     if ( !data )
         return;
+
+    qDebug() << "pweoripworipweirpweirp";
 
     if ( medAbstractView::isInList ( data, layer ) )
         return;

@@ -11,9 +11,16 @@
 
 =========================================================================*/
 
+
+#include <QDebug>
+
+#include <dtkCore/dtkAbstractData>
+#include <dtkCore/dtkAbstractDataFactory>
+
+#include <medMetaDataKeys.h>
 #include <meshModify.h>
 #include <medToolBoxFactory.h>
-#include <QDebug>
+#include <medDataManager.h>
 
 #include <vtkActor.h>
 #include <vtkBoxWidget.h>
@@ -25,6 +32,7 @@
 #include <vtkImageView3D.h>
 #include <vtkMetaDataSet.h>
 #include <vtkTransformPolyDataFilter.h>
+#include <vtkMetaSurfaceMesh.h>
 
 class vtkMyCallback : public vtkCommand
 {
@@ -37,7 +45,6 @@ public:
         vtkBoxWidget * widget = reinterpret_cast<vtkBoxWidget*>(caller);
         widget->GetTransform(t);
         for(int i = 0; i < _dataset->GetNumberOfActors(); i++) {
-            qDebug() << "actor" << i;
             _dataset->GetActor(i)->SetUserTransform(t);
         }
 
@@ -135,7 +142,28 @@ void meshModifyToolBox::toggleWidget()
         transformFilter->SetTransform(t);
         transformFilter->Update();
 
-        polydata->DeepCopy(transformFilter->GetOutput());
+        vtkPolyData * newPolydata = vtkPolyData::New();
+        newPolydata->DeepCopy(transformFilter->GetOutput());
+
+        dtkSmartPointer<dtkAbstractData> newData = dtkAbstractDataFactory::instance()->createSmartPointer("vtkDataMesh");
+
+        newData->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
+        newData->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
+        newData->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
+
+        vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
+        smesh->SetDataSet(newPolydata);
+        newData->setData(smesh);
+        medDataManager::instance()->importNonPersistent( newData.data() );
+//        _view->setSharedDataPointer(newData);
+
+        // reset transforms on the original
+        vtkSmartPointer<vtkTransform> t_id = vtkSmartPointer<vtkTransform>::New();
+        for(int i = 0; i < _dataset->GetNumberOfActors(); i++) {
+            _dataset->GetActor(i)->SetUserTransform(t_id);
+        }
+
+        _boxWidget->Off();
     }
 
     _modifying = ! _modifying;
