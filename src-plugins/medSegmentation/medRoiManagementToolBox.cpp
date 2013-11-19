@@ -35,7 +35,9 @@
 #include <vtkPointHandleRepresentation2D.h>
 #include <vtkProperty2D.h>
 #include <vtkSeedRepresentation.h>
+#include <vtkSeedWidget.h>
 #include <vtkHandleWidget.h>
+#include <seedPointRoi.h>
 
 class toolBoxObserver : public vtkCommand
 {

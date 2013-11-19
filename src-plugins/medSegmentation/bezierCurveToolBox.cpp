@@ -813,7 +813,7 @@ void bezierCurveToolBox::interpolateCurve()
     currentView->update();
 }
 
-void bezierCurveToolBox::generateBinaryImage()
+void bezierCurveToolBox::generateBinaryImage() // TODO : MAKE IT WORK WITH SERIES OF ROI CODE !! 
 {
     if (!currentView)
         return;
