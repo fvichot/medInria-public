@@ -79,8 +79,18 @@ meshModifyToolBox::meshModifyToolBox(QWidget * parent)
     _spinBox->setRange(0,10);
     w->layout()->addWidget(_spinBox);
 
+    _exportButton = new QPushButton("Export");
+    _exportButton->setEnabled(false);
+    w->layout()->addWidget(_exportButton);
+
+    _importButton = new QPushButton("Import");
+    _importButton->setEnabled(false);
+    w->layout()->addWidget(_importButton);
+
     connect(_modifyButton, SIGNAL(clicked()), this, SLOT(toggleWidget()));
     connect(_cancelButton, SIGNAL(clicked()), this, SLOT(cancel()));
+    connect(_exportButton, SIGNAL(clicked()), this, SLOT(exportTransform()));
+    connect(_importButton, SIGNAL(clicked()), this, SLOT(importTransform()));
 }
 
 
@@ -151,7 +161,8 @@ void meshModifyToolBox::toggleWidget()
         _boxWidget->On();
         _spinBox->setEnabled(false);
         _cancelButton->setEnabled(true);
-
+        _exportButton->setEnabled(true);
+        _importButton->setEnabled(true);
     } else {
         vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
         _boxWidget->GetTransform(t);
@@ -201,6 +212,8 @@ void meshModifyToolBox::cancel()
     _modifyButton->setText("Modify");
     _spinBox->setEnabled(true);
     _cancelButton->setEnabled(false);
+    _exportButton->setEnabled(false);
+    _importButton->setEnabled(false);
     _dataset = 0;
 }
 
@@ -208,5 +221,72 @@ void meshModifyToolBox::cancel()
 void meshModifyToolBox::dataAdded(dtkAbstractData * data, int index)
 {
     if (data->identifier().contains("vtkDataMesh"))
-    _modifyButton->setEnabled(true);
+        _modifyButton->setEnabled(true);
+}
+
+void meshModifyToolBox::exportTransform()
+{
+    if ( ! _boxWidget || ! _boxWidget->GetEnabled())
+        return;
+
+    vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
+    _boxWidget->GetTransform(t);
+
+    vtkSmartPointer<vtkMatrix4x4>  m = vtkSmartPointer<vtkMatrix4x4>::New();
+    m->DeepCopy(t->GetMatrix());
+
+    QByteArray matrixStr;
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            matrixStr += QByteArray::number(m->GetElement(i, j)) + "\t";
+        }
+        matrixStr += "\n";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(0, "Export the matrix file");
+    if (filePath.isEmpty())
+        return;
+
+    QFile f(filePath);
+    if ( ! f.open(QIODevice::WriteOnly)) {
+        qDebug() << "Can't open file" << filePath;
+        return;
+    }
+
+    f.write(matrixStr);
+    f.close();
+
+    qDebug() << "Done exporting tranform!";
+}
+
+void meshModifyToolBox::importTransform()
+{
+    QString filePath = QFileDialog::getOpenFileName(0, "Import the matrix file");
+    if (filePath.isEmpty())
+        return;
+
+    QFile f(filePath);
+    if ( ! f.open(QIODevice::ReadOnly)) {
+        qDebug() << "Can't open file" << filePath;
+        return;
+    }
+
+    QByteArray matrixStr = f.readAll();
+    f.close();
+
+    vtkSmartPointer<vtkMatrix4x4> m = vtkSmartPointer<vtkMatrix4x4>::New();
+    int i = 0, j = 0;
+    foreach(QByteArray line, matrixStr.split('\n')) {
+        foreach(QByteArray num, line.split('\t')) {
+            m->SetElement(i,j,num.toDouble());
+            j++;
+        }
+        i++;j = 0;
+    }
+
+    vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
+    t->SetMatrix(m);
+
+    _boxWidget->SetTransform(t);
+    _boxWidget->InvokeEvent(vtkCommand::InteractionEvent);
 }

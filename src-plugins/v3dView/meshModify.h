@@ -42,10 +42,15 @@ public slots:
     void cancel();
     void dataAdded(dtkAbstractData* data, int index);
 
+    void exportTransform();
+    void importTransform();
+
 private:
     v3dView * _view;
     QPushButton * _modifyButton;
     QPushButton * _cancelButton;
+    QPushButton * _exportButton;
+    QPushButton * _importButton;
     QSpinBox * _spinBox;
     vtkSmartPointer<vtkBoxWidget> _boxWidget;
     vtkSmartPointer<vtkMyCallback> _callback;
