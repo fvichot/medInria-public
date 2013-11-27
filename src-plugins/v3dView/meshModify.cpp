@@ -31,6 +31,7 @@
 
 #include <vtkImageView3D.h>
 #include <vtkMetaDataSet.h>
+#include <vtkMetaDataSetSequence.h>
 #include <vtkTransformFilter.h>
 #include <vtkMetaSurfaceMesh.h>
 
@@ -167,26 +168,60 @@ void meshModifyToolBox::toggleWidget()
         vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
         _boxWidget->GetTransform(t);
 
-        vtkSmartPointer<vtkTransformFilter> transformFilter =
-          vtkSmartPointer<vtkTransformFilter>::New();
-        transformFilter->SetInput(pointset);
-        transformFilter->SetTransform(t);
-        transformFilter->Update();
+        if (data->identifier() == "vtkDataMesh") {
+            vtkSmartPointer<vtkTransformFilter> transformFilter =
+                    vtkSmartPointer<vtkTransformFilter>::New();
+            transformFilter->SetInput(pointset);
+            transformFilter->SetTransform(t);
+            transformFilter->Update();
 
-        vtkPointSet * newPointset = pointset->NewInstance();
-        newPointset->DeepCopy(transformFilter->GetOutput());
+            vtkPointSet * newPointset = pointset->NewInstance();
+            newPointset->DeepCopy(transformFilter->GetOutput());
 
-        dtkSmartPointer<dtkAbstractData> newData = dtkAbstractDataFactory::instance()->createSmartPointer("vtkDataMesh");
+            dtkSmartPointer<dtkAbstractData> newData = dtkAbstractDataFactory::instance()->createSmartPointer("vtkDataMesh");
 
-        newData->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
-        newData->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
-        newData->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
+            newData->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
+            newData->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
+            newData->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
 
-        vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
-        smesh->SetDataSet(newPointset);
-        newData->setData(smesh);
-        medDataManager::instance()->importNonPersistent( newData.data() );
+            vtkMetaDataSet * dataset = _dataset->NewInstance();
+            dataset->SetDataSet(newPointset);
+            newData->setData(dataset);
+            medDataManager::instance()->importNonPersistent( newData.data() );
 
+        } else if (data->identifier() == "vtkDataMesh4D") {
+            vtkMetaDataSetSequence * seq = vtkMetaDataSetSequence::SafeDownCast(_dataset);
+            const std::vector<vtkMetaDataSet*> & datasetList = seq->GetMetaDataSetList();
+
+            dtkSmartPointer<dtkAbstractData> newData = dtkAbstractDataFactory::instance()->createSmartPointer("vtkDataMesh4D");
+            newData->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
+            newData->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
+            newData->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
+
+            vtkMetaDataSetSequence * newSeq = vtkMetaDataSetSequence::New();
+
+            vtkSmartPointer<vtkTransformFilter> transformFilter =
+                    vtkSmartPointer<vtkTransformFilter>::New();
+
+            foreach(vtkMetaDataSet * dataset, datasetList) {
+                vtkPointSet * pointset = vtkPointSet::SafeDownCast(dataset->GetDataSet());
+                transformFilter->SetInput(pointset);
+                transformFilter->SetTransform(t);
+                transformFilter->Update();
+
+                vtkPointSet * newPointset = pointset->NewInstance();
+                newPointset->DeepCopy(transformFilter->GetOutput());
+
+                vtkMetaDataSet * newDataset = dataset->NewInstance();
+                newDataset->SetDataSet(newPointset);
+                newDataset->SetTime(dataset->GetTime());
+
+                newSeq->AddMetaDataSet(newDataset);
+            }
+
+            newData->setData(newSeq);
+            medDataManager::instance()->importNonPersistent( newData.data() );
+        }
         cancel();
     }
 
