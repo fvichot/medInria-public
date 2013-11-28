@@ -15,188 +15,72 @@
 
 #include <QtCore/QObject>
 
-#include <dtkCore/dtkSmartPointer.h>
-
+#include "medGlobal.h"
 #include "medCoreExport.h"
 #include "medDataIndex.h"
 
-class dtkAbstractData;
-class dtkAbstractDataFactory;
-
+class medAbstractData;
 class medDataManagerPrivate;
-class medAbstractDbController;
 
-/**
- * This class is the global access point to data stored in the database.
- * It tries to use several database-controllers to provide/store data
- * Another role is to cache data to provide faster access (work in progress)
- */
 class MEDCORE_EXPORT medDataManager : public QObject
 {
     Q_OBJECT
 
 public:
-      static medDataManager *instance();
-      static void destroy();
+    static medDataManager* instance();
 
-    /**
-    * Ask the data-manager to provide the data belonging to this index using its registered controllers.
-    * @params const medDataIndex & index medDataIndex for data
-    * @return dtkAbstractData * the data
-    */
-    dtkSmartPointer<dtkAbstractData> data(const medDataIndex& index);
-    
-    bool setMetaData( const medDataIndex& index, const QString& key, const QString& value );
+    medAbstractData* data(const medDataIndex& index);
 
-    /**
-    * Use this function to insert data into the database,
-    * Do *not* use the concrete database controller implementation for it
-    * The data-manager will take over this task
-    * @params dtkSmartPointer<dtkAbstractData> & data
-    */
-    void import(dtkSmartPointer<dtkAbstractData> &data);
+    void import(medAbstractData* data);
+    void import(const QString& dataPath, bool indexWithoutCopying);
 
-    /**
-    * Import data into the db read from file
-    * @params const QString & file The file containing the data
-    * @params bool indexWithoutCopying true if the file must only be indexed by its current path,
-    * false if the file will be imported (copied or converted to the internal storage format)
-    */
-    void import(const QString& file,bool indexWithoutCopying);
+    void importNonPersistent(medAbstractData* data);
+    void importNonPersistent(const QString& dataPath);
 
-    /**
-    * Use this function to insert data into the non-persistent database,
-    * Do *not* use the concrete database controller implementation for it
-    * The data-manager will take over this task
-    * @params const dtkAbstractData & data
-    */
-    void importNonPersistent(dtkAbstractData *data);
+    void exportDataToFile(medAbstractData* data);
 
-    /**
-    * Use this function to insert data into the non-persistent database,
-    * Do *not* use the concrete database controller implementation for it
-    * The data-manager will take over this task
-    * @params const dtkAbstractData & data
-    * @params QString uuid Universally unique identifier associated with the data
-    */
+    bool updateData(const medDataIndex& index, medAbstractData* data);
+    bool updateMetadata( const medDataIndex& index, const QString& key, const QString& value );
+
+    void removeData(const medDataIndex& index);
+
+private:
     void importNonPersistent(dtkAbstractData *data, QString uuid);
 
-    /**
-    * Overload to insert data directly from a file into the no-persistent database
-    * @params QString file
-    */
-    void importNonPersistent(QString file);
-
-    /**
-    * Overload to insert data directly from a file into the no-persistent database
-    * @params QString file
-    * @params QString & uuid Universally unique identifier associated with the data
-    */
     void importNonPersistent(QString file, const QString &uuid);
 
-    /**
-    * Use this function to save data to a file.
-    * @params dtkAbstractData *data Pointer to some data to save
-    * @params const QString & filename The location in which the data will be stored in the file system
-    */
-    void exportDataToFile(dtkAbstractData *data);
-
-    /**
-    * Use this function to save all non-persistent data to the sql database.
-    * The list of non-persistent data will then be cleared, and any subsequent
-    * access to those data will trigger a reading from the database.
-    */
     void storeNonPersistentDataToDatabase();
 
-    /**
-     * Use this function to save a set of non-persistent data (e.g. from the same patient, study or series) to the sql database.
-     * The data is specified by its medDataIndex , it is then removed from the non persistent database
-     */
     void storeNonPersistentMultipleDataToDatabase( const medDataIndex &index );
 
-    /**
-     * Use this function to save one non-persistent data to the sql database.
-     * The data is specified by ots medDataIndex , it is then removed from the non persistent database
-     */
     void storeNonPersistentSingleDataToDatabase( const medDataIndex &index );
 
-    /**
-    * Returns the number of non-persistent data contained in the data manager
-    */
     int nonPersistentDataCount() const;
 
-    /**
-    * Clear the list of non-persistent data
-    */
     void clearNonPersistentData();
 
 
-    /** Remove an item or items from the database
-     *  Will remove a whole patient / study / series depending on the index.
-     */
-    void removeData(const medDataIndex& index);
 
-    /**
-     * Moves study and its series from one patient to another and returns the list of new indexes.
-     * Moves across different datasources are not supported.
-     * @params const medDataIndex & indexStudy The data index of the study to be moved
-     * @params const medDataIndex & toPatient The data index to move the study to.
-     */
     QList<medDataIndex> moveStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient);
 
-    /**
-     * Moves serie from one study to another and returns the new index of the serie.
-     * Moves across different datasources are not supported.
-     * @params const medDataIndex & indexSerie The data index of the serie to be moved
-     * @params const medDataIndex & toStudy The data index to move the serie to.
-     */    
     medDataIndex moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy);
 
 
-    /** return the DB controller for given data source. */
     medAbstractDbController *controllerForDataSource( int dataSource );
     const medAbstractDbController *controllerForDataSource( int dataSource ) const;
 
-    /** Return a list of available dataSource Ids.*/
     QList<int> dataSourceIds() const;
 
-    /**
-     * Check if the program was compiled using 32bit compiler
-     */
     static bool is32Bit();
 
-    /**
-    * Returns the memory usage of the current process in bytes.
-    * On linux, this refers to the virtual memory allocated by
-    * the process (the VIRT column in top).
-    * On windows, this refers to the size in bytes of the working
-    * set pages (the "Memory" column in the task manager).
-    * Code taken from mitk (bsd)
-    */
     static size_t getProcessMemoryUsage();
 
-    /**
-    * Returns the total size of physical memory in bytes
-    */
     static size_t getTotalSizeOfPhysicalRam();
 
-    /**
-    * Return the hard limit the process can allocate
-    * Result depends on the platform
-    * If this threshold is crossed the manager will not
-    * allocate memory to ensure system stability
-    */
     static quint64 getUpperMemoryThreshold();
 
-    /**
-    * Return the memory limit where the system should try to stay
-    * This ensures optimal memory usage to avoid paging
-    */
     static size_t getOptimalMemoryThreshold();
 
-    /**
-     * Clear all items stored in the data manager
-     */
     void clearCache();
    
 
@@ -241,49 +125,32 @@ public slots:
 
 protected:
      medDataManager();
-    ~medDataManager();
+     virtual ~medDataManager();
 
 
-    /**
-    * Compares the process memory usage with the upper threshold, frees memory to reach lower threshold
-    * @return bool success or failure
-    */
+
     bool manageMemoryUsage(const medDataIndex& index, medAbstractDbController* controller);
 
-    /**
-    * Helper for linux
-    */
+
     static int ReadStatmFromProcFS( int* size, int* res, int* shared, int* text, int* sharedLibs, int* stack, int* dirtyPages );
 
-    /** Remove all matching items from the cache. */
     void removeDataFromCache( const medDataIndex &index);
 
-    /**
-     * Print available memory
-     */
     void printMemoryStatus(size_t requiredMemoryInKb = 0);
 
-    /**
-    * Releases all own references to let all stored smartpointers get out of scope
-    * All remaining references will be restored (probably not thread safe)
-    * @return void
-    */
+
     bool tryFreeMemory(size_t memoryLimit);
     
-    /**
-    * Defines writers priorities
-    */
+
     void setWriterPriorities();
 
 protected slots:
 
     void exportDialog_updateSuffix(int index);
 
-protected:
-    static medDataManager *s_instance;
-
 private:
-    medDataManagerPrivate *d;
+    static medDataManager* s_instance;
+    medDataManagerPrivate* d;
 };
 
 

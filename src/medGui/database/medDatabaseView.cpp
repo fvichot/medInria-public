@@ -559,7 +559,7 @@ void medDatabaseView::onEditRequested(void)
             {
                 QVariant data = editDialog.value(label);
                 QVariant variant = item->attribute(i);
-                medDataManager::instance()->setMetaData(index,item->attribute(i).toString(),data.toString());
+                medDataManager::instance()->updateMetadataForIndex(index,item->attribute(i).toString(),data.toString());
                 i++;    
             }
         } 

@@ -98,6 +98,13 @@ QMutex medDataManagerPrivate::mutex;
 
 //-------------------------------------------------------------------------------------------------------
 
+/**
+ * \class medDataManager
+ * This class is the global access point to data stored in the database.
+ * It tries to use several database-controllers to provide/store data
+ * Another role is to cache data to provide faster access (work in progress)
+ */
+
 medDataManager *medDataManager::instance(void)
 {
     if(!s_instance)
@@ -107,7 +114,11 @@ medDataManager *medDataManager::instance(void)
 }
 
 //-------------------------------------------------------------------------------------------------------
-
+/**
+ * @brief medDataManager::data
+ * @param index
+ * @return
+ */
 dtkSmartPointer<dtkAbstractData> medDataManager::data(const medDataIndex& index)
 {
     dtkSmartPointer<dtkAbstractData>  dtkdata;
@@ -198,7 +209,7 @@ dtkSmartPointer<dtkAbstractData> medDataManager::data(const medDataIndex& index)
 
 //-------------------------------------------------------------------------------------------------------
 
-bool medDataManager::setMetaData( const medDataIndex& index, const QString& key, const QString& value )
+bool medDataManager::updateMetadataForIndex( const medDataIndex& index, const QString& key, const QString& value )
 {
     medAbstractDbController * dbc = controllerForDataSource( index.dataSourceId() );
 
@@ -245,16 +256,6 @@ medDataManager::~medDataManager(void)
     delete d;
 
     d = NULL;
-}
-
-//-------------------------------------------------------------------------------------------------------
-
-void medDataManager::destroy( void )
-{
-    if (s_instance) {
-        delete s_instance;
-        s_instance = 0;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------
@@ -546,10 +547,10 @@ void medDataManager::onNonPersistentDataImported(const medDataIndex &index, QStr
 
 //-------------------------------------------------------------------------------------------------------
 
-void medDataManager::importNonPersistent(QString file)
+void medDataManager::importNonPersistent(const QString & dataPath)
 {
     QString uuid = QUuid::createUuid().toString();
-    this->importNonPersistent (file, uuid);
+    this->importNonPersistent (dataPath, uuid);
 }
 
 //-------------------------------------------------------------------------------------------------------
@@ -781,7 +782,7 @@ size_t medDataManager::getOptimalMemoryThreshold()
 
 //-------------------------------------------------------------------------------------------------------
 
-void medDataManager::import( dtkSmartPointer<dtkAbstractData> &data )
+void medDataManager::import(medSmartPointer<medAbstractData> &data )
 {
     if (!data.data())
         return;
@@ -794,17 +795,17 @@ void medDataManager::import( dtkSmartPointer<dtkAbstractData> &data )
 
 //-------------------------------------------------------------------------------------------------------
 
-void medDataManager::import(const QString& file,bool indexWithoutCopying)
+void medDataManager::import(const QString& dataPath, bool indexWithoutCopying)
 {
     qDebug() << "DEBUG : entering medDataManager::import(const QString& file,bool indexWithoutCopying)";
 
-    if(file.isEmpty())
+    if(dataPath.isEmpty())
         return;
 
     medAbstractDbController* db = d->getDbController();
 
     if(db)
-        db->import(file,indexWithoutCopying);
+        db->import(dataPath,indexWithoutCopying);
 }
 
 //-------------------------------------------------------------------------------------------------------
