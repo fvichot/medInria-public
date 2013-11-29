@@ -15,9 +15,10 @@
 
 #include <QtCore/QObject>
 
-#include "medGlobal.h"
-#include "medCoreExport.h"
-#include "medDataIndex.h"
+#include <medCoreExport.h>
+#include <medDataFuture.h>
+#include <medDataIndex.h>
+#include <medGlobal.h>
 
 class medAbstractData;
 class medDataManagerPrivate;
@@ -29,20 +30,36 @@ class MEDCORE_EXPORT medDataManager : public QObject
 public:
     static medDataManager* instance();
 
-    medAbstractData* data(const medDataIndex& index);
+    medAbstractData* retrieveData(const medDataIndex& index);
 
-    void import(medAbstractData* data);
-    void import(const QString& dataPath, bool indexWithoutCopying);
+    medJobTracker importData(medAbstractData* data);
+    medJobTracker importFile(const QString& dataPath, bool indexWithoutCopying);
 
-    void importNonPersistent(medAbstractData* data);
-    void importNonPersistent(const QString& dataPath);
+    medJobTracker importDataNonPersistent(medAbstractData* data);
+    medJobTracker importFileNonPersistent(const QString& dataPath);
 
-    void exportDataToFile(medAbstractData* data);
+    medJobTracker exportData(medAbstractData* data);
+    medJobTracker exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
     bool updateData(const medDataIndex& index, medAbstractData* data);
-    bool updateMetadata( const medDataIndex& index, const QString& key, const QString& value );
+    bool updateMetadata(const medDataIndex& index, const QString& key, const QString& value);
 
-    void removeData(const medDataIndex& index);
+    medJobTracker removeData(const medDataIndex& index);
+
+signals:
+    void dataImported(const medDataIndex& index);
+    void dataUpdated(const medDataIndex& index);
+    void metadataUpdated(const medDataIndex& index, const QString& key, const QString& value);
+    void dataRemoved(const medDataIndex& index);
+
+private:
+     medDataManager();
+     virtual ~medDataManager();
+
+    static medDataManager* s_instance;
+    medDataManagerPrivate* d;
+};
+
 
 private:
     void importNonPersistent(dtkAbstractData *data, QString uuid);
@@ -152,5 +169,3 @@ private:
     static medDataManager* s_instance;
     medDataManagerPrivate* d;
 };
-
-
