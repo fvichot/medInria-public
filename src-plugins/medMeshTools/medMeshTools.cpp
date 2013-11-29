@@ -30,12 +30,13 @@
 #include <vtkTriangleFilter.h>
 #include <vtkSmartPointer.h>
 #include <vtkAlgorithmOutput.h>
+#include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
 
-//#include <vtkActor.h>
-//#include <vtkPolyDataMapper.h>
-//#include <vtkRenderWindowInteractor.h>
-//#include <vtkRenderWindow.h>
-//#include <vtkRenderer.h>
+#include <medDataManager.h>
+#include <medMetaDataKeys.h>
+
+
 
 // /////////////////////////////////////////////////////////////////
 // medMeshToolsPrivate
@@ -60,14 +61,35 @@ public:
 template <class PixelType> int medMeshToolsPrivate::update()
 {
     typedef itk::Image<PixelType, 3> ImageType;
+    
     typedef itk::ImageToVTKImageFilter<ImageType>  FilterType;
 
     typename FilterType::Pointer filter = FilterType::New();
 
-    ImageType * img = static_cast<ImageType *>(input->data());
-
+    typename ImageType::Pointer img = static_cast<ImageType *>(input->data());
     filter->SetInput(img);
     filter->Update();
+
+    // ----- Hack to keep the itkImages info (origin and orientation)
+    vtkMatrix4x4* matrix = vtkMatrix4x4::New();
+    matrix->Identity();
+    for (unsigned int x=0; x<3; x++) {
+        for (unsigned int y=0; y<3; y++) 
+        {
+            matrix->SetElement(x,y,img->GetDirection()[x][y]);
+        }
+    }
+    
+    typename itk::ImageBase<3>::PointType origin = img->GetOrigin();
+    double v_origin[4], v_origin2[4];
+    for (int i=0; i<3; i++)
+        v_origin[i] = origin[i];
+    v_origin[3] = 1.0;
+    matrix->MultiplyPoint (v_origin, v_origin2);
+    for (int i=0; i<3; i++)
+        matrix->SetElement (i, 3, v_origin[i]-v_origin2[i]);
+
+//------------------------------------------------------
 
     vtkImageData * vtkImage = filter->GetOutput();
 
@@ -107,16 +129,33 @@ template <class PixelType> int medMeshToolsPrivate::update()
         lastAlgo = contourSmoothed;
     }
 
-    vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
-    smesh->SetDataSet(lastAlgo->GetOutput());
 
+    vtkPolyData * polydata = lastAlgo->GetOutput();
+
+    //To get the itkImage infos back
+    vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
+    t->SetMatrix(matrix);
+
+    vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+    transformFilter->SetInput(polydata);
+    transformFilter->SetTransform(t);
+    transformFilter->Update();
+
+    polydata->DeepCopy(transformFilter->GetOutput());
+
+    vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
+    smesh->SetDataSet(polydata);
+    
     contour->Delete();
     contourTrian->Delete();
     if (contourDecimated) contourDecimated->Delete();
     if (contourSmoothed) contourSmoothed->Delete();
 
-    output->setData(smesh);
+    QString patientName = input->metadata ( medMetaDataKeys::PatientName.key() );
+    output->addMetaData ( medMetaDataKeys::PatientName.key(), patientName );
 
+    output->setData(smesh);
+    
     return EXIT_SUCCESS;
 }
 
@@ -148,7 +187,6 @@ void medMeshTools::setInput ( dtkAbstractData *data )
 {
     if ( !data )
         return;
-    
     d->output = dtkAbstractDataFactory::instance()->createSmartPointer ( "vtkDataMesh" );
     
     d->input = data;

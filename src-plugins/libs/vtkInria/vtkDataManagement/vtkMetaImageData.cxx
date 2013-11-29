@@ -34,7 +34,7 @@ vtkCxxRevisionMacro(vtkMetaImageData, "$Revision: 1370 $");
 #include <vtkJPEGReader.h>
 #include <vtkTIFFReader.h>
 #include <vtkMatrix4x4.h>
-  
+
 
 //----------------------------------------------------------------------------
 vtkMetaImageData::vtkMetaImageData()

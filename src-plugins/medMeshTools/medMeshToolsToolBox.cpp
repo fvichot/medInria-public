@@ -64,6 +64,7 @@ medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
     d->thresholdSlider = new medSliderSpinboxPair(displayWidget);
     d->thresholdSlider->setMinimum(0);
     d->thresholdSlider->setMaximum(2000);
+    d->thresholdSlider->setValue(1);
 
     QLabel * thresholdLabel = new QLabel("Threshold : ", displayWidget);
     QHBoxLayout *thresholdLayout = new QHBoxLayout;
@@ -181,7 +182,7 @@ void medMeshToolsToolBox::update(dtkAbstractView *view)
 
     if ((d->view) && (d->view != medView) )
     {
-        d->view->disconnect(this,0);
+        //d->view->disconnect(this,0);
         clear();
     }
 
@@ -230,7 +231,7 @@ void medMeshToolsToolBox::addMeshToView() {
     dtkAbstractData * data = d->process->output();
     ptr.takePointer(data);
 
-    ptr->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
+    //ptr->setMetaData(medMetaDataKeys::PatientName.key(), "John Doe");
     ptr->setMetaData(medMetaDataKeys::StudyDescription.key(), "generated");
     ptr->setMetaData(medMetaDataKeys::SeriesDescription.key(), "generated mesh");
     d->view->setSharedDataPointer(ptr);
