@@ -199,8 +199,8 @@ medSegmentationAbstractToolBox( parent)
     layout->addWidget(penMode_CheckBox);
 
     listOfCurvesForSagittal = new QList<QPair<vtkSmartPointer<vtkContourWidget>,unsigned int> >();
-    listOfCurvesForAxial = new QList<QPair<vtkSmartPointer<vtkContourWidget>,unsigned int> >(); 
-    listOfCurvesForCoronal = new QList<QPair<vtkSmartPointer<vtkContourWidget>,unsigned int> >(); 
+    listOfCurvesForAxial = new QList<QPair<vtkSmartPointer<vtkContourWidget>,unsigned int> >();
+    listOfCurvesForCoronal = new QList<QPair<vtkSmartPointer<vtkContourWidget>,unsigned int> >();
 
     observer = bezierObserver::New();
     observer->setToolBox(this);
@@ -214,7 +214,7 @@ medSegmentationAbstractToolBox( parent)
     connect(copy_shortcut,SIGNAL(activated()),this,SLOT(copyContours()));
     connect(paste_shortcut,SIGNAL(activated()),this,SLOT(pasteContours()));
 
-    ListOfContours = new QList<vtkSmartPointer<vtkPolyData>>();
+    ListOfContours = new QList<vtkSmartPointer<vtkPolyData> >();
 
     propagate = new QPushButton("Propagate",this);
     interpolate = new QPushButton("Interpolate",this);

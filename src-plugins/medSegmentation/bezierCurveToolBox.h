@@ -138,7 +138,7 @@ private:
     vtkSmartPointer<vtkContourWidget> currentContour;
     vtkSmartPointer<vtkBalloonWidget> currentBalloon;
 
-    QList<vtkSmartPointer<vtkPolyData>> * ListOfContours; // buffer for copy/paste
+    QList<vtkSmartPointer<vtkPolyData> > * ListOfContours; // buffer for copy/paste
 
     int currentOrientation;
     unsigned int currentSlice;
