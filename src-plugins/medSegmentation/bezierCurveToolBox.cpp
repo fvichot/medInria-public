@@ -164,7 +164,7 @@ void contourWidgetObserver::Execute ( vtkObject *caller, unsigned long event, vo
             if (!toolBox->viewsPlaneIndex.contains(toolBox->currentView))
             {
                 QList<int> * planeIndexes=new QList<int>();
-                planeIndexes->reserve(3);
+                for(int i=0;i<3;i++){planeIndexes->append(0);}; // fill the list with 0;
                 toolBox->viewsPlaneIndex.insert(toolBox->currentView,planeIndexes);
             }
 
