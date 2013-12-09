@@ -978,8 +978,5 @@ void AlgorithmPaintToolbox::updateMouseInteraction() //Apply the current interac
     }
 }
 
-            {
-                qDebug() << "direction(j,i) : " << direction(j,i);
-            }
 } // namespace mseg
 
