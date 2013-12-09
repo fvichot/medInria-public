@@ -33,6 +33,7 @@
 #include <vtkOrientedGlyphFocalPlaneContourRepresentation.h>
 #include <vector>
 #include <vtkConstantBalloonWidget.h>
+#include <vtkPolygon.h>
 
 #include <itkImage.h>
 #include <medAbstractRoi.h>

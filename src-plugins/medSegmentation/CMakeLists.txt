@@ -40,6 +40,9 @@ include(dtkPlugin)
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
+find_package(VTK REQUIRED)
+include(${VTK_USE_FILE})
+
 ## #################################################################
 ## Input
 ## #################################################################
@@ -81,6 +84,7 @@ add_library(${PROJECT_NAME} SHARED
 
 target_link_libraries(${PROJECT_NAME}
   ${QT_LIBRARIES}
+  ${VTK_LIBRARIES}
   dtkCore dtkLog
   medCore
   medGui

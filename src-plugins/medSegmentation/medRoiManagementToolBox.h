@@ -21,6 +21,7 @@
 class dtkAbstractView;
 class medRoiManagementToolBoxPrivate;
 class medWorkspace;
+class medSeriesOfRoi;
 
 
 //! Roi Management toolbox
