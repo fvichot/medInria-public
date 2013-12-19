@@ -407,7 +407,7 @@ void medRoiManagementToolBox::unselectRois()
         else 
             continue;
         
-    d->currentView->update();
+    //d->currentView->update();
     d->roisSelected.clear();
 }
 
