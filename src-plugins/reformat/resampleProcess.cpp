@@ -23,6 +23,8 @@ public:
     dtkSmartPointer <dtkAbstractData> input;
     dtkSmartPointer <dtkAbstractData> output;
     int interpolator;
+    int dimX,dimY,dimZ;
+    double spacingX,spacingY,spacingZ;
 };
 
 // /////////////////////////////////////////////////////////////////
@@ -30,6 +32,12 @@ public:
 // /////////////////////////////////////////////////////////////////
 resampleProcess::resampleProcess(void) : dtkAbstractProcess(), d(new resampleProcessPrivate(this))
 {
+    d->dimX=0;
+    d->dimY=0;
+    d->dimZ=0;
+    d->spacingX=0;
+    d->spacingY=0;
+    d->spacingZ= 0;
 }
 
 resampleProcess::~resampleProcess(void)
@@ -54,7 +62,27 @@ void resampleProcess::setInput ( dtkAbstractData *data )
 
 void resampleProcess::setParameter ( double data, int channel)
 {
-
+    switch (channel)
+    {
+    case 0:
+        d->dimX = (int)data;
+        break;
+    case 1:
+        d->dimY = (int)data;
+        break;
+    case 2:
+        d->dimZ = (int)data;
+        break;
+    case 3:
+        d->spacingX = data;
+        break;
+    case 4:
+        d->spacingY = data;
+        break;
+    case 5:
+        d->spacingZ = data;
+        break;
+    }
 }
 
 int resampleProcess::update ( void )
@@ -152,13 +180,13 @@ int resampleProcess::update ( void )
 template <class ImageType> void resampleProcess::resample(const char *str)
 {
     typename ImageType::Pointer inputImage =dynamic_cast<ImageType*>((itk::Object*)(d->input->data()));
-
-    typedef itk::ResampleImageFilter<ImageType, ImageType> ResampleFilterType;
-    typedef itk::IdentityTransform<double,3> TransformType; //TODO : 3 -> ImageType ::Dimension
     
-    typedef itk::BSplineInterpolateImageFunction<ImageType, double, double> InterpolatorType; // by default
-    InterpolatorType::Pointer interpolator = InterpolatorType::New();
-    interpolator->SetSplineOrder(3);
+    typedef typename itk::ResampleImageFilter<ImageType, ImageType,double> ResampleFilterType;
+    
+    //typedef typename itk::IdentityTransform<double,3> TransformType; 
+    //typedef typename itk::BSplineInterpolateImageFunction<ImageType, double, double> InterpolatorType; // by default
+    //InterpolatorType::Pointer interpolator = InterpolatorType::New();
+    //interpolator->SetSplineOrder(3);
 
     //switch (d->interpolator) // choose between different type of interpolator via toolbox // set the d->interpolator via setParameter
     //{
@@ -172,46 +200,49 @@ template <class ImageType> void resampleProcess::resample(const char *str)
     //    typedef itk::BSplineInterpolateImageFunction<ImageType, double, double> Interpolator;
     //}
 
-    TransformType::Pointer transform = TransformType::New();
-    transform->SetIdentity();
+    //TransformType::Pointer transform = TransformType::New();
+    /*transform->SetIdentity();*/
 
     ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
-   // resampleFilter->SetTransform(transform);
+    //resampleFilter->SetTransform(transform);
   //  resampleFilter->SetInterpolator(interpolator);
-
-    //// TODO finish 
-    //unsigned int nNewWidth = 1;/*atoi(argv[3]);*/
-    //unsigned int nNewHeight =1;/* atoi(argv[4]);*/
- 
+    
     //// Fetch original image size.
-    //const ImageType::RegionType& inputRegion = inputImage->GetLargestPossibleRegion();
-    //const ImageType::SizeType& vnInputSize = inputRegion.GetSize();
-    //unsigned int nOldWidth = vnInputSize[0];
-    //unsigned int nOldHeight = vnInputSize[1];
+    const ImageType::RegionType& inputRegion = inputImage->GetLargestPossibleRegion();
+    const ImageType::SizeType& vnInputSize = inputRegion.GetSize();
+    unsigned int nOldX = vnInputSize[0];
+    unsigned int nOldY = vnInputSize[1];
+    unsigned int nOldZ = vnInputSize[2];
 
     //// Fetch original image spacing.
-    //const ImageType::SpacingType& vfInputSpacing = inputImage->GetSpacing();
-
-    //double vfOutputSpacing[2];
-    //vfOutputSpacing[0] = vfInputSpacing[0] * (double) nOldWidth / (double) nNewWidth;
-    //vfOutputSpacing[1] = vfInputSpacing[1] * (double) nOldHeight / (double) nNewHeight;
-
-    //// Set the output spacing. If you comment out the following line, the original
-    //// image will be simply put in the upper left corner of the new image without
-    //// any scaling.
-    //resampleFilter->SetOutputSpacing(vfOutputSpacing);
-
-    //// Set the output size as specified on the command line.
-
-    //itk::Size<3> vnOutputSize = { {nNewWidth, nNewHeight,1} };
-    //resampleFilter->SetSize(vnOutputSize);
-
-    //// Specify the input.
-
-    //resampleFilter->SetInput(inputImage);
-
-    //d->output = dtkAbstractDataFactory::instance()->createSmartPointer(str);
-    //d->output->setData(resampleFilter->GetOutput());
+    const ImageType::SpacingType& vfInputSpacing = inputImage->GetSpacing();
+    double vfOutputSpacing[3]={d->spacingX,d->spacingY,d->spacingZ};
+    if (d->dimX || d->dimY || d->dimZ)
+    {
+        vfOutputSpacing[0] = vfInputSpacing[0] * (double) nOldX / (double) d->dimX;
+        vfOutputSpacing[1] = vfInputSpacing[1] * (double) nOldY / (double) d->dimY;
+        vfOutputSpacing[2] = vfInputSpacing[2] * (double) nOldZ / (double) d->dimZ;
+    }
+    else
+    {
+        d->dimX =  floor((vfInputSpacing[0] * (double) nOldX / (double) vfOutputSpacing[0]) +0.5);
+        qDebug () << "d->dimX : " << nOldX << " " << d->dimX;
+        d->dimY =  floor((vfInputSpacing[1] * (double) nOldY / (double) vfOutputSpacing[1]) +0.5);
+        qDebug () << "d->dimY : "  << nOldY << " " << d->dimY;
+        d->dimZ =  floor((vfInputSpacing[2] * (double) nOldZ / (double) vfOutputSpacing[2]) +0.5);
+        qDebug () << "d->dimZ : "  << nOldZ << " " << d->dimZ;
+    }
+    
+    typename ImageType::SizeType vnOutputSize = {d->dimX,d->dimY,d->dimZ};
+    
+    resampleFilter->SetInput(inputImage);
+    resampleFilter->SetSize(vnOutputSize);
+    resampleFilter->SetOutputSpacing(vfOutputSpacing);
+    resampleFilter->SetOutputOrigin( inputImage->GetOrigin() );
+    resampleFilter->SetOutputDirection(inputImage->GetDirection() );
+    resampleFilter->UpdateLargestPossibleRegion();
+    d->output = dtkAbstractDataFactory::instance()->createSmartPointer(str);
+    d->output->setData(resampleFilter->GetOutput());
 }
 
 dtkAbstractData * resampleProcess::output ( void )

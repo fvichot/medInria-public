@@ -28,7 +28,7 @@ public:
     QLabel * dimensions, * spacing;
     QRadioButton * bySpacing, * byDimension;
     QLabel *spacingXLab,*spacingYLab,*spacingZLab;
-    QSpinBox * spacingX,* spacingY,* spacingZ;
+    QDoubleSpinBox * spacingX,* spacingY,* spacingZ;
     QLabel *dimXLab,*dimYLab,*dimZLab;
     QSpinBox * dimX,* dimY,* dimZ;
     QPushButton * resample;
@@ -69,25 +69,28 @@ resampleToolBox::resampleToolBox (QWidget *parent) : medToolBox (parent), d(new 
     QHBoxLayout * spacingSpinBoxLayout = new QHBoxLayout(resampleToolBoxBody);
     d->spacingXLab = new QLabel("spacingX : ");
     d->spacingXLab->hide();
-    d->spacingX = new QSpinBox(resampleToolBoxBody);
+    d->spacingX = new QDoubleSpinBox(resampleToolBoxBody);
     d->spacingX->setRange(0,10000);
     d->spacingX->setSuffix(" mm");
+    d->spacingX->setSingleStep(0.1f);
     d->spacingX->hide();
     spacingSpinBoxLayout->addWidget(d->spacingXLab);
     spacingSpinBoxLayout->addWidget(d->spacingX);
     d->spacingYLab = new QLabel("spacingY : ");
     d->spacingYLab->hide();
-    d->spacingY = new QSpinBox(resampleToolBoxBody);
+    d->spacingY = new QDoubleSpinBox(resampleToolBoxBody);
     d->spacingY->setRange(0,10000);
     d->spacingY->setSuffix(" mm");
+    d->spacingY->setSingleStep(0.1f);
     d->spacingY->hide();
     spacingSpinBoxLayout->addWidget(d->spacingYLab);
     spacingSpinBoxLayout->addWidget(d->spacingY);
     d->spacingZLab = new QLabel("spacingZ : ");
     d->spacingZLab->hide();
-    d->spacingZ = new QSpinBox(resampleToolBoxBody);
+    d->spacingZ = new QDoubleSpinBox(resampleToolBoxBody);
     d->spacingZ->setRange(0,10000);
     d->spacingZ->setSuffix(" mm");
+    d->spacingZ->setSingleStep(0.1f);
     d->spacingZ->hide();
     spacingSpinBoxLayout->addWidget(d->spacingZLab);
     spacingSpinBoxLayout->addWidget(d->spacingZ);
@@ -218,20 +221,35 @@ void resampleToolBox::hideShowSpinBoxes()
 
 void resampleToolBox::startResampling()
 {
-    if (d->bySpacing->isChecked())
+    if (d->byDimension->isChecked())
     {
         d->resample_p->setParameter((double)(d->dimX->value()),0);
-        d->resample_p->setParameter((double)(d->dimY->value()),0);
-        d->resample_p->setParameter((double)(d->dimZ->value()),0);
+        d->resample_p->setParameter((double)(d->dimY->value()),1);
+        d->resample_p->setParameter((double)(d->dimZ->value()),2);
     }
     else
     {
-        d->resample_p->setParameter((double)(d->spacingX->value()),0);
-        d->resample_p->setParameter((double)(d->spacingY->value()),0);
-        d->resample_p->setParameter((double)(d->spacingZ->value()),0);
+        d->resample_p->setParameter((double)(d->spacingX->value()),3);
+        d->resample_p->setParameter((double)(d->spacingY->value()),4);
+        d->resample_p->setParameter((double)(d->spacingZ->value()),5);
     }
 
     dtkAbstractData *currentData = reinterpret_cast< dtkAbstractData * >( d->currentView->data() );
     d->resample_p->setInput(currentData);
     d->resample_p->update();
+    dtkSmartPointer<dtkAbstractData> output(d->resample_p->output());
+
+    foreach(QString metaData, currentData->metaDataList())
+        output->addMetaData(metaData,currentData->metaDataValues(metaData));
+
+    foreach(QString property,currentData->propertyList())
+        output->addProperty(property,currentData->propertyValues(property));
+    QString newDescription = "resampled";
+    output->setMetaData(medMetaDataKeys::SeriesDescription.key(), newDescription);
+    
+    QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
+    output->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
+
+    medDataManager::instance()->importNonPersistent(output);
+    
 }
