@@ -43,7 +43,8 @@ set(${PROJECT_NAME}_HEADERS_MOC
   reformatWorkspace.h
   reformatToolBox.h
   resampleToolBox.h
-  resampleProcess.h)
+  resampleProcess.h
+  medReformatViewer.h)
 
 set(${PROJECT_NAME}_HEADERS
   ${${PROJECT_NAME}_HEADERS_MOC})
@@ -53,7 +54,8 @@ set(${PROJECT_NAME}_SOURCES
   reformatWorkspace.cpp
   reformatToolBox.cpp
   resampleToolBox.cpp
-  resampleProcess.cpp)
+  resampleProcess.cpp
+  medReformatViewer.cpp)
 
 ## #################################################################
 ## Build rules
@@ -73,6 +75,7 @@ target_link_libraries(${PROJECT_NAME}
   medCore
   medGui
   ITKCommon
+  QVTK
   )
 
 

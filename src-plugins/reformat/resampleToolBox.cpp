@@ -32,13 +32,6 @@ public:
     QLabel *dimXLab,*dimYLab,*dimZLab;
     QSpinBox * dimX,* dimY,* dimZ;
     QPushButton * resample;
-
-    /*QPushButton *runFlowQ;
-    QPushButton *openDICOM;
-    QPushButton *doSegmentation;
-    dtkSmartPointer <dtkAbstractData> dataBMode;
-    dtkSmartPointer <dtkAbstractData> dataDoppler;*/
-
 };
 resampleToolBox::resampleToolBox (QWidget *parent) : medToolBox (parent), d(new resampleToolBoxPrivate)
 {
@@ -47,20 +40,10 @@ resampleToolBox::resampleToolBox (QWidget *parent) : medToolBox (parent), d(new 
     this->setAboutPluginButton(this->plugin());
     // Fill the toolBox
     QWidget *resampleToolBoxBody = new QWidget(this);
-    //d->runFlowQ = new QPushButton("Run flow computation", resampleToolBoxBody);
-    //d->runFlowQ->setDisabled(true);
-    //d->openDICOM = new QPushButton("Open DICOM", resampleToolBoxBody);
-    //d->openDICOM->setEnabled(true);
 
-    //d->doSegmentation =new QPushButton("Segment ROI", resampleToolBoxBody);
-    //d->runFlowQ->setDisabled(true);
-
-    /*d->dimensions = new QLabel("Dimensions : ",resampleToolBoxBody);
-    d->spacing = new QLabel("Spacing : ",resampleToolBoxBody);*/
     d->resample = new QPushButton("Resample image",resampleToolBoxBody);
     QVBoxLayout *resampleToolBoxLayout =  new QVBoxLayout(resampleToolBoxBody);
-    /*resampleToolBoxLayout->addWidget(d->dimensions);
-    resampleToolBoxLayout->addWidget(d->spacing);*/
+
     QHBoxLayout * radioButtonLayout = new QHBoxLayout(resampleToolBoxBody);
     d->bySpacing = new QRadioButton("Spacing",resampleToolBoxBody);
     d->byDimension = new QRadioButton("Dimension",resampleToolBoxBody);
@@ -123,9 +106,6 @@ resampleToolBox::resampleToolBox (QWidget *parent) : medToolBox (parent), d(new 
     resampleToolBoxLayout->addLayout(spacingSpinBoxLayout);
     resampleToolBoxLayout->addLayout(dimSpinBoxLayout);
     resampleToolBoxLayout->addWidget(d->resample);
-    //resampleToolBoxLayout->addWidget(d->runFlowQ);
-    //resampleToolBoxLayout->addWidget(d->openDICOM);
-    //resampleToolBoxLayout->addWidget(d->doSegmentation);
     resampleToolBoxBody->setLayout(resampleToolBoxLayout);
     this->addWidget(resampleToolBoxBody);
 
@@ -184,10 +164,6 @@ void resampleToolBox::displayInfoOnCurrentView()
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(d->currentView->backend())->view2D;
     double* spacing = view2d->GetInput()->GetSpacing();
     int* dimensions = view2d->GetInput()->GetDimensions();
-
-    //d->dimensions->setText("Dimensions : " + QString::number(dimensions[0]) + " " + QString::number(dimensions[1]) + " " + QString::number(dimensions[2]));
-    //// TODO : dimensions does not work for godin image .... I dont know why
-    //d->spacing->setText("Spacing : " + QString::number(spacing[0]) + " " + QString::number(spacing[1]) + " " + QString::number(spacing[2]));
 
     d->dimX->setValue(dimensions[0]);
     d->dimY->setValue(dimensions[1]);

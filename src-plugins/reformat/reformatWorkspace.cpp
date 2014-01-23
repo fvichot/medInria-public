@@ -53,18 +53,16 @@ reformatWorkspace::reformatWorkspace(QWidget *parent) : medWorkspace(parent), d(
         toolboxNames.move(toolboxNames.indexOf("medViewPropertiesToolBox"),0);
     }
 
-    toolboxNames.append("reformatToolBox");
+    //toolboxNames.append("reformatToolBox");
     toolboxNames.append("resampleToolBox");
     foreach(QString toolbox, toolboxNames)
     {
        addToolBox( medToolBoxFactory::instance()->createToolBox(toolbox, parent) );
     }
 
-    /*reformatToolBox * reformatTb = new reformatToolBox(;
-    resampleToolBox * resampleTb = new resampleToolBox();
-
+    reformatToolBox * reformatTb = new reformatToolBox();
+    reformatTb->setWorkspace(this);
     addToolBox(reformatTb);
-    addToolBox(resampleTb);*/
 }
 
 reformatWorkspace::~reformatWorkspace()

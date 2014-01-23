@@ -2,6 +2,7 @@
 
 #include <reformatPluginExport.h>
 #include <medToolBox.h>
+#include <medWorkspace.h>
 
 class reformatToolBoxPrivate;
 
@@ -13,10 +14,12 @@ public:
     ~reformatToolBox();
     static bool registered();
     dtkPlugin* plugin();
+    void setWorkspace(medWorkspace * workspace);
 
 private:
     reformatToolBoxPrivate *d;
 
 public slots:
-    void startReformat();
+    void startReformat(bool);
+    void update(dtkAbstractView* view);
 };
