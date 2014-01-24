@@ -37,6 +37,8 @@ public:
 
     static bool registered();
 
+    void showViewPropertiesToolBox(bool val);
+
     
 private:
     reformatWorkspacePrivate *d;

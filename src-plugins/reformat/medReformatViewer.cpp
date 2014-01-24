@@ -90,6 +90,7 @@ public:
             // Although the return value is not used, we keep the get calls
             // in case they had side-effects
             rep->GetResliceCursorActor()->GetCursorAlgorithm()->GetResliceCursor();
+            
             for (int i = 0; i < 3; i++)
             {
                 vtkPlaneSource *ps = static_cast< vtkPlaneSource * >(
@@ -248,6 +249,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     riw[0]->GetResliceCursorWidget()->ResetResliceCursor();
     riw[1]->GetResliceCursorWidget()->ResetResliceCursor();
     riw[2]->GetResliceCursorWidget()->ResetResliceCursor();
+    
     views[0]->show();
     views[1]->show();
     views[2]->show();

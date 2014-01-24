@@ -37,6 +37,7 @@ static QString s_description()
 class reformatWorkspacePrivate
 {
 public:
+    medToolBox * viewPropertiesToolBox;
 };
 
 // /////////////////////////////////////////////////////////////////
@@ -57,7 +58,13 @@ reformatWorkspace::reformatWorkspace(QWidget *parent) : medWorkspace(parent), d(
     toolboxNames.append("resampleToolBox");
     foreach(QString toolbox, toolboxNames)
     {
-       addToolBox( medToolBoxFactory::instance()->createToolBox(toolbox, parent) );
+        if (toolbox=="medViewPropertiesToolBox")
+        {
+            d->viewPropertiesToolBox = medToolBoxFactory::instance()->createToolBox(toolbox, parent);
+            addToolBox(d->viewPropertiesToolBox);
+        }
+        else
+            addToolBox( medToolBoxFactory::instance()->createToolBox(toolbox, parent) );
     }
 
     reformatToolBox * reformatTb = new reformatToolBox();
@@ -103,4 +110,10 @@ bool reformatWorkspace::registered()
             (s_identifier(), "Reformat/Resample", s_description());
 }
 
-
+void reformatWorkspace::showViewPropertiesToolBox(bool val)
+{
+    if (val)
+        d->viewPropertiesToolBox->show();
+    else
+        d->viewPropertiesToolBox->hide();
+}

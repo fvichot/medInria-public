@@ -1,4 +1,5 @@
 #include "reformatToolBox.h"
+#include <reformatWorkspace.h>
 #include <QWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -85,7 +86,6 @@ void reformatToolBox::startReformat(bool val)
             //d->workspace->stackedViewContainers()->hideTabBar();
             connect(d->orthogonalAxes,SIGNAL(checked(bool)),d->reformatViewer,SLOT(orthogonalAxisModeEnabled(bool)));
         }
-
     }
     else
     {
@@ -93,6 +93,7 @@ void reformatToolBox::startReformat(bool val)
         d->orthogonalAxes->setEnabled(false);
         // d->workspace->stackedViewContainers()->show // TODO: go get commit in varSegITK4 branch for showTabBar() function
         d->workspace->stackedViewContainers()->unlockTabs();
+        d->workspace->setCurrentViewContainer("Reformat/Resample");
         d->workspace->stackedViewContainers()->removeContainer("Reformat");
         disconnect(d->reformatViewer);
         delete d->reformatViewer;        
@@ -105,6 +106,7 @@ void reformatToolBox::startReformat(bool val)
 void reformatToolBox::setWorkspace(medWorkspace * workspace)
 {
     d->workspace = workspace;
+    connect(d->workspace->stackedViewContainers(),SIGNAL(currentChanged(const QString&)),this,SLOT(actOnContainerChange(const QString&)));
 }
 
 void reformatToolBox::update(dtkAbstractView* view)
@@ -118,4 +120,14 @@ void reformatToolBox::update(dtkAbstractView* view)
     {
 
     }
+}
+
+void reformatToolBox::actOnContainerChange(const QString & name)
+{
+    if (!qobject_cast<reformatWorkspace*>(d->workspace))
+        return;
+    if (name == "Reformat")
+        qobject_cast<reformatWorkspace*>(d->workspace)->showViewPropertiesToolBox(false);
+    else
+        qobject_cast<reformatWorkspace*>(d->workspace)->showViewPropertiesToolBox(true);
 }
