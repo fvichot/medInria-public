@@ -203,19 +203,19 @@ template <class ImageType> void resampleProcess::resample(const char *str)
     //TransformType::Pointer transform = TransformType::New();
     /*transform->SetIdentity();*/
 
-    ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
+    typename ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
     //resampleFilter->SetTransform(transform);
   //  resampleFilter->SetInterpolator(interpolator);
     
     //// Fetch original image size.
-    const ImageType::RegionType& inputRegion = inputImage->GetLargestPossibleRegion();
-    const ImageType::SizeType& vnInputSize = inputRegion.GetSize();
+    const typename ImageType::RegionType& inputRegion = inputImage->GetLargestPossibleRegion();
+    const typename ImageType::SizeType& vnInputSize = inputRegion.GetSize();
     unsigned int nOldX = vnInputSize[0];
     unsigned int nOldY = vnInputSize[1];
     unsigned int nOldZ = vnInputSize[2];
 
     //// Fetch original image spacing.
-    const ImageType::SpacingType& vfInputSpacing = inputImage->GetSpacing();
+    const typename ImageType::SpacingType& vfInputSpacing = inputImage->GetSpacing();
     double vfOutputSpacing[3]={d->spacingX,d->spacingY,d->spacingZ};
     if (d->dimX || d->dimY || d->dimZ)
     {
