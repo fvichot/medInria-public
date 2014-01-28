@@ -20,8 +20,9 @@ public:
 
 public slots:
 
-  virtual void resliceMode(int);
+  //virtual void resliceMode(int);
   virtual void thickMode(int);
+  virtual void blendMode(int);
   virtual void SetBlendModeToMaxIP();
   virtual void SetBlendModeToMinIP();
   virtual void SetBlendModeToMeanIP();
@@ -33,6 +34,8 @@ public slots:
   //void setView(medAbstractView * view){_view = view;};
 
   void orthogonalAxisModeEnabled(bool);
+  void saveImage();
+  void thickSlabChanged(int);
 
 
 protected:

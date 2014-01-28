@@ -23,4 +23,7 @@ public slots:
     void startReformat(bool);
     void update(dtkAbstractView* view);
     void actOnContainerChange(const QString&);
+    void propagateThickModeActivated();
+    void propagateBlendModeChosen();
 };
+

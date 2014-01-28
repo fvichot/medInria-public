@@ -144,10 +144,10 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     views[3] = new QVTKWidget(widgetbody);
     views[3]->setSizePolicy ( QSizePolicy::Minimum, QSizePolicy::Minimum );
     QGridLayout * gridLayout = new QGridLayout(this);
-    gridLayout->addWidget(views[0],0,0);
-    gridLayout->addWidget(views[1],0,1);
-    gridLayout->addWidget(views[2],1,0);
-    gridLayout->addWidget(views[3],1,1);
+    gridLayout->addWidget(views[2],0,0);
+    gridLayout->addWidget(views[3],0,1);
+    gridLayout->addWidget(views[1],1,0);
+    gridLayout->addWidget(views[0],1,1);
 
     gridLayout->setColumnStretch ( 0, 0 );
     gridLayout->setColumnStretch ( 1, 0 );
@@ -272,26 +272,32 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
 };
 
 
-void medReformatViewer::resliceMode(int mode)
-{
-    //this->ui->thickModeCheckBox->setEnabled(mode ? 1 : 0);
-    //this->ui->blendModeGroupBox->setEnabled(mode ? 1 : 0);
+//void medReformatViewer::resliceMode(int mode)
+//{
+//    //this->ui->thickModeCheckBox->setEnabled(mode ? 1 : 0);
+//    //this->ui->blendModeGroupBox->setEnabled(mode ? 1 : 0);
+//
+//    for (int i = 0; i < 3; i++)
+//    {
+//        riw[i]->SetResliceMode(mode ? 1 : 0);
+//        riw[i]->GetRenderer()->ResetCamera();
+//        riw[i]->Render();
+//    }
+//}
 
+void medReformatViewer::thickMode(int val)
+{
     for (int i = 0; i < 3; i++)
     {
-        riw[i]->SetResliceMode(mode ? 1 : 0);
-        riw[i]->GetRenderer()->ResetCamera();
+        riw[i]->SetThickMode(val);
         riw[i]->Render();
+        /*riw[i]->GetResliceCursorWidget()->ResetResliceCursor();*/
     }
 }
-
-void medReformatViewer::thickMode(int mode)
+void medReformatViewer::blendMode(int val)
 {
-    for (int i = 0; i < 3; i++)
-    {
-        riw[i]->SetThickMode(mode ? 1 : 0);
-        riw[i]->Render();
-    }
+    if (val)
+        SetBlendModeToMinIP();
 }
 
 void medReformatViewer::SetBlendMode(int m)
@@ -329,7 +335,7 @@ void medReformatViewer::ResetViews()
         riw[i]->Reset();
     }
 
-    // Also sync the Image plane widget on the 3D top left view with any
+    // Also sync the Image plane widget on the 3D top right view with any
     // changes to the reslice cursor.
     for (int i = 0; i < 3; i++)
     {
@@ -398,5 +404,27 @@ void medReformatViewer::Render()
 
 void medReformatViewer::orthogonalAxisModeEnabled(bool)
 {
-
+    // For the time being this mode is activated via CTRL (with CMD I suppose on MAC)
 }
+
+void medReformatViewer::saveImage()
+{
+    
+}
+
+void medReformatViewer::thickSlabChanged(int val)
+{
+    /*QSlider * sliderSender = qobject_cast<QSlider*>(QObject::sender());
+    if (sliderSender)
+    {*/
+        //sliderSender->value();
+    if (riw[0]->GetThickMode())
+    {
+        riw[0]->GetResliceCursor()->SetThickness(val,val,val);
+        riw[1]->GetResliceCursor()->SetThickness(val,val,val);
+        riw[2]->GetResliceCursor()->SetThickness(val,val,val);
+        this->Render();
+    }
+    /*}*/
+}
+

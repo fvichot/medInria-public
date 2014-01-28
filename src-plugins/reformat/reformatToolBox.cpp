@@ -15,15 +15,17 @@
 #include <medReformatViewer.h>
 #include <medAbstractView.h>
 #include <medTabbedViewContainers.h>
-
+#include <qgroupbox.h>
 class reformatToolBoxPrivate
 {
 public:
     QPushButton * b_startReformat;
     medAbstractView * currentView;
     medWorkspace * workspace;
-    QCheckBox * orthogonalAxes;
-    QRadioButton * maxIP,*minIP,*meanIP,*normal;
+    QGroupBox * thickMode;
+    QSlider * thickSlab;
+    /*QGroupBox * blendModes;*/
+    QRadioButton * maxIP,*minIP,*meanIP;
     medReformatViewer * reformatViewer;
 };
 reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new reformatToolBoxPrivate)
@@ -35,11 +37,28 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     QWidget *reformatToolBoxBody = new QWidget(this);
     d->b_startReformat = new QPushButton("Start Reformat", reformatToolBoxBody);
     d->b_startReformat->setCheckable(true);
-    d->orthogonalAxes = new QCheckBox("Orthogonal Axes",reformatToolBoxBody);
-    d->orthogonalAxes->setEnabled(false);
+    /*d->thickMode = new QCheckBox("Thick Mode",reformatToolBoxBody);
+    d->thickMode->setEnabled(false);*/
+    d->thickSlab = new QSlider(Qt::Horizontal,reformatToolBoxBody);
+    d->thickSlab->setRange(0,10); // TODO : set based on the image 
+    d->thickMode = new QGroupBox("Thick Mode",reformatToolBoxBody);
+    QVBoxLayout * thickModeLayout = new QVBoxLayout(reformatToolBoxBody);
+    d->maxIP = new QRadioButton("MIP Max Intensity Projection",d->thickMode);
+    d->minIP = new QRadioButton("MinIP Min Intensity Projection",d->thickMode);
+    d->meanIP = new QRadioButton("Mean",d->thickMode);
+    thickModeLayout->addWidget(d->thickSlab);
+    thickModeLayout->addWidget(d->minIP);
+    thickModeLayout->addWidget(d->maxIP);
+    thickModeLayout->addWidget(d->meanIP);
+    d->thickMode->setLayout(thickModeLayout);
+    d->thickMode->setCheckable(true);
+    d->thickMode->setChecked(false);
+    d->thickMode->setEnabled(false);
     QVBoxLayout *reformatToolBoxLayout =  new QVBoxLayout(reformatToolBoxBody);
     reformatToolBoxLayout->addWidget(d->b_startReformat);
-    reformatToolBoxLayout->addWidget(d->orthogonalAxes);
+    reformatToolBoxLayout->addWidget(d->thickMode);
+    /*reformatToolBoxLayout->addWidget(d->thickSlab);*/
+    /*reformatToolBoxLayout->addWidget(d->thickMode);*/
     reformatToolBoxBody->setLayout(reformatToolBoxLayout);
     this->addWidget(reformatToolBoxBody);
 
@@ -77,20 +96,24 @@ void reformatToolBox::startReformat(bool val)
         if (d->currentView && d->workspace)
         {
             d->b_startReformat->setText("Stop Reformat");
-            d->orthogonalAxes->setEnabled(true);
+            d->thickMode->setEnabled(true);
             d->reformatViewer = new medReformatViewer(d->currentView,d->workspace->stackedViewContainers());
             d->reformatViewer->setAcceptDrops(false);
             d->workspace->stackedViewContainers()->addContainer("Reformat",d->reformatViewer);
             d->workspace->setCurrentViewContainer("Reformat");
             d->workspace->stackedViewContainers()->lockTabs();
             //d->workspace->stackedViewContainers()->hideTabBar();
-            connect(d->orthogonalAxes,SIGNAL(checked(bool)),d->reformatViewer,SLOT(orthogonalAxisModeEnabled(bool)));
+            connect(d->thickMode,SIGNAL(toggled(bool)),this,SLOT(propagateThickModeActivated()));
+            connect(d->thickSlab,SIGNAL(valueChanged(int)),d->reformatViewer,SLOT(thickSlabChanged(int)));
+            connect(d->maxIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
+            connect(d->minIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
+            connect(d->meanIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
         }
     }
     else
     {
         d->b_startReformat->setText("Start Reformat");
-        d->orthogonalAxes->setEnabled(false);
+        d->thickMode->setEnabled(false);
         // d->workspace->stackedViewContainers()->show // TODO: go get commit in varSegITK4 branch for showTabBar() function
         d->workspace->stackedViewContainers()->unlockTabs();
         d->workspace->setCurrentViewContainer("Reformat/Resample");
@@ -130,4 +153,28 @@ void reformatToolBox::actOnContainerChange(const QString & name)
         qobject_cast<reformatWorkspace*>(d->workspace)->showViewPropertiesToolBox(false);
     else
         qobject_cast<reformatWorkspace*>(d->workspace)->showViewPropertiesToolBox(true);
+}
+
+void reformatToolBox::propagateBlendModeChosen()
+{
+    if (d->maxIP->isChecked())
+        d->reformatViewer->SetBlendModeToMaxIP();
+    else 
+        if (d->minIP->isChecked())
+            d->reformatViewer->SetBlendModeToMinIP();
+        else
+            d->reformatViewer->SetBlendModeToMeanIP();
+}
+
+void reformatToolBox::propagateThickModeActivated()
+{
+    if (d->thickMode->isChecked())
+    {
+        d->reformatViewer->thickMode(1);
+        d->maxIP->toggle();
+    }
+    else
+        d->reformatViewer->thickMode(0);
+
+
 }
