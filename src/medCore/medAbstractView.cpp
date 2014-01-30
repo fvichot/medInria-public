@@ -151,16 +151,6 @@ QWidget *medAbstractView::receiverWidget(void)
     return NULL;
 }
 
-void * medAbstractView::getView2D()
-{
-    return NULL;
-}
-
-void * medAbstractView::getRenderWindow()
-{
-    return NULL;
-}
-
 void medAbstractView::setLinkPosition (bool value)
 {
     d->linkPosition = value;

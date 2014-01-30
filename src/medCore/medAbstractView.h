@@ -67,8 +67,6 @@ public:
                        QList<QColor> & colors );
 
     virtual QWidget *receiverWidget();
-    virtual void * getView2D();
-    virtual void * getRenderWindow();
 
     /**
        Set the view slice.

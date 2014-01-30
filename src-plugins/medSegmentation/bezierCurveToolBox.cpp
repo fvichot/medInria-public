@@ -94,6 +94,7 @@
 #include <vtkDoubleArray.h>
 #include <fillPolygonInImage.c>
 #include <itkContourExtractor2DImageFilter.h>
+#include <medVtkViewBackend.h>
 
 class contourWidgetObserver : public vtkCommand
 {
@@ -400,7 +401,7 @@ void bezierCurveToolBox::update(dtkAbstractView *view)
         return;
     
     currentView=cast;
-    observer->setView(static_cast<vtkImageView2D *>(currentView->getView2D()));
+    observer->setView(static_cast<medVtkViewBackend*>(currentView->backend())->view2D);
 
     roiToolBox->update(view);
     
@@ -431,7 +432,7 @@ void bezierCurveToolBox::onAddNewCurve()
     if (!currentView)
         return;
 
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
 
     currentBezierRoi = new bezierPolygonRoi(view2d);
 
@@ -568,7 +569,7 @@ QList<medSeriesOfRoi*> * bezierCurveToolBox::getListOfView(medAbstractView * vie
 
 void bezierCurveToolBox::reorderPolygon(vtkPolyData * poly)
 {
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
 
     double displayPoint[3];
     double * worldPoint;
@@ -714,7 +715,7 @@ void bezierCurveToolBox::interpolateCurve()
     if (!currentView)
         return;
 
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
     typedef QList<medSeriesOfRoi*> * ListOfSeriesOfRois;
     ListRois list;
@@ -818,7 +819,7 @@ void bezierCurveToolBox::generateBinaryImage() // TODO : MAKE IT WORK WITH SERIE
     if (!currentView)
         return;
 
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
     //ListRois list = getListOfView(currentView); // TODO : need to correct this thing !!
     ListRois list;
@@ -847,7 +848,7 @@ void bezierCurveToolBox::generateBinaryImage() // TODO : MAKE IT WORK WITH SERIE
 
 QList<QPair<vtkPolygon*,bezierCurveToolBox::PlaneIndexSlicePair> > bezierCurveToolBox::createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly)
 {
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > listPolygon = QList<QPair<vtkPolygon*,PlaneIndexSlicePair> >();
 
     int ind=0;
@@ -926,7 +927,7 @@ QList<QPair<vtkPolygon*,bezierCurveToolBox::PlaneIndexSlicePair> > bezierCurveTo
 
 void bezierCurveToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
 {
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
     typedef itk::Image<unsigned char,3> MaskType;
     dtkSmartPointer<medAbstractData> m_maskData = dtkAbstractDataFactory::instance()->createSmartPointer( medProcessPaintSegm::MaskImageTypeIdentifier() );
@@ -1143,7 +1144,7 @@ void bezierCurveToolBox::setOutputMetadata(const dtkAbstractData * inputData, dt
 int bezierCurveToolBox::computePlaneIndex()
 {
     typedef  MaskType::DirectionType::InternalMatrixType::element_type ElemType;
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     int planeIndex=-1;
     
     medAbstractViewCoordinates * coords = currentView->coordinates();
@@ -1173,7 +1174,7 @@ int bezierCurveToolBox::computePlaneIndex()
 
 RoiStatistics bezierCurveToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon)
 {
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
     double n[3];
     double bounds[6];
@@ -1365,7 +1366,7 @@ void bezierCurveToolBox::computeStatistics()
     if (!currentView)
         return;
 
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
     QList<QPair<vtkPolyData *,PlaneIndexSlicePair> > listPolyData = QList<QPair<vtkPolyData *,PlaneIndexSlicePair> >();
     

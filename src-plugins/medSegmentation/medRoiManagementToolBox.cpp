@@ -38,6 +38,7 @@
 #include <vtkSeedWidget.h>
 #include <vtkHandleWidget.h>
 #include <seedPointRoi.h>
+#include <medVtkViewBackend.h>
 
 class toolBoxObserver : public vtkCommand
 {
@@ -237,7 +238,7 @@ void medRoiManagementToolBox::update( dtkAbstractView *view )
     d->currentView = dynamic_cast<medAbstractView*>(view);
     // TODO : update all the tabs for this current view
     
-    d->observer->setView(static_cast<vtkImageView2D *>(d->currentView->getView2D()));
+    d->observer->setView(static_cast<medVtkViewBackend*>(d->currentView->backend())->view2D);
 
     connect(d->currentView,SIGNAL(sliceChanged(int,bool)),this,SLOT(updateDisplay()),Qt::UniqueConnection);
     updateDisplay();
@@ -280,7 +281,7 @@ void medRoiManagementToolBox::updateDisplay()
     if (!d->currentView)
         return;
     
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(d->currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(d->currentView->backend())->view2D;
     
     unsigned int currentSlice = view2d->GetSlice();
     unsigned char currentOrientation = view2d->GetViewOrientation();
@@ -457,7 +458,7 @@ void medRoiManagementToolBox::seedMode(bool checked) // TODO if currentView chan
     if (!checked)
         return;
     
-    vtkImageView2D * view2d = static_cast<vtkImageView2D *>(d->currentView->getView2D());
+    vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(d->currentView->backend())->view2D;
 
     // Create the representation
     vtkSmartPointer<vtkPointHandleRepresentation2D> handle = vtkSmartPointer<vtkPointHandleRepresentation2D>::New();
