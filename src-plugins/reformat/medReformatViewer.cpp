@@ -33,6 +33,11 @@
 #include <medVtkViewBackend.h>
 #include <vtkImageView2D.h>
 #include <medWorkspace.h>
+#include <itkVtkImageToImageFilter.h>
+#include <dtkCore/dtkAbstractData.h>
+#include <medMetaDataKeys.h>
+#include <medDataManager.h>
+#include <dtkCore/dtkAbstractDataFactory.h>
 
 //----------------------------------------------------------------------------
 class vtkResliceCursorCallback : public vtkCommand
@@ -90,7 +95,7 @@ public:
             // Although the return value is not used, we keep the get calls
             // in case they had side-effects
             rep->GetResliceCursorActor()->GetCursorAlgorithm()->GetResliceCursor();
-            
+
             for (int i = 0; i < 3; i++)
             {
                 vtkPlaneSource *ps = static_cast< vtkPlaneSource * >(
@@ -106,6 +111,8 @@ public:
                 this->IPW[i]->UpdatePlacement();
             }
         }
+
+        //if (ev == vtkInteractorStyleImage::keypress)
 
         // Render everything
         for (int i = 0; i < 3; i++)
@@ -128,6 +135,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     vtkImageView2D * view2d;
     if (view)
     {
+        _view = view;
         view2d = static_cast<medVtkViewBackend*>(view->backend())->view2D;
         vtkViewData = view2d->GetInput();
         imageDims = vtkViewData->GetDimensions();
@@ -249,7 +257,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     riw[0]->GetResliceCursorWidget()->ResetResliceCursor();
     riw[1]->GetResliceCursorWidget()->ResetResliceCursor();
     riw[2]->GetResliceCursorWidget()->ResetResliceCursor();
-    
+
     views[0]->show();
     views[1]->show();
     views[2]->show();
@@ -268,7 +276,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     //connect(this->ui->AddDistance1Button, SIGNAL(pressed()), this, SLOT(AddDistanceMeasurementToView1()));
     this->show();
 
-  
+
 };
 
 
@@ -409,7 +417,260 @@ void medReformatViewer::orthogonalAxisModeEnabled(bool)
 
 void medReformatViewer::saveImage()
 {
+    vtkImageData * output;
+    //typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+
+    if (riw[0]->GetThickMode())
+    {
+        vtkImageSlabReslice *thickSlabReslice = vtkImageSlabReslice::SafeDownCast(
+            vtkResliceCursorThickLineRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+        thickSlabReslice->Update();
+        output = thickSlabReslice->GetOutput();
+    }
+    else
+    {
+        vtkImageReslice *reslicerTop = vtkImageReslice::New();
+        vtkImageReslice *reslicer = vtkImageReslice::SafeDownCast(
+            vtkResliceCursorRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+        reslicerTop->SetInput(reslicer->GetInput());
+        reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());
+        //reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
+        //reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
+        reslicerTop->Update();
+        output = reslicerTop->GetOutput();
+    }
     
+    //output->setaxis
+    // TODO : the output of the reslice need to receive all the info from the original image : spacing origin ...
+    dtkSmartPointer<dtkAbstractData> outputData(NULL);
+    qDebug () << "Type of the image " <<  output->GetScalarTypeAsString() << " "  << output->GetScalarType();
+
+    switch (output->GetScalarType())
+    {
+    case VTK_CHAR:
+        {
+            typedef itk::Image<char,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageChar3");
+            outputData->setData(image);
+            break;
+        }
+
+    case VTK_UNSIGNED_CHAR:
+        {
+            typedef itk::Image<unsigned char,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageUChar3");
+            outputData->setData(image);
+            break;
+        }
+
+    case VTK_SHORT:
+        {
+            typedef itk::Image<short,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageShort3");
+            outputData->setData(image);
+            break;
+        }
+
+    case VTK_UNSIGNED_SHORT:
+        {
+            typedef itk::Image<unsigned short,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageUShort3");
+            outputData->setData(image);
+            break;
+        }
+
+    case VTK_INT:
+        {
+            typedef itk::Image<int,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageInt3");
+            outputData->setData(image);
+            break;
+        }
+    case VTK_UNSIGNED_INT:
+        {
+            typedef itk::Image<unsigned int,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageUInt3");
+            outputData->setData(image);
+            break;
+        }
+    case VTK_LONG:
+        {
+            typedef itk::Image<long,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageLong3");
+            outputData->setData(image);
+            break;
+        }
+    case VTK_UNSIGNED_LONG:
+        {
+            typedef itk::Image<unsigned long,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageULong3");
+            outputData->setData(image);
+            break; 
+        }
+    case VTK_FLOAT:
+        {
+            typedef itk::Image<float,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageFloat3");
+            outputData->setData(image);
+            break;
+        }
+    case VTK_DOUBLE:
+        {
+            typedef itk::Image<double,3> ImageType;
+            typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+            VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+            filter->SetInput(output);
+            filter->Update();
+            ImageType::Pointer image = filter->GetOutput();
+            outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageDouble3");
+            outputData->setData(image);
+            break;
+        }
+    }
+
+    /* if (output->GetScalarType()==VTK_CHAR)
+    {
+    typedef itk::Image<char,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_UNSIGNED_CHAR)
+    {
+    typedef itk::Image<unsigned char,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_SHORT)
+    {
+    typedef itk::Image<short,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_UNSIGNED_SHORT)
+    {
+    typedef itk::Image<unsigned short,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_INT)
+    {
+    typedef itk::Image<int,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_UNSIGNED_INT)
+    {
+    typedef itk::Image<unsigned int,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_FLOAT)
+    {
+    typedef itk::Image<float,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }
+    else if (output->GetScalarType()==VTK_DOUBLE)
+    {
+    typedef itk::Image<double,3> ImageType;
+    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
+    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
+    filter->SetInput(output);
+    filter->Update();
+    ImageType::Pointer image = filter->GetOutput();
+    outputData->setData(image);
+    }*/
+
+    if (outputData && outputData->data())
+    {
+        dtkAbstractData *currentData = reinterpret_cast< dtkAbstractData * >( _view->data() );
+
+        foreach(QString metaData, currentData->metaDataList())
+            outputData->addMetaData(metaData,currentData->metaDataValues(metaData));
+
+        foreach(QString property,currentData->propertyList())
+            outputData->addProperty(property,currentData->propertyValues(property));
+        QString newDescription = "reformated";
+        outputData->setMetaData(medMetaDataKeys::SeriesDescription.key(), newDescription);
+
+        QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
+        outputData->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
+
+        medDataManager::instance()->importNonPersistent(outputData);
+    }
 }
 
 void medReformatViewer::thickSlabChanged(int val)
@@ -417,7 +678,7 @@ void medReformatViewer::thickSlabChanged(int val)
     /*QSlider * sliderSender = qobject_cast<QSlider*>(QObject::sender());
     if (sliderSender)
     {*/
-        //sliderSender->value();
+    //sliderSender->value();
     if (riw[0]->GetThickMode())
     {
         riw[0]->GetResliceCursor()->SetThickness(val,val,val);
@@ -428,3 +689,4 @@ void medReformatViewer::thickSlabChanged(int val)
     /*}*/
 }
 
+// TODO : redefine the vtkInteractorStyleImage to control the image the way u want

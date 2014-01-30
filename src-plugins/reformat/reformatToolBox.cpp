@@ -27,7 +27,9 @@ public:
     /*QGroupBox * blendModes;*/
     QRadioButton * maxIP,*minIP,*meanIP;
     medReformatViewer * reformatViewer;
+    QPushButton * b_saveImage;
 };
+
 reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new reformatToolBoxPrivate)
 {
     this->setTitle("Reformat");
@@ -37,8 +39,8 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     QWidget *reformatToolBoxBody = new QWidget(this);
     d->b_startReformat = new QPushButton("Start Reformat", reformatToolBoxBody);
     d->b_startReformat->setCheckable(true);
-    /*d->thickMode = new QCheckBox("Thick Mode",reformatToolBoxBody);
-    d->thickMode->setEnabled(false);*/
+    d->b_saveImage = new QPushButton("Save Image", reformatToolBoxBody);
+    d->b_saveImage->setCheckable(false);
     d->thickSlab = new QSlider(Qt::Horizontal,reformatToolBoxBody);
     d->thickSlab->setRange(0,10); // TODO : set based on the image 
     d->thickMode = new QGroupBox("Thick Mode",reformatToolBoxBody);
@@ -57,6 +59,7 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     QVBoxLayout *reformatToolBoxLayout =  new QVBoxLayout(reformatToolBoxBody);
     reformatToolBoxLayout->addWidget(d->b_startReformat);
     reformatToolBoxLayout->addWidget(d->thickMode);
+    reformatToolBoxLayout->addWidget(d->b_saveImage);
     /*reformatToolBoxLayout->addWidget(d->thickSlab);*/
     /*reformatToolBoxLayout->addWidget(d->thickMode);*/
     reformatToolBoxBody->setLayout(reformatToolBoxLayout);
@@ -97,6 +100,7 @@ void reformatToolBox::startReformat(bool val)
         {
             d->b_startReformat->setText("Stop Reformat");
             d->thickMode->setEnabled(true);
+            d->b_saveImage->setEnabled(true);
             d->reformatViewer = new medReformatViewer(d->currentView,d->workspace->stackedViewContainers());
             d->reformatViewer->setAcceptDrops(false);
             d->workspace->stackedViewContainers()->addContainer("Reformat",d->reformatViewer);
@@ -108,12 +112,14 @@ void reformatToolBox::startReformat(bool val)
             connect(d->maxIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
             connect(d->minIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
             connect(d->meanIP,SIGNAL(toggled(bool)),this,SLOT(propagateBlendModeChosen()));
+            connect(d->b_saveImage,SIGNAL(clicked()),d->reformatViewer,SLOT(saveImage()));
         }
     }
     else
     {
         d->b_startReformat->setText("Start Reformat");
         d->thickMode->setEnabled(false);
+        d->b_saveImage->setEnabled(false);
         // d->workspace->stackedViewContainers()->show // TODO: go get commit in varSegITK4 branch for showTabBar() function
         d->workspace->stackedViewContainers()->unlockTabs();
         d->workspace->setCurrentViewContainer("Reformat/Resample");
