@@ -25,5 +25,6 @@ public slots:
     void actOnContainerChange(const QString&);
     void propagateThickModeActivated();
     void propagateBlendModeChosen();
+    void displayInfoOnCurrentView();
 };
 

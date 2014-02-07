@@ -34,10 +34,15 @@
 #include <vtkImageView2D.h>
 #include <medWorkspace.h>
 #include <itkVtkImageToImageFilter.h>
+#include <itkImageToVTKImageFilter.h>
 #include <dtkCore/dtkAbstractData.h>
 #include <medMetaDataKeys.h>
 #include <medDataManager.h>
 #include <dtkCore/dtkAbstractDataFactory.h>
+#include <QDoubleSpinBox>
+#include <dtkCore/dtkAbstractData.h>
+#include <dtkCore/dtkAbstractView.h>
+
 
 //----------------------------------------------------------------------------
 class vtkResliceCursorCallback : public vtkCommand
@@ -127,6 +132,12 @@ public:
     vtkResliceCursorWidget *RCW[3];
 };
 
+/* TODO : 
+- The images do not appear in a similar way as our v3dview plugin . Need to check what is the problem ?
+- Save image does not seem to work perfectly especially for the thick mode. Need to find the cause ! 
+- give the possibility to the user to change slice via keyboard up and down 
+*/
+
 
 medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): medCustomViewContainer(parent)
 {
@@ -167,7 +178,8 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
 
     views[0]->SetRenderWindow(riw[0]->GetRenderWindow()); 
     riw[0]->SetupInteractor(views[0]->GetRenderWindow()->GetInteractor());
-
+    
+    
     views[1]->SetRenderWindow(riw[1]->GetRenderWindow());
     riw[1]->SetupInteractor(views[1]->GetRenderWindow()->GetInteractor());
 
@@ -187,8 +199,11 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
 
         riw[i]->SetInput(vtkViewData); 
         riw[i]->SetSliceOrientation(i);
+        //riw[i]->SetResliceModeToAxisAligned();
         riw[i]->SetResliceModeToOblique();
     }
+
+    vtkViewData->GetSpacing(outputSpacing);
 
     vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
     picker->SetTolerance(0.005);
@@ -254,9 +269,9 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
 
     }
 
-    riw[0]->GetResliceCursorWidget()->ResetResliceCursor();
-    riw[1]->GetResliceCursorWidget()->ResetResliceCursor();
-    riw[2]->GetResliceCursorWidget()->ResetResliceCursor();
+    riw[0]->GetRenderer()->ResetCamera();
+    riw[1]->GetRenderer()->ResetCamera();
+    riw[2]->GetRenderer()->ResetCamera();
 
     views[0]->show();
     views[1]->show();
@@ -297,9 +312,10 @@ void medReformatViewer::thickMode(int val)
 {
     for (int i = 0; i < 3; i++)
     {
+        //TODO : set the axes to the reslicecursorwidget vtkimageReslice .... this will propably solve the problem of disappearance.
         riw[i]->SetThickMode(val);
+        riw[i]->GetRenderer()->ResetCamera();
         riw[i]->Render();
-        /*riw[i]->GetResliceCursorWidget()->ResetResliceCursor();*/
     }
 }
 void medReformatViewer::blendMode(int val)
@@ -422,20 +438,29 @@ void medReformatViewer::saveImage()
 
     if (riw[0]->GetThickMode())
     {
+        vtkImageSlabReslice *reslicerTop = vtkImageSlabReslice::New();
         vtkImageSlabReslice *thickSlabReslice = vtkImageSlabReslice::SafeDownCast(
             vtkResliceCursorThickLineRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
-        thickSlabReslice->Update();
-        output = thickSlabReslice->GetOutput();
+        reslicerTop->SetInput(thickSlabReslice->GetInput());
+        reslicerTop->SetResliceAxes(thickSlabReslice->GetResliceAxes());
+        reslicerTop->SetSlabThickness(thickSlabReslice->GetSlabThickness());
+        reslicerTop->SetBlendMode(thickSlabReslice->GetBlendMode());
+        reslicerTop->Update();
+        output = reslicerTop->GetOutput();
     }
     else
     {
         vtkImageReslice *reslicerTop = vtkImageReslice::New();
         vtkImageReslice *reslicer = vtkImageReslice::SafeDownCast(
             vtkResliceCursorRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
-        reslicerTop->SetInput(reslicer->GetInput());
+        reslicerTop->SetInput(riw[0]->GetInput());
         reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());
-        //reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
-        //reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
+        reslicerTop->SetOutputSpacing(outputSpacing);
+        /*reslicerTop->SetOutputOrigin  (riw[0]->GetInput()->GetOrigin());
+        reslicerTop->SetOutputExtent  (riw[0]->GetInput()->GetWholeExtent());*/
+        reslicerTop->SetInterpolationModeToLinear();
+        reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
+        reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
         reslicerTop->Update();
         output = reslicerTop->GetOutput();
     }
@@ -573,87 +598,6 @@ void medReformatViewer::saveImage()
         }
     }
 
-    /* if (output->GetScalarType()==VTK_CHAR)
-    {
-    typedef itk::Image<char,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_UNSIGNED_CHAR)
-    {
-    typedef itk::Image<unsigned char,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_SHORT)
-    {
-    typedef itk::Image<short,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_UNSIGNED_SHORT)
-    {
-    typedef itk::Image<unsigned short,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_INT)
-    {
-    typedef itk::Image<int,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_UNSIGNED_INT)
-    {
-    typedef itk::Image<unsigned int,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_FLOAT)
-    {
-    typedef itk::Image<float,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }
-    else if (output->GetScalarType()==VTK_DOUBLE)
-    {
-    typedef itk::Image<double,3> ImageType;
-    typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
-    VTKImageToImageType::Pointer filter = VTKImageToImageType::New();
-    filter->SetInput(output);
-    filter->Update();
-    ImageType::Pointer image = filter->GetOutput();
-    outputData->setData(image);
-    }*/
-
     if (outputData && outputData->data())
     {
         dtkAbstractData *currentData = reinterpret_cast< dtkAbstractData * >( _view->data() );
@@ -673,20 +617,41 @@ void medReformatViewer::saveImage()
     }
 }
 
-void medReformatViewer::thickSlabChanged(int val)
+void medReformatViewer::thickSlabChanged(double val)
 {
-    /*QSlider * sliderSender = qobject_cast<QSlider*>(QObject::sender());
-    if (sliderSender)
-    {*/
-    //sliderSender->value();
-    if (riw[0]->GetThickMode())
+    QDoubleSpinBox * spinBoxSender = qobject_cast<QDoubleSpinBox*>(QObject::sender());
+    //if (!riw[0]->GetThickMode())
+    //    return;
+
+    if (spinBoxSender)
     {
-        riw[0]->GetResliceCursor()->SetThickness(val,val,val);
-        riw[1]->GetResliceCursor()->SetThickness(val,val,val);
-        riw[2]->GetResliceCursor()->SetThickness(val,val,val);
+        double x,y,z;
+        riw[0]->GetResliceCursor()->GetThickness(x,y,z);
+        if (spinBoxSender->accessibleName()=="SpacingX")
+        {
+            riw[0]->GetResliceCursor()->SetThickness(val,y,z);
+            riw[1]->GetResliceCursor()->SetThickness(val,y,z);
+            riw[2]->GetResliceCursor()->SetThickness(val,y,z);
+            outputSpacing[0]=val;
+        }
+
+        if (spinBoxSender->accessibleName()=="SpacingY")
+        {
+            riw[0]->GetResliceCursor()->SetThickness(x,val,z);
+            riw[1]->GetResliceCursor()->SetThickness(x,val,z);
+            riw[2]->GetResliceCursor()->SetThickness(x,val,z);
+            outputSpacing[1]=val;
+        }
+
+        if (spinBoxSender->accessibleName()=="SpacingZ")
+        {
+            riw[0]->GetResliceCursor()->SetThickness(x,y,val);
+            riw[1]->GetResliceCursor()->SetThickness(x,y,val);
+            riw[2]->GetResliceCursor()->SetThickness(x,y,val);
+            outputSpacing[2]=val;
+        }
         this->Render();
     }
-    /*}*/
 }
 
 // TODO : redefine the vtkInteractorStyleImage to control the image the way u want

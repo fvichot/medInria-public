@@ -35,7 +35,7 @@ public slots:
 
   void orthogonalAxisModeEnabled(bool);
   void saveImage();
-  void thickSlabChanged(int);
+  void thickSlabChanged(double);
 
 
 protected:
@@ -45,7 +45,8 @@ protected:
   vtkSmartPointer< vtkResliceImageViewerMeasurements > ResliceMeasurements;
   QVTKWidget * views[4];
   medAbstractView * _view;
-  
+  double outputSpacing[3];
+
 protected slots:
 
 private:

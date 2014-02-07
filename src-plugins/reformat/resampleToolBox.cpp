@@ -24,7 +24,6 @@ public:
     medAbstractView * currentView;
     resampleProcess * resample_p;
 
-
     QLabel * dimensions, * spacing;
     QRadioButton * bySpacing, * byDimension;
     QLabel *spacingXLab,*spacingYLab,*spacingZLab;
