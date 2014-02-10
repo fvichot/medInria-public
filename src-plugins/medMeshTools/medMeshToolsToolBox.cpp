@@ -59,22 +59,20 @@ medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
 {
     this->setTitle("medMeshTools");
 
-    QWidget *displayWidget = new QWidget(this);
-
-    d->thresholdSlider = new medSliderSpinboxPair(displayWidget);
+    d->thresholdSlider = new medSliderSpinboxPair;
     d->thresholdSlider->setMinimum(0);
     d->thresholdSlider->setMaximum(2000);
     d->thresholdSlider->setValue(1);
 
-    QLabel * thresholdLabel = new QLabel("Threshold : ", displayWidget);
+    QLabel * thresholdLabel = new QLabel("Threshold : ");
     QHBoxLayout *thresholdLayout = new QHBoxLayout;
     thresholdLayout->addWidget(thresholdLabel);
     thresholdLayout->addWidget(d->thresholdSlider);
 
-    d->decimateCheckbox = new QCheckBox("Decimate mesh", displayWidget);
+    d->decimateCheckbox = new QCheckBox("Decimate mesh");
     d->decimateCheckbox->setChecked(true);
 
-    d->reductionSpinBox = new QDoubleSpinBox(displayWidget);
+    d->reductionSpinBox = new QDoubleSpinBox;
     d->reductionSpinBox->setRange(0.0, 1.0);
     d->reductionSpinBox->setSingleStep(0.01);
     d->reductionSpinBox->setDecimals(2);
@@ -82,44 +80,44 @@ medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
 
     connect(d->decimateCheckbox, SIGNAL(toggled(bool)), d->reductionSpinBox, SLOT(setEnabled(bool)));
 
-    QLabel * reductionLabel = new QLabel("Reduction target : ", displayWidget);
+    QLabel * reductionLabel = new QLabel("Reduction target : ");
     QHBoxLayout *reductionLayout = new QHBoxLayout;
     reductionLayout->addWidget(reductionLabel);
     reductionLayout->addWidget(d->reductionSpinBox);
 
-    d->smoothCheckbox = new QCheckBox("Smooth mesh", displayWidget);
+    d->smoothCheckbox = new QCheckBox("Smooth mesh");
     d->smoothCheckbox->setChecked(true);
 
-    d->iterationsSpinBox = new QSpinBox(displayWidget);
+    d->iterationsSpinBox = new QSpinBox;
     d->iterationsSpinBox->setRange(0, 100);
     d->iterationsSpinBox->setSingleStep(1);
     d->iterationsSpinBox->setValue(30);
 
-    QLabel * iterationsLabel = new QLabel("Iterations : ", displayWidget);
+    QLabel * iterationsLabel = new QLabel("Iterations : ");
     QHBoxLayout * iterationsLayout = new QHBoxLayout;
     iterationsLayout->addWidget(iterationsLabel);
     iterationsLayout->addWidget(d->iterationsSpinBox);
 
-    d->relaxationSpinBox = new QDoubleSpinBox(displayWidget);
+    d->relaxationSpinBox = new QDoubleSpinBox;
     d->relaxationSpinBox->setRange(0.0, 1.0);
     d->relaxationSpinBox->setSingleStep(0.01);
     d->relaxationSpinBox->setDecimals(2);
     d->relaxationSpinBox->setValue(0.2);
 
-    QLabel * relaxationLabel = new QLabel("Relaxation factor : ", displayWidget);
+    QLabel * relaxationLabel = new QLabel("Relaxation factor : ");
     QHBoxLayout * relaxationLayout = new QHBoxLayout;
     relaxationLayout->addWidget(relaxationLabel);
     relaxationLayout->addWidget(d->relaxationSpinBox);
 
-    QPushButton * runButton = new QPushButton(tr("Run"), displayWidget);
+    QPushButton * runButton = new QPushButton(tr("Run"));
     
     // progression stack
-    QWidget *widget = new QWidget(displayWidget);
+    QWidget *widget = new QWidget(this);
     d->progression_stack = new medProgressionStack(widget);
     QHBoxLayout *progressStackLayout = new QHBoxLayout;
     progressStackLayout->addWidget(d->progression_stack);
     
-    QVBoxLayout *displayLayout = new QVBoxLayout(displayWidget);
+    QVBoxLayout *displayLayout = new QVBoxLayout();
 
     displayLayout->addLayout(thresholdLayout);
     displayLayout->addWidget(d->decimateCheckbox);
@@ -129,8 +127,9 @@ medMeshToolsToolBox::medMeshToolsToolBox(QWidget *parent)
     displayLayout->addLayout(relaxationLayout);
     displayLayout->addWidget(runButton);
     displayLayout->addLayout(progressStackLayout);
-    
-    this->addWidget(displayWidget);
+    widget->setLayout(displayLayout);
+
+    this->addWidget(widget);
 
     d->view = 0;
 
