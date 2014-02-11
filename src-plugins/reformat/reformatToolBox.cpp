@@ -96,8 +96,12 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     d->thickMode->setCheckable(true);
     d->thickMode->setChecked(false);
     d->thickMode->setEnabled(false);
+    QLabel * help1 = new QLabel("To move two axes simultaneously press CTRL/CMD",reformatToolBoxBody);
+    QLabel * help2 = new QLabel("To reset axes in a view : press 'o'",reformatToolBoxBody);
     QVBoxLayout *reformatToolBoxLayout =  new QVBoxLayout(reformatToolBoxBody);
     reformatToolBoxLayout->addWidget(d->b_startReformat);
+    reformatToolBoxLayout->addWidget(help1);
+    reformatToolBoxLayout->addWidget(help2);
     reformatToolBoxLayout->addWidget(spinBoxes);
     reformatToolBoxLayout->addWidget(d->thickMode);
     reformatToolBoxLayout->addWidget(d->b_saveImage);
