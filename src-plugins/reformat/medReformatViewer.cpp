@@ -42,6 +42,7 @@
 #include <QDoubleSpinBox>
 #include <dtkCore/dtkAbstractData.h>
 #include <dtkCore/dtkAbstractView.h>
+#include <vtkMatrix4x4.h>
 
 
 //----------------------------------------------------------------------------
@@ -149,6 +150,12 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
         _view = view;
         view2d = static_cast<medVtkViewBackend*>(view->backend())->view2D;
         vtkViewData = view2d->GetInput();
+        double origin[3];
+        vtkViewData->GetOrigin(origin);
+        qDebug() << " origin : " << origin[0] <<" " <<origin[1] << " " << origin[2];
+        vtkViewData->SetOrigin(vtkViewData->GetCenter());
+        vtkViewData->GetOrigin(origin);
+        qDebug() << " origin : " << origin[0] <<" " <<origin[1] << " " << origin[2];
         imageDims = vtkViewData->GetDimensions();
     }
     else
@@ -192,7 +199,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
         vtkResliceCursorLineRepresentation *rep =
             vtkResliceCursorLineRepresentation::SafeDownCast(
             riw[i]->GetResliceCursorWidget()->GetRepresentation());
-        riw[i]->SetResliceCursor(riw[0]->GetResliceCursor());
+        riw[i]->SetResliceCursor(riw[2]->GetResliceCursor());
 
         rep->GetResliceCursorActor()->
             GetCursorAlgorithm()->SetReslicePlaneNormal(i);
@@ -262,8 +269,8 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
             vtkCommand::WindowLevelEvent, cbk );
 
         // Make them all share the same color map.
-        riw[i]->SetLookupTable(riw[0]->GetLookupTable());
-        planeWidget[i]->GetColorMap()->SetLookupTable(riw[0]->GetLookupTable());
+        riw[i]->SetLookupTable(riw[2]->GetLookupTable());
+        planeWidget[i]->GetColorMap()->SetLookupTable(riw[2]->GetLookupTable());
         //planeWidget[i]->GetColorMap()->SetInput(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap()->GetInput());
         planeWidget[i]->SetColorMap(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
 
@@ -365,8 +372,8 @@ void medReformatViewer::ResetViews()
     {
         vtkPlaneSource *ps = static_cast< vtkPlaneSource * >(
             planeWidget[i]->GetPolyDataAlgorithm());
-        ps->SetNormal(riw[0]->GetResliceCursor()->GetPlane(i)->GetNormal());
-        ps->SetCenter(riw[0]->GetResliceCursor()->GetPlane(i)->GetOrigin());
+        ps->SetNormal(riw[2]->GetResliceCursor()->GetPlane(i)->GetNormal());
+        ps->SetCenter(riw[2]->GetResliceCursor()->GetPlane(i)->GetOrigin());
 
         // If the reslice plane has modified, update it on the 3D widget
         this->planeWidget[i]->UpdatePlacement();
@@ -436,11 +443,11 @@ void medReformatViewer::saveImage()
     vtkImageData * output;
     //typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
 
-    if (riw[0]->GetThickMode())
+    if (riw[2]->GetThickMode())
     {
         vtkImageSlabReslice *reslicerTop = vtkImageSlabReslice::New();
         vtkImageSlabReslice *thickSlabReslice = vtkImageSlabReslice::SafeDownCast(
-            vtkResliceCursorThickLineRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+            vtkResliceCursorThickLineRepresentation::SafeDownCast(riw[2]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
         reslicerTop->SetInput(thickSlabReslice->GetInput());
         reslicerTop->SetResliceAxes(thickSlabReslice->GetResliceAxes());
         reslicerTop->SetSlabThickness(thickSlabReslice->GetSlabThickness());
@@ -452,15 +459,18 @@ void medReformatViewer::saveImage()
     {
         vtkImageReslice *reslicerTop = vtkImageReslice::New();
         vtkImageReslice *reslicer = vtkImageReslice::SafeDownCast(
-            vtkResliceCursorRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
-        reslicerTop->SetInput(riw[0]->GetInput());
-        reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());
+            vtkResliceCursorRepresentation::SafeDownCast(riw[2]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+        reslicerTop->SetInput(riw[2]->GetInput());
+        
+        reslicerTop->SetResliceAxesDirectionCosines(reslicer->GetResliceAxesDirectionCosines());
+        //reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());5
+        //reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
+        //reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
+        reslicerTop->SetBackgroundLevel(-1024); // todo: set the background value in an automatic way.
         reslicerTop->SetOutputSpacing(outputSpacing);
         /*reslicerTop->SetOutputOrigin  (riw[0]->GetInput()->GetOrigin());
         reslicerTop->SetOutputExtent  (riw[0]->GetInput()->GetWholeExtent());*/
         reslicerTop->SetInterpolationModeToLinear();
-        reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
-        reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
         reslicerTop->Update();
         output = reslicerTop->GetOutput();
     }
@@ -626,7 +636,7 @@ void medReformatViewer::thickSlabChanged(double val)
     if (spinBoxSender)
     {
         double x,y,z;
-        riw[0]->GetResliceCursor()->GetThickness(x,y,z);
+        riw[2]->GetResliceCursor()->GetThickness(x,y,z);
         if (spinBoxSender->accessibleName()=="SpacingX")
         {
             riw[0]->GetResliceCursor()->SetThickness(val,y,z);
