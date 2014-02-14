@@ -9,6 +9,23 @@
 #include <medAbstractView.h>
 #include <medCustomViewContainer.h>
 
+class QVTKFrame : public QFrame
+{
+public:
+    QVTKFrame(QWidget * parent):QFrame(parent)
+    {
+        QHBoxLayout * layout = new QHBoxLayout(this);
+        view = new QVTKWidget(this);
+        layout->addWidget(view);
+        this->setLayout(layout);
+    };
+    ~QVTKFrame() {}
+    QVTKWidget * getView(){return view;};
+private:
+    QVTKWidget * view;
+
+};
+
 class medReformatViewer : public medCustomViewContainer
 {
   Q_OBJECT
@@ -36,7 +53,7 @@ public slots:
   void orthogonalAxisModeEnabled(bool);
   void saveImage();
   void thickSlabChanged(double);
-
+  bool eventFilter(QObject * object,QEvent * event);
 
 protected:
   vtkSmartPointer< vtkResliceImageViewer > riw[3];
@@ -44,9 +61,11 @@ protected:
   /*vtkSmartPointer< vtkDistanceWidget > DistanceWidget[3];*/
   vtkSmartPointer< vtkResliceImageViewerMeasurements > ResliceMeasurements;
   QVTKWidget * views[4];
+  QVTKFrame * frames[4];
   medAbstractView * _view;
   double outputSpacing[3];
-
+  
+  
 protected slots:
 
 private:

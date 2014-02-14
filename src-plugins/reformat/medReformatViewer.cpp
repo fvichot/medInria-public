@@ -44,7 +44,7 @@
 #include <dtkCore/dtkAbstractView.h>
 #include <vtkMatrix4x4.h>
 
-
+class QVTKFrame;
 //----------------------------------------------------------------------------
 class vtkResliceCursorCallback : public vtkCommand
 {
@@ -139,7 +139,6 @@ public:
 - give the possibility to the user to change slice via keyboard up and down 
 */
 
-
 medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): medCustomViewContainer(parent)
 {
     int * imageDims;
@@ -164,16 +163,25 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
     for (int i = 0; i < 3; i++)
     {
         riw[i] = vtkSmartPointer< vtkResliceImageViewer >::New();
-        views[i] = new QVTKWidget(widgetbody);
+        frames[i] = new QVTKFrame(widgetbody);
+        views[i] = frames[i]->getView();
         views[i]->setSizePolicy ( QSizePolicy::Minimum, QSizePolicy::Minimum );
+        if (i==0)
+            frames[i]->setStyleSheet("* {border : 1px solid #FF0000;}");
+        else if (i==1)
+            frames[i]->setStyleSheet("* {border : 1px solid #00FF00;}");
+        else if (i==2)
+            frames[i]->setStyleSheet("* {border : 1px solid #0000FF;}");
+        views[i]->installEventFilter(this);
     }
-    views[3] = new QVTKWidget(widgetbody);
+    frames[3] = new QVTKFrame(widgetbody);
+    views[3] = frames[3]->getView();
     views[3]->setSizePolicy ( QSizePolicy::Minimum, QSizePolicy::Minimum );
     QGridLayout * gridLayout = new QGridLayout(this);
-    gridLayout->addWidget(views[2],0,0);
-    gridLayout->addWidget(views[3],0,1);
-    gridLayout->addWidget(views[1],1,0);
-    gridLayout->addWidget(views[0],1,1);
+    gridLayout->addWidget(frames[2],0,0);
+    gridLayout->addWidget(frames[3],0,1);
+    gridLayout->addWidget(frames[1],1,0);
+    gridLayout->addWidget(frames[0],1,1);
 
     gridLayout->setColumnStretch ( 0, 0 );
     gridLayout->setColumnStretch ( 1, 0 );
@@ -235,7 +243,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
         color[0] /= 4.0;
         color[1] /= 4.0;
         color[2] /= 4.0;
-        riw[i]->GetRenderer()->SetBackground( color );
+        riw[i]->GetRenderer()->SetBackground( 0,0,0 );
 
         planeWidget[i]->SetTexturePlaneProperty(ipwProp);
         planeWidget[i]->TextureInterpolateOff();
@@ -475,6 +483,7 @@ void medReformatViewer::saveImage()
         output = reslicerTop->GetOutput();
     }
     
+    
     //output->setaxis
     // TODO : the output of the reslice need to receive all the info from the original image : spacing origin ...
     dtkSmartPointer<dtkAbstractData> outputData(NULL);
@@ -662,6 +671,30 @@ void medReformatViewer::thickSlabChanged(double val)
         }
         this->Render();
     }
+}
+
+bool medReformatViewer::eventFilter(QObject * object,QEvent * event)
+{
+    if (!qobject_cast<QVTKWidget*>(object))
+        return true;
+
+    if (event->type()==QEvent::FocusIn)
+    {
+        for(int i = 0;i<3;i++)
+        {
+            if (views[i]==object)
+            {
+                frames[i]->setStyleSheet("QFrame {border : 1px solid #FF3333;}");
+            }
+        }
+        return false;
+    }
+    if (event->type()==QEvent::FocusOut)
+    {
+        qDebug() << "I am out";
+        return false;
+    }
+    return false;
 }
 
 // TODO : redefine the vtkInteractorStyleImage to control the image the way u want
