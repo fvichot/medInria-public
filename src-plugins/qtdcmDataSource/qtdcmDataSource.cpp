@@ -13,8 +13,8 @@
 
 #include "qtdcmDataSource.h"
 
-#include <medSql/medDatabaseImporter.h>
-#include <medSql/medDatabaseController.h>
+#include <medCore/medDatabaseImporter.h>
+#include <medCore/medDatabaseController.h>
 #include <medCore/medJobManager.h>
 #include <medCore/medAbstractDataSourceFactory.h>
 #include <medToolBox.h>

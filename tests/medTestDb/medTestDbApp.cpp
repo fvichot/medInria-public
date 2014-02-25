@@ -18,10 +18,6 @@
 #include <dtkCore/dtkGlobal.h>
 #include <dtkLog/dtkLog.h>
 
-
-
-#include <medDbControllerFactory.h>
-
 #include <medMetaDataKeys.h>
 #include <medPluginManager.h>
 #include <medStorage.h>
@@ -68,10 +64,6 @@ medTestDbApp::medTestDbApp( int argc, char *argv[] ) :
 
     if(!medDatabaseController::instance()->createConnection())
         CHECK_TEST_RESULT( "Unable to create a connection to the database" );
-
-    //Register dbController
-    medDbControllerFactory::instance()->registerDbController("DbController", createDbController);
-    medDbControllerFactory::instance()->registerDbController("NonPersistentDbController", createNonPersistentDbController);
 
     CHECK_TEST_RESULT( medQtDataImage::registered() );
     CHECK_TEST_RESULT( medQtDataImageReader::registered() );

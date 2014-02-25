@@ -150,7 +150,7 @@ medBrowserArea::medBrowserArea(QWidget *parent) : QWidget(parent), d(new medBrow
 
     connect(medDataManager::instance(), SIGNAL(failedToOpen(const medDataIndex&)), this, SLOT(onOpeningFailed(const medDataIndex&)));
 
-    medDatabaseControllerImpl* dbcont = medDatabaseController::instance().data();
+    medDatabaseController* dbcont = medDatabaseController::instance();
     connect(dbcont, SIGNAL(partialImportAttempted ( const QString& )), this, SLOT(onPartialImportAttempted ( const QString& )));
 
     //Check if there are already item in the database, otherwise, switch to File system datasource

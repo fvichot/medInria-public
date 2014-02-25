@@ -38,6 +38,8 @@ set(${PROJECT_NAME}_DEVEL_HEADERS_MOC
   medViewEventFilter.h
   annotationData/medImageMaskAnnotationData.h
   annotationData/medSeedPointAnnotationData.h
+  medDatabaseController.h
+  medDatabaseImporter.h
 )
 
 set(${PROJECT_NAME}_DEVEL_HEADERS
@@ -45,6 +47,7 @@ set(${PROJECT_NAME}_DEVEL_HEADERS
   medAbstractViewCoordinates.h
   medCoreExport.h
   medDataIndex.h
+  medSqlExport.h
 )
 
 set(${PROJECT_NAME}_HEADERS_MOC
@@ -53,9 +56,17 @@ set(${PROJECT_NAME}_HEADERS_MOC
   medViewManager.h
   medPluginManager.h
   medAbstractViewCollection.h
-  medDbControllerFactory.h
   medStorage.h
-)
+  medAbstractDatabaseImporter.h
+  medDatabaseExporter.h
+  medDatabaseModel.h  
+  medDatabaseNonPersistentController.h
+  medDatabaseNonPersistentItem.h
+  medDatabaseNonPersistentImporter.h
+  medDatabaseProxyModel.h
+  medDatabaseReader.h
+  medDatabaseRemover.h
+  )
 
 set(${PROJECT_NAME}_HEADERS
   ${${PROJECT_NAME}_HEADERS_MOC}
@@ -63,8 +74,8 @@ set(${PROJECT_NAME}_HEADERS
   medDataReaderWriter.h
   medAbstractDatabaseItem.h
   medStyleSheetParser.h
-)
-
+  medDatabaseItem.h
+  )
 
 set(${PROJECT_NAME}_SOURCES
   medDataIndex.cpp
@@ -81,7 +92,6 @@ set(${PROJECT_NAME}_SOURCES
   medJobItem.cpp
   medJobManager.cpp
   medSettingsManager.cpp
-  medDbControllerFactory.cpp
   medAbstractDbController.cpp
   medRunnableProcess.cpp
   medAbstractDataSource.cpp
@@ -96,7 +106,19 @@ set(${PROJECT_NAME}_SOURCES
   annotationData/medImageMaskAnnotationData.cpp
   annotationData/medSeedPointAnnotationData.cpp
   medStyleSheetParser.cpp
-)
+  medAbstractDatabaseImporter.cpp
+  medDatabaseController.cpp
+  medDatabaseExporter.cpp
+  medDatabaseImporter.cpp
+  medDatabaseItem.cpp
+  medDatabaseModel.cpp  
+  medDatabaseNonPersistentController.cpp
+  medDatabaseNonPersistentItem.cpp
+  medDatabaseNonPersistentImporter.cpp
+  medDatabaseProxyModel.cpp
+  medDatabaseReader.cpp
+  medDatabaseRemover.cpp
+  )
 
 ## #################################################################
 ## Wrapping
@@ -169,9 +191,9 @@ if (SWIG_FOUND)
     endif()
 endif()
 
-# Include header files for Visual Studio.
-source_group("Header Files" REGULAR_EXPRESSION .*\\.h\$)
-source_group("Generated Files" FILES ${${PROJECT_NAME}_SOURCES_MOC})
+if (BUILD_TESTING)
+  add_subdirectory (Testing)
+endif()
 
 ## #################################################################
 ## Installation

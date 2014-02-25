@@ -24,7 +24,6 @@ set(${PROJECT_NAME}_INCLUDE_DIR
     ${PROJECT_SOURCE_DIR}/src/medCore/annotationData
     ${PROJECT_SOURCE_DIR}/src/medGui
     ${PROJECT_SOURCE_DIR}/src/medPacs
-    ${PROJECT_SOURCE_DIR}/src/medSql
     ${PROJECT_SOURCE_DIR}/src/medTest
     ${PROJECT_SOURCE_DIR}/src/medGui/commonWidgets
     ${PROJECT_SOURCE_DIR}/src/medGui/factories
@@ -42,7 +41,6 @@ set(${PROJECT_NAME}_INSTALL_INCLUDE_DIR
     ${CMAKE_INSTALL_PREFIX}/src/medCore/annotationData
     ${CMAKE_INSTALL_PREFIX}/include/medGui
     ${CMAKE_INSTALL_PREFIX}/include/medPacs
-    ${CMAKE_INSTALL_PREFIX}/include/medSql
     ${CMAKE_INSTALL_PREFIX}/include/medTest
     ${CMAKE_INSTALL_PREFIX}/include/medGui/commonWidgets
     ${CMAKE_INSTALL_PREFIX}/include/medGui/factories

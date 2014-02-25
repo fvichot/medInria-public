@@ -612,7 +612,6 @@ INPUT                  = @CMAKE_SOURCE_DIR@/doc/dox \
                          @CMAKE_SOURCE_DIR@/src/medCore \
                          @CMAKE_SOURCE_DIR@/src/medGui \
                          @CMAKE_SOURCE_DIR@/src/medPacs \
-                         @CMAKE_SOURCE_DIR@/src/medSql \
 
 
 # This tag can be used to specify the character encoding of the source files

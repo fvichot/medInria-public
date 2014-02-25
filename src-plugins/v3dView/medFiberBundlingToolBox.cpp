@@ -21,7 +21,6 @@
 
 #include <medDataManager.h>
 #include <medAbstractDbController.h>
-#include <medDbControllerFactory.h>
 #include <v3dViewFiberInteractor.h>
 #include <medMessageController.h>
 #include <medDropSite.h>

@@ -144,7 +144,6 @@ target_link_libraries(${PROJECT_NAME}
   dtkVr
   medGui
   medCore
-  medSql
   medPacs)
 
 # Include header files for Visual Studio.

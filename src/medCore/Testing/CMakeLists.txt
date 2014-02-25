@@ -60,7 +60,6 @@ target_link_libraries(${PROJECT_NAME}
   medGui
   medCore
   medTest
-  medSql
   dtkCore)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

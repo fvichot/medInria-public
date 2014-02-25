@@ -27,7 +27,6 @@
 #include <medMessageController.h>
 #include <medStatusBar.h>
 #include <medSettingsManager.h>
-#include <medDbControllerFactory.h>
 #include <medJobManager.h>
 #include <medDataManager.h>
 
@@ -828,19 +827,10 @@ void medMainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 
     this->writeSettings();
-
-    medDatabaseController::destroy();
-    medDatabaseNonPersistentController::destroy();
-    medDataManager::destroy();
 }
 
 void medMainWindow::registerToFactories()
 {
-    //Register dbController
-    medDbControllerFactory::instance()->registerDbController("DbController", createDbController);
-    medDbControllerFactory::instance()->registerDbController("NonPersistentDbController", createNonPersistentDbController);
-
-
 #if defined(HAVE_SWIG) && defined(HAVE_PYTHON)
     // Setting up core python module
 

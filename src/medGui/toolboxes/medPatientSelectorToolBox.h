@@ -43,8 +43,6 @@ public slots:
 
 protected slots:
     void onCurrentIndexChanged(int);
-    //! Attaches new connections to the registered controller, and updates if needed.
-    void onDbControllerRegistered(const QString&);
 protected:
     int addChooseItem();
     void removeChooseItem();

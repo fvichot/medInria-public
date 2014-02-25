@@ -56,7 +56,6 @@ else()
         ${QT_QTTEST_LIBRARY}
         ${QT_QTLOCATION_LIBRARY}
         ${QT_LIBRARIES}
-        medSql
         dtkCore dtkLog
         medCore
         )

@@ -22,7 +22,6 @@
 #include <medDataManager.h>
 #include <medMetaDataKeys.h>
 #include <medAbstractDbController.h>
-#include <medDbControllerFactory.h>
 
 class medPatientSelectorToolBoxPrivate
 {
@@ -51,12 +50,7 @@ medPatientSelectorToolBox::medPatientSelectorToolBox(QWidget *parent) : medToolB
 
     connect(d->combo, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
 
-    medDbControllerFactory* dbFactory = medDbControllerFactory::instance();
-    connect(dbFactory, SIGNAL(dbControllerRegistered(const QString&)), this, SLOT(onDbControllerRegistered(const QString&)));
-
-    //connect all existing db controllers, also calls setupDatabase if any dbController
-    onDbControllerRegistered(QString());
-
+    this->setupDatabase();
 }
 
 medPatientSelectorToolBox::~medPatientSelectorToolBox(void)
@@ -252,14 +246,4 @@ void medPatientSelectorToolBox::setupDatabase(void)
             }
         }
     }
-
-    // d->combo->blockSignals (false);  // automatic.
-}
-
-void medPatientSelectorToolBox::onDbControllerRegistered( const QString& )
-{
-    // Connections are moved to medWorkspaceArea for now, the reason is that otherwise setupDatabase is called too late
-    // This method stays only to call the first setupDatabase method
-
-    this->setupDatabase();
 }
