@@ -24,7 +24,6 @@
 
 #include <medPluginManager.h>
 #include <medStyleSheetParser.h>
-#include <medDbControllerFactory.h>
 #include <medWorkspaceFactory.h>
 #include <medAbstractWorkspace.h>
 #include <medFilteringWorkspace.h>
@@ -230,10 +229,6 @@ void medApplication::redirectMessageToSplash(const QString &message)
 
 void medApplication::registerToFactories()
 {
-    //Register dbController
-    medDbControllerFactory::instance()->registerDbController("DbController", createDbController);
-    medDbControllerFactory::instance()->registerDbController("NonPersistentDbController", createNonPersistentDbController);
-
     // Registering different workspaces
     medWorkspaceFactory * viewerWSpaceFactory = medWorkspaceFactory::instance();
     viewerWSpaceFactory->registerWorkspace<medVisualizationWorkspace>();
