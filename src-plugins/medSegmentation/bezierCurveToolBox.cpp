@@ -194,13 +194,14 @@ medSegmentationAbstractToolBox( parent)
 
     this->setTitle(this->s_name(this));
 
-    QVBoxLayout * layout = new QVBoxLayout(displayWidget);
+    QVBoxLayout * layout = new QVBoxLayout();
+    displayWidget->setLayout(layout);
 
-    addNewCurve = new QPushButton(tr("Closed Polygon"),displayWidget);
+    addNewCurve = new QPushButton(tr("Closed Polygon"));
     addNewCurve->setToolTip(tr("Activate closed polygon mode"));
     connect(addNewCurve,SIGNAL(clicked()),this,SLOT(onAddNewCurve()));
     
-    generateBinaryImage_button = new QPushButton(tr("Generate Binary Image"),displayWidget);
+    generateBinaryImage_button = new QPushButton(tr("Generate Binary Image"));
     
     connect(generateBinaryImage_button,SIGNAL(clicked()),this,SLOT(generateBinaryImage()));
 
@@ -247,99 +248,12 @@ medSegmentationAbstractToolBox( parent)
     /*connect(propagate,SIGNAL(clicked()),this,SLOT(propagateCurve()));*/
     connect(interpolate,SIGNAL(clicked()),this,SLOT(interpolateCurve()));
 
-    histogramToolBox = new medHistogramToolBox(this);
+    histogramToolBox = new medHistogramToolBox();
     layout->addWidget(histogramToolBox);
+    histogramToolBox->hide(); // TODO: add a checkbox to hide/show the histogram toolbox.
 }
 
 bezierCurveToolBox::~bezierCurveToolBox(){}
-
-//void bezierCurveToolBox::onClearMaskClicked()
-//{
-//    if ( m_maskData && m_itkMask ){
-//        m_itkMask->FillBuffer( medSegmentationSelectorToolBox::MaskPixelValues::Unset );
-//        m_itkMask->Modified();
-//        m_itkMask->GetPixelContainer()->Modified();
-//        m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
-//
-//        m_maskAnnotationData->invokeModified();
-//    }
-//}
-
-//void bezierCurveToolBox::setData( dtkAbstractData *dtkdata )
-//{
-//    if (!dtkdata)
-//        return;
-//
-//    // disconnect existing
-//    if ( m_imageData ) {
-//        // TODO?
-//    }
-//
-//    m_lastVup = QVector3D();
-//    m_lastVpn = QVector3D();
-//
-//    m_imageData = dtkSmartPointer<dtkAbstractData>(dtkdata);
-//    
-//    // Update values of slider
-//
-//    GenerateMinMaxValuesFromImage < itk::Image <char,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <unsigned char,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <short,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <unsigned short,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <int,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <unsigned int,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <long,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <unsigned long,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <float,3> > ();
-//    GenerateMinMaxValuesFromImage < itk::Image <double,3> > ();
-//
-//    if ( m_imageData ) {
-//        medImageMaskAnnotationData * existingMaskAnnData = NULL;
-//        foreach( medAttachedData * data, m_imageData->attachedData() ) {
-//
-//            if ( qobject_cast<medImageMaskAnnotationData*>(data) ) {
-//                existingMaskAnnData =  qobject_cast<medImageMaskAnnotationData*>(data);
-//                break;
-//            }
-//        }
-//
-//        if ( existingMaskAnnData ) {
-//
-//            m_maskAnnotationData = existingMaskAnnData;
-//            m_maskData = existingMaskAnnData->maskData();
-//
-//        } else {
-//
-//            m_maskData =
-//                    dtkAbstractDataFactory::instance()->createSmartPointer( medProcessPaintSegm::MaskImageTypeIdentifier() );
-//
-//            if ( !m_maskData ) {
-//                dtkDebug() << DTK_PRETTY_FUNCTION << "Failed to create " << medProcessPaintSegm::MaskImageTypeIdentifier();
-//                return;
-//            }
-//
-//        //    if ( this->m_maskAnnotationData ) {
-//        //        m_maskAnnotationData->parentData()->removeAttachedData(m_maskAnnotationData);
-//        //    }
-//
-//            m_maskAnnotationData = new medImageMaskAnnotationData;
-//            this->initializeMaskData( m_imageData, m_maskData );
-//            m_maskAnnotationData->setMaskData(qobject_cast<medAbstractDataImage*>(m_maskData));
-//
-//            m_maskAnnotationData->setColorMap( m_labelColorMap );
-//
-//            m_imageData->addAttachedData(m_maskAnnotationData);
-//        }
-//    }
-//
-//    if ( m_imageData ) {
-//        m_itkMask = dynamic_cast<MaskType*>( reinterpret_cast<itk::Object*>(m_maskData->data()) );
-//        this->showButtons(true);
-//    } else {
-//        m_itkMask = NULL;
-//        this->showButtons(false);
-//    }
-//}
 
 //static
 medSegmentationAbstractToolBox *bezierCurveToolBox::createInstance(QWidget *parent )
