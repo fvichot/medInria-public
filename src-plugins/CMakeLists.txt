@@ -82,6 +82,8 @@ set(PLUGIN_LIST
   itkDataSHImage                 ON
   itkDataSHImageWriter           ON
   itkDataSHImageReader           ON
+  pointRoi                       ON
+  polygonRoi                     ON
   )
 
 if (MEDINRIA-PLUGINS_BUILD_EXAMPLES)

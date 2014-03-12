@@ -31,92 +31,8 @@
 #include <medAbstractRoi.h>
 #include <QtGui>
 #include <medRoiItemWidget.h>
-//#include <vtkImageView2D.h>
-//#include <vtkPointHandleRepresentation2D.h>
-//#include <vtkProperty2D.h>
-//#include <vtkSeedRepresentation.h>
-//#include <vtkSeedWidget.h>
-//#include <vtkHandleWidget.h>
-//#include <seedPointRoi.h>
-//#include <medVtkViewBackend.h>
-//
-//class toolBoxObserver : public vtkCommand
-//{
-//public:
-//    typedef QPair<unsigned int,unsigned int> PlaneIndexSlicePair;
-//
-//    static toolBoxObserver* New()
-//    {
-//        return new toolBoxObserver;
-//    }
-//
-//    void Execute ( vtkObject *caller, unsigned long event, void *callData );
-//
-//    void setView ( vtkImageView2D *view )
-//    {
-//        this->view = view;
-//        //view->AddObserver(vtkImageView2D::SliceChangedEvent,this);
-//    }
-//
-//    void setToolBox ( medRoiCreatorToolBox * toolBox )
-//    {
-//        this->toolBox = toolBox;
-//    }
-//
-//    inline void lock()
-//    {
-//        this->m_lock = 1;
-//    }
-//    inline void unlock()
-//    {
-//        this->m_lock = 0;
-//    }
-//
-//protected:
-//    toolBoxObserver();
-//    ~toolBoxObserver();
-//
-//private:
-//    int m_lock;
-//    vtkImageView2D *view;
-//    medRoiCreatorToolBox * toolBox;
-//};
-//
-//toolBoxObserver::toolBoxObserver()
-//{
-//    this->m_lock = 0;
-//}
-//
-//toolBoxObserver::~toolBoxObserver(){}
-//
-//void toolBoxObserver::Execute ( vtkObject *caller, unsigned long event, void *callData )
-//{
-//    if ( this->m_lock )
-//        return;
-//
-//    if (!this->view || !toolBox)
-//        return;
-//
-//    switch ( event )
-//    {
-//    case vtkCommand::PlacePointEvent:
-//        {
-//            vtkSeedWidget * seedWidget = dynamic_cast<vtkSeedWidget*>(caller);
-//            seedPointRoi * seedRoi = new seedPointRoi(view,seedWidget);
-//            toolBox->addRoi(toolBox->getCurrentView(), seedRoi,"Seeds");
-//            toolBox->seedMode(true); // create new seedWidget for next point
-//            break;
-//        }
-//    case vtkCommand::EndInteractionEvent:
-//        {
-//            
-//            break;
-//        }
-//    }
-//}
-
-
-
+#include <medToolBoxFactory.h>
+#include <medToolBoxBody.h>
 
 class medRoiCreatorToolBoxPrivate
 {
@@ -143,6 +59,7 @@ public:
     medAbstractRoi* roi;
     
     int currentPageIndex;
+    QList<medToolBox*> roiToolsTB;
 };
 
 medRoiCreatorToolBox::medRoiCreatorToolBox(QWidget *parent) : medToolBox(parent), d(new medRoiCreatorToolBoxPrivate)
@@ -188,6 +105,17 @@ medRoiCreatorToolBox::medRoiCreatorToolBox(QWidget *parent) : medToolBox(parent)
     this->addWidget(displayWidget);
 
     connect(d->layoutToolBoxTab,SIGNAL(currentChanged(int)),this,SLOT(saveCurrentPageIndex(int)));
+
+    QGridLayout * toolsLayout = new QGridLayout;
+    
+    foreach(QString toolbox_name,medToolBoxFactory::instance()->toolBoxesFromCategory("RoiTools"))
+    { 
+        d->roiToolsTB.append(medToolBoxFactory::instance()->createToolBox(toolbox_name));
+        toolsLayout->addWidget(d->roiToolsTB[d->roiToolsTB.size()-1]->body());
+        connect(d->roiToolsTB[d->roiToolsTB.size()-1],SIGNAL(roiCreated(medAbstractView*,medAbstractRoi*,QString)),this,SLOT(addRoi(medAbstractView*,medAbstractRoi*,QString)));
+    }
+
+    displayLayout->addLayout(toolsLayout);
 }
 
 medRoiCreatorToolBox::~medRoiCreatorToolBox(void)
@@ -205,8 +133,11 @@ void medRoiCreatorToolBox::update( dtkAbstractView *view )
     unselectRois(); // remove all selected rois of previous view
     d->currentView = dynamic_cast<medAbstractView*>(view);
     // TODO : update all the tabs for this current view
-    
+
     //d->observer->setView(static_cast<medVtkViewBackend*>(d->currentView->backend())->view2D);
+
+    foreach(medToolBox *tb, d->roiToolsTB)
+        tb->update(view);
 
     connect(d->currentView,SIGNAL(sliceChanged(int,bool)),this,SLOT(updateDisplay()),Qt::UniqueConnection);
     updateDisplay();
