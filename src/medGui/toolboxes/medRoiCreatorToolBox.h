@@ -43,6 +43,7 @@ public:
 
     medAbstractView * getCurrentView();
     QList<PairInd> getSelectedRois();
+    void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
 
 signals:
     

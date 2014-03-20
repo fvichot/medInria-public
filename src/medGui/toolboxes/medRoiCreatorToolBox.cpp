@@ -33,6 +33,7 @@
 #include <medRoiItemWidget.h>
 #include <medToolBoxFactory.h>
 #include <medToolBoxBody.h>
+#include <medDataManager.h>
 
 class medRoiCreatorToolBoxPrivate
 {
@@ -326,7 +327,31 @@ QList<medRoiCreatorToolBox::PairInd> medRoiCreatorToolBox::getSelectedRois()
 
 void medRoiCreatorToolBox::applyRoiToImage()
 {
-    // conversion vers brush roi puis appel du maskapplication process
+    //roiItem item selected
+    medRoiItemWidget * roiItem = qobject_cast<medRoiItemWidget*>(d->ListAllRois->itemWidget(d->contextMenuItem,0));
+    medRoiItemWidget::PairInd pair = roiItem->getIndex();
+    ListRois list = d->viewsRoisSeries->value(d->currentView)->at(pair.first)->getIndices();
+
+    dtkAbstractData * data;
+    foreach(medRoiToolBox * roitb,d->roiToolsTB)
+    {
+        if (roitb->roi_description()==list->at(0)->type())
+        {
+            data = roitb->convertToBinaryImage(list);
+            break;
+        }
+    }
+    dtkAbstractProcess * maskApplicationProcess = dtkAbstractProcessFactory::instance()->create("medMaskApplication");
+    if (!maskApplicationProcess)
+        return; // TODO : add message error like the plugin is not here or something like that
+    int layer = 0; // TODO : add also a way to choose the layer on which u want to apply the roi
+
+    maskApplicationProcess->setInput(data,0);
+    maskApplicationProcess->setInput(static_cast<dtkAbstractData*>(d->currentView->data()),layer);
+    maskApplicationProcess->update();
+
+    d->currentView->removeOverlay(layer);
+    d->currentView->setData(maskApplicationProcess->output(),layer);
 }
 
 void medRoiCreatorToolBox::onInterpolate() 
@@ -357,7 +382,10 @@ void medRoiCreatorToolBox::onGenerateBinaryImage()
     {
         if (roitb->roi_description()==list->at(0)->type())
         {
-            roitb->convertToBinaryImage(list);
+            dtkAbstractData * outputData = roitb->convertToBinaryImage(list);
+            dtkAbstractData *inputData = reinterpret_cast<dtkAbstractData*>(d->currentView->data());
+            setOutputMetadata(inputData,outputData);    
+            medDataManager::instance()->importNonPersistent(outputData);
             break;
         }
     }
@@ -380,18 +408,46 @@ void medRoiCreatorToolBox::onContextTreeMenu( const QPoint point )
     menu->setFocusPolicy(Qt::NoFocus);
     QAction * interpolate = new QAction(this);
     interpolate->setText(tr("Interpolate"));
+    menu->addAction(interpolate);
     connect(interpolate, SIGNAL(triggered()), this, SLOT(onInterpolate()));
+    
     QAction * generateBinaryImage = new QAction(this);
     generateBinaryImage->setText(tr("Generate Binary Image"));
+    menu->addAction(generateBinaryImage);
     connect(generateBinaryImage,SIGNAL(triggered()),this,SLOT(onGenerateBinaryImage()));
 
+    dtkAbstractProcess * maskApplicationProcess = dtkAbstractProcessFactory::instance()->create("medMaskApplication");
+    if (maskApplicationProcess)
+    {
+        QAction * applyRoiToImage_action = new QAction(this);
+        applyRoiToImage_action->setText(tr("Apply Roi To Image"));
+        menu->addAction(applyRoiToImage_action);
+        connect(applyRoiToImage_action,SIGNAL(triggered()),this,SLOT(applyRoiToImage()));
+    }
 
-    menu->addAction(interpolate);
-    menu->addAction(generateBinaryImage);
     menu->exec(d->ListAllRois->mapToGlobal(point));
     delete menu;
 }
     
+void medRoiCreatorToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
+{
+    Q_ASSERT(outputData && inputData);
+
+    QStringList metaDataToCopy;
+    metaDataToCopy 
+        << medMetaDataKeys::PatientName.key()
+        << medMetaDataKeys::StudyDescription.key();
+
+    foreach( const QString & key, metaDataToCopy ) {
+        outputData->setMetaData(key, inputData->metadatas(key));
+    }
+
+    QString seriesDesc;
+    seriesDesc = tr("Segmented from ") + medMetaDataKeys::SeriesDescription.getFirstValue( inputData );
+    medMetaDataKeys::SeriesDescription.set(outputData,seriesDesc);
+}
+
+
 
 /*******************************MEDSERIESOFROI*///////////////// MOVE THIS CLASS IN A FILE
 

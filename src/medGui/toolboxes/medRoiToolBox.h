@@ -31,7 +31,7 @@ public:
     ~medRoiToolBox();
     
     virtual void interpolateRois(QList<medAbstractRoi*>*);
-    virtual void convertToBinaryImage(QList<medAbstractRoi*>*); // will be the conversion to brush Roi later on ...
+    virtual dtkAbstractData * convertToBinaryImage(QList<medAbstractRoi*>*); // will be the conversion to brush Roi later on ...
     virtual void applyRoiToImage();
     virtual QString roi_description();
 

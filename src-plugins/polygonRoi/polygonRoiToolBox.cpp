@@ -705,10 +705,10 @@ void PolygonRoiToolBox::interpolateRois_inListOrientation(QList<medAbstractRoi*>
     currentView->update();
 }
 
-void PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
+dtkAbstractData * PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
 {
     if (!currentView)
-        return;
+        return NULL;
 
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
@@ -730,7 +730,7 @@ void PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list)
     view2d->SetViewOrientation(orientation);
     
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > listPolygon = createImagePolygons(listPolyData);
-    binaryImageFromPolygon(listPolygon);
+    return binaryImageFromPolygon(listPolygon);
 }
 
 
@@ -813,7 +813,7 @@ QList<QPair<vtkPolygon*,PolygonRoiToolBox::PlaneIndexSlicePair> > PolygonRoiTool
 }
 
 
-void PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
+dtkAbstractData * PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
@@ -862,37 +862,37 @@ void PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInde
         }
         
         /**********************-TEST WITH GRAPHICGEMS CODE--------------------------------*/
-        int nbPoints = polys[k].first->GetPoints()->GetNumberOfPoints();
-        Window * win = new Window();
-        Point2 * pt = static_cast<Point2*>(malloc(sizeof(Point2)*nbPoints)) ;
-        win->x0=bounds[bx];win->x1=bounds[bx+1];win->y0=bounds[by];win->y1 = bounds[by+1];
-        vtkPoints * pointsArray =polys[k].first->GetPoints(); 
-        for(int i=0;i<nbPoints;i++)
-        {
-            pt[i].x = pointsArray->GetPoint(i)[0];
-            pt[i].y = pointsArray->GetPoint(i)[1];
-        }
-        double *img = fillConcavePolygon(nbPoints,pt,win,1);
-        // recuperer info stocke ds img.
+        //int nbPoints = polys[k].first->GetPoints()->GetNumberOfPoints();
+        //Window * win = new Window();
+        //Point2 * pt = static_cast<Point2*>(malloc(sizeof(Point2)*nbPoints)) ;
+        //win->x0=bounds[bx];win->x1=bounds[bx+1];win->y0=bounds[by];win->y1 = bounds[by+1];
+        //vtkPoints * pointsArray =polys[k].first->GetPoints(); 
+        //for(int i=0;i<nbPoints;i++)
+        //{
+        //    pt[i].x = pointsArray->GetPoint(i)[0];
+        //    pt[i].y = pointsArray->GetPoint(i)[1];
+        //}
+        //double *img = fillConcavePolygon(nbPoints,pt,win,1);
+        //// recuperer info stocke ds img.
 
-        int sizeX = win->x1-win->x0;
-        int sizeY = win->y1-win->y0;
-        if (img)
-            for (int i=0;i<sizeX;i++)
-                for(int j=0;j<sizeY;j++)
-                    if (img[i*sizeY+j]==1)
-                    {
-                        MaskType::IndexType index;
-                        index[x]=i+win->x0;index[y]=j+win->y0;index[z]=polys[k].second.first;
-                        m_itkMask->SetPixel(index,1);
-                    }
-            
-        free(img);
-        free(pt);
-        delete win;
+        //int sizeX = win->x1-win->x0;
+        //int sizeY = win->y1-win->y0;
+        //if (img)
+        //    for (int i=0;i<sizeX;i++)
+        //        for(int j=0;j<sizeY;j++)
+        //            if (img[i*sizeY+j]==1)
+        //            {
+        //                MaskType::IndexType index;
+        //                index[x]=i+win->x0;index[y]=j+win->y0;index[z]=polys[k].second.first;
+        //                m_itkMask->SetPixel(index,1);
+        //            }
+        //    
+        //free(img);
+        //free(pt);
+        //delete win;
         
         /**********************-TEST WITH GRAPHICGEMS CODE OVER--------------------------------*/
-        /*for(int i=bounds[bx];i<=bounds[bx+1];i++)
+        for(int i=bounds[bx];i<=bounds[bx+1];i++)
         {
             for(int j=bounds[by];j<=bounds[by+1];j++)
             {
@@ -912,10 +912,11 @@ void PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneInde
                     m_itkMask->SetPixel(index,1);
                 }
             }
-        }*/
+        }
     }
     this->setOutputMetadata(reinterpret_cast< medAbstractData * >( currentView->data()), m_maskData);
-    medDataManager::instance()->importNonPersistent( m_maskData.data());
+    //medDataManager::instance()->importNonPersistent( m_maskData.data());
+    return m_maskData.data();
 }
 
 void PolygonRoiToolBox::initializeMaskData( medAbstractData * imageData, medAbstractData * maskData )
