@@ -18,6 +18,7 @@
 
 #include <medDataManager.h>
 #include <medAbstractDbController.h>
+#include <medRoiToolBox.h>
 #include <medToolBoxBody.h>
 #include <medToolBoxFactory.h>
 #include <vtkSeedWidget.h>
@@ -111,7 +112,7 @@ public:
      toolBoxObserver * observer;
 };
 
-pointRoiToolBox::pointRoiToolBox(QWidget *parent) : medToolBox(parent), d(new pointRoiToolBoxPrivate)
+pointRoiToolBox::pointRoiToolBox(QWidget *parent) : medRoiToolBox(parent), d(new pointRoiToolBoxPrivate)
 {
     QPushButton *seedButton = new QPushButton("Point");
     seedButton->setCheckable(true);
@@ -184,4 +185,9 @@ medAbstractView * pointRoiToolBox::getCurrentView()
 void pointRoiToolBox::emitRoiCreated(medAbstractView * view, medAbstractRoi* roi, QString type)
 {
     emit roiCreated(view,roi,type);
+}
+
+QString pointRoiToolBox::roi_description()
+{
+    return "Point";
 }

@@ -48,6 +48,7 @@ public:
     virtual void select();
     virtual void unselect();
     virtual void computeRoiStatistics();
+    //virtual void interpolateRoi(QList<medAbstractRoi*> * list);
 
 public slots:
     

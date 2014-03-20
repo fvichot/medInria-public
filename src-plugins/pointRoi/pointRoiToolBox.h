@@ -13,7 +13,7 @@ PURPOSE.
 
 #pragma once
 
-#include <medToolBox.h>
+#include <medRoiToolBox.h>
 #include <dtkCore/dtkAbstractView.h>
 #include <medAbstractView.h>
 #include <PointRoiPluginExport.h>
@@ -21,7 +21,7 @@ PURPOSE.
 
 class pointRoiToolBoxPrivate;
 
-class POINTROIPLUGIN_EXPORT pointRoiToolBox : public medToolBox
+class POINTROIPLUGIN_EXPORT pointRoiToolBox : public medRoiToolBox
 {
     Q_OBJECT
 
@@ -32,6 +32,8 @@ public:
     virtual void update(dtkAbstractView * view);
 
     static bool registered();
+
+    virtual QString roi_description();
 
     medAbstractView * getCurrentView();
 

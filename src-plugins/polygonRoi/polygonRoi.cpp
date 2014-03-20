@@ -28,7 +28,38 @@ public:
         return new polygonRoiObserver;
     }
 
-    void Execute ( vtkObject *caller, unsigned long event, void *callData );
+    virtual void Execute ( vtkObject *caller, unsigned long event, void *callData )
+    {
+        if (this->m_lock )
+            return;
+
+        if (!this->roi->getView())
+            return;
+
+        switch ( event )
+        {
+        case vtkCommand::StartInteractionEvent:
+            {
+                roi->setIdSlice(roi->getView()->GetSlice());
+                roi->setOrientation(roi->getView()->GetViewOrientation());
+                break;
+            }
+        case vtkImageView2D::SliceChangedEvent:
+            {
+                roi->showOrHide(roi->getView()->GetViewOrientation(),roi->getView()->GetSlice());
+                break;
+            }
+        case vtkCommand::EndInteractionEvent:
+            {
+                emit roi->selected(); // will trigger the computation of new statistics
+            }
+        }
+    }
+
+    void setView ( vtkImageView2D *view )
+    {
+        this->view = view;
+    }
 
     void setRoi ( polygonRoi *roi )
     {
@@ -51,6 +82,7 @@ protected:
 private:
     int m_lock;
     polygonRoi * roi;
+    vtkImageView2D * view;
 };
 
 polygonRoiObserver::polygonRoiObserver()
@@ -60,28 +92,7 @@ polygonRoiObserver::polygonRoiObserver()
 
 polygonRoiObserver::~polygonRoiObserver(){}
 
-void polygonRoiObserver::Execute ( vtkObject *caller, unsigned long event, void *callData )
-{
-    if (this->m_lock )
-        return;
 
-    if (!this->roi->getView())
-        return;
-
-    switch ( event )
-    {
-        case vtkImageView2D::SliceChangedEvent:
-        default:
-        {
-            roi->showOrHide(roi->getView()->GetViewOrientation(),roi->getView()->GetSlice());
-            break;
-        }
-        case vtkCommand::EndInteractionEvent:
-        {
-            emit roi->selected(); // will trigger the computation of new statistics
-        }
-    }
-}
 
 class polygonRoiPrivate
 {
@@ -123,6 +134,7 @@ polygonRoi::polygonRoi(vtkImageView2D * view, medAbstractRoi *parent )
     d->observer->setRoi(this);
     d->view->AddObserver(vtkImageView2D::SliceChangedEvent,d->observer,0);
     d->contour->AddObserver(vtkCommand::EndInteractionEvent,d->observer,0);
+    d->contour->AddObserver(vtkCommand::StartInteractionEvent,d->observer,0);
 }
 
 
@@ -229,3 +241,101 @@ void polygonRoi::unselect()
 }
 
 void polygonRoi::computeRoiStatistics(){}
+
+//void polygonRoi::interpolateRoi(QList<medAbstractRoi*> * list) 
+//{
+//    //ListOfSeriesOfRois listSeries = roiToolBox->getSeriesOfRoi()->value(currentView);
+//
+//    //QList<QPair<unsigned int,unsigned int> > listInd = roiToolBox->getSelectedRois();
+//    //if (listInd.size()!=1) // This part of the code need improvement
+//    //    return;
+//    //else
+//    //{
+//    //    if (listInd[0].second!=-1)
+//    //        return;
+//    //    else
+//    //    {
+//    //        list = listSeries->at(listInd[0].first)->getIndices();
+//    //    }
+//    //}
+//    //
+//    if (!list || list->isEmpty())
+//        return;
+//
+//    int orientation = d->view->GetViewOrientation();
+//    
+//    int maxSlice = 0;
+//    int minSlice = 999999;
+//    
+//    for(int i=0;i<list->size();i++)
+//    {
+//        polygonRoi * polyRoi = dynamic_cast<polygonRoi*>(list->at(i)); 
+//        if (polyRoi->getOrientation()==orientation)
+//        {
+//            int idSlice = polyRoi->getIdSlice();
+//            if (idSlice>maxSlice)
+//                maxSlice = idSlice;
+//            if (idSlice<minSlice)
+//                minSlice = idSlice;
+//        }
+//    }
+//
+//    vtkSmartPointer<vtkPolyData> curve1;
+//    vtkSmartPointer<vtkPolyData> curve2;
+//    int curve1NbNode, curve2NbNode;
+//
+//    for(int i=0;i<list->size();i++)
+//    {
+//        polygonRoi * polyRoi = dynamic_cast<polygonRoi*>(list->at(i));
+//        if (polyRoi->getOrientation()==orientation)
+//        {
+//            int idSlice = polyRoi->getIdSlice();
+//            vtkContourWidget * contour = polyRoi->getContour();
+//            if (idSlice==maxSlice)
+//            {
+//                curve1 = contour->GetContourRepresentation()->GetContourRepresentationAsPolyData();
+//                curve1NbNode = contour->GetContourRepresentation()->GetNumberOfNodes();
+//            }
+//            if (idSlice==minSlice)
+//            {
+//                curve2 = contour->GetContourRepresentation()->GetContourRepresentationAsPolyData();
+//                curve2NbNode = contour->GetContourRepresentation()->GetNumberOfNodes();
+//            }
+//        }
+//    }
+//
+//    QList<vtkPolyData *> listPolyData = generateIntermediateCurves(curve1,curve2,maxSlice-minSlice-1);
+//
+//    int number = ceil(4/3.0 * (double)(curve2NbNode));
+//    if (curve1NbNode>curve2NbNode)
+//        number = ceil(4/3.0 * (double)(curve1NbNode));
+//
+//    for (int i = minSlice+1;i<maxSlice;i++)
+//    {
+//        polygonRoi * polyRoi = new polygonRoi(d->view);
+//        vtkContourWidget * contour = polyRoi->getContour();
+//        contour->Initialize(listPolyData.at(i-(minSlice+1))); 
+//        vtkContourRepresentation * contourRep = contour->GetContourRepresentation();
+//        
+//        int nbPoints = contourRep->GetNumberOfNodes();
+//        int div = floor(nbPoints/(double)number);
+//        bool first = true;
+//        for (int k = nbPoints-1;k>=0;k--)
+//        {
+//            if (k%div!=0)
+//                contourRep->DeleteNthNode(k);
+//            else
+//                if (first) // delete the last node, no need for that normally
+//                {
+//                    contourRep->DeleteNthNode(k);
+//                    first=false;
+//                }
+//        }
+//        contourRep->SetClosedLoop(1); 
+//                
+//        polyRoi->setIdSlice(i);
+//        emitRoiCreated(currentView,polyRoi,"Polygon rois");
+//        connect(polyRoi,SIGNAL(selected()),this,SLOT(computeStatistics()));
+//    }
+//    currentView->update();
+//}

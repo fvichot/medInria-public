@@ -24,10 +24,10 @@
 #include <medMessageController.h>
 #include <medMetaDataKeys.h>
 #include <medToolBoxFactory.h>
+#include <medRoiToolBox.h>
 #include <medToolBoxTab.h>
 #include <medViewManager.h>
 #include <medWorkspace.h>
-#include <medToolBoxTab.h>
 #include <medAbstractRoi.h>
 #include <QtGui>
 #include <medRoiItemWidget.h>
@@ -59,7 +59,9 @@ public:
     medAbstractRoi* roi;
     
     int currentPageIndex;
-    QList<medToolBox*> roiToolsTB;
+    QList<medRoiToolBox*> roiToolsTB;
+
+    QTreeWidgetItem * contextMenuItem;
 };
 
 medRoiCreatorToolBox::medRoiCreatorToolBox(QWidget *parent) : medToolBox(parent), d(new medRoiCreatorToolBoxPrivate)
@@ -80,6 +82,8 @@ medRoiCreatorToolBox::medRoiCreatorToolBox(QWidget *parent) : medToolBox(parent)
     headers << tr("Type") << tr("Name") << tr("Area") << tr("Volume") << tr("");
     d->ListAllRois->setHeaderLabels(headers);
     allLayout->addWidget(d->ListAllRois);
+    d->ListAllRois->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(d->ListAllRois, SIGNAL(customContextMenuRequested(QPoint)),this, SLOT(onContextTreeMenu(QPoint)));
 
     /*QWidget * currentSliceTab = new QWidget(this);
     QVBoxLayout *currentSliceLayout = new QVBoxLayout(currentSliceTab);
@@ -110,12 +114,14 @@ medRoiCreatorToolBox::medRoiCreatorToolBox(QWidget *parent) : medToolBox(parent)
     
     foreach(QString toolbox_name,medToolBoxFactory::instance()->toolBoxesFromCategory("RoiTools"))
     { 
-        d->roiToolsTB.append(medToolBoxFactory::instance()->createToolBox(toolbox_name));
+        d->roiToolsTB.append(qobject_cast<medRoiToolBox*>(medToolBoxFactory::instance()->createToolBox(toolbox_name)));
         toolsLayout->addWidget(d->roiToolsTB[d->roiToolsTB.size()-1]->body());
         connect(d->roiToolsTB[d->roiToolsTB.size()-1],SIGNAL(roiCreated(medAbstractView*,medAbstractRoi*,QString)),this,SLOT(addRoi(medAbstractView*,medAbstractRoi*,QString)));
     }
 
     displayLayout->addLayout(toolsLayout);
+
+    d->contextMenuItem=0;
 }
 
 medRoiCreatorToolBox::~medRoiCreatorToolBox(void)
@@ -193,7 +199,7 @@ void medRoiCreatorToolBox::updateDisplay()
             serieItem->setSizeHint(0,widget->sizeHint());
             d->ListAllRois->insertTopLevelItem(k,serieItem);
             d->ListAllRois->setItemWidget(serieItem,0,widget);
-
+            
             for(unsigned int i=0;i<list->size();i++)
             {
                 QTreeWidgetItem *item = new QTreeWidgetItem(serieItem);
@@ -318,7 +324,74 @@ QList<medRoiCreatorToolBox::PairInd> medRoiCreatorToolBox::getSelectedRois()
     return d->roisSelected;
 }
 
+void medRoiCreatorToolBox::applyRoiToImage()
+{
+    // conversion vers brush roi puis appel du maskapplication process
+}
 
+void medRoiCreatorToolBox::onInterpolate() 
+{
+    //roiItem item selected
+    medRoiItemWidget * roiItem = qobject_cast<medRoiItemWidget*>(d->ListAllRois->itemWidget(d->contextMenuItem,0));
+    medRoiItemWidget::PairInd pair = roiItem->getIndex();
+    ListRois list = d->viewsRoisSeries->value(d->currentView)->at(pair.first)->getIndices();
+
+    foreach(medRoiToolBox * roitb,d->roiToolsTB)
+    {
+        if (roitb->roi_description()==list->at(0)->type())
+        {
+            roitb->interpolateRois(list);
+            break;
+        }
+    }
+}
+
+void medRoiCreatorToolBox::onGenerateBinaryImage() 
+{
+    //roiItem item selected
+    medRoiItemWidget * roiItem = qobject_cast<medRoiItemWidget*>(d->ListAllRois->itemWidget(d->contextMenuItem,0));
+    medRoiItemWidget::PairInd pair = roiItem->getIndex();
+    ListRois list = d->viewsRoisSeries->value(d->currentView)->at(pair.first)->getIndices();
+
+    foreach(medRoiToolBox * roitb,d->roiToolsTB)
+    {
+        if (roitb->roi_description()==list->at(0)->type())
+        {
+            roitb->convertToBinaryImage(list);
+            break;
+        }
+    }
+}
+
+void medRoiCreatorToolBox::onContextTreeMenu( const QPoint point )
+{
+
+    QTreeWidgetItem * item = 0;
+    item = d->ListAllRois->itemAt(point);
+
+    if (!item)
+        return;
+
+    d->contextMenuItem = item;
+
+    item->setSelected(true);
+
+    QMenu * menu = new QMenu(d->ListAllRois);
+    menu->setFocusPolicy(Qt::NoFocus);
+    QAction * interpolate = new QAction(this);
+    interpolate->setText(tr("Interpolate"));
+    connect(interpolate, SIGNAL(triggered()), this, SLOT(onInterpolate()));
+    QAction * generateBinaryImage = new QAction(this);
+    generateBinaryImage->setText(tr("Generate Binary Image"));
+    connect(generateBinaryImage,SIGNAL(triggered()),this,SLOT(onGenerateBinaryImage()));
+
+
+    menu->addAction(interpolate);
+    menu->addAction(generateBinaryImage);
+    menu->exec(d->ListAllRois->mapToGlobal(point));
+    delete menu;
+}
+    
 
 /*******************************MEDSERIESOFROI*///////////////// MOVE THIS CLASS IN A FILE
 

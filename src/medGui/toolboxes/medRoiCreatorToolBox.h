@@ -43,7 +43,7 @@ public:
 
     medAbstractView * getCurrentView();
     QList<PairInd> getSelectedRois();
-    
+
 signals:
     
 public slots:
@@ -56,6 +56,10 @@ public slots:
     void selectRois();
     void unselectRois();
     void deleteRoi(PairInd);
+    void onInterpolate();
+    void onGenerateBinaryImage();
+    void applyRoiToImage();
+    void onContextTreeMenu( const QPoint point );
 
 private:
     medRoiCreatorToolBoxPrivate *d;

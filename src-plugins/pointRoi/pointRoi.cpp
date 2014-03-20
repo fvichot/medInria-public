@@ -114,7 +114,7 @@ void pointRoi::On()
 }
 
 QString pointRoi::info(){return QString();}
-QString pointRoi::type(){return "SeedPoint";}
+QString pointRoi::type(){return "Point";}
 void pointRoi::computeRoiStatistics(){}
 
 vtkImageView2D * pointRoi::getView()

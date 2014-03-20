@@ -13,10 +13,7 @@
 
 #pragma once
 
-#include <medSegmentationAbstractToolBox.h>
-
 #include <polygonRoiPluginExport.h>
-
 #include <dtkCore/dtkAbstractData.h>
 #include <dtkCore/dtkSmartPointer.h>
 
@@ -39,8 +36,7 @@
 #include <medAbstractRoi.h>
 #include <polygonRoi.h>
 #include <medRoiCreatorToolBox.h>
-//#include <medRoiManagementToolBox.h>
-//#include <medHistogramToolBox.h>
+#include <medRoiToolBox.h>
 
 class medAbstractData;
 class medAbstractView;
@@ -50,8 +46,8 @@ class contourWidgetObserver;
 class dtkAbstractProcessFactory;
 
 
-//! Segmentation toolbox to allow manual painting of pixels
-class POLYGONROIPLUGIN_EXPORT PolygonRoiToolBox : public medSegmentationAbstractToolBox
+//! Polygon roi toolBox
+class POLYGONROIPLUGIN_EXPORT PolygonRoiToolBox : public medRoiToolBox
 {
     Q_OBJECT;
 public:
@@ -66,20 +62,7 @@ public:
     PolygonRoiToolBox( QWidget *parent );
     ~PolygonRoiToolBox();
 
-     //! Override dtkAbstractObject
-    QString description() const { return s_description(); }
-    QString identifier() const { return s_identifier(); }
-
-    static medSegmentationAbstractToolBox * createInstance( QWidget *parent );
-
-    static QString s_description();
-
-    /** Get name to use for this when registering with a factory.*/
-    static QString s_identifier();
-
-    //! Get a human readable name for this widget.
-    /** \param trObj : Provide an object for the tr() function. If NULL qApp will be used. */
-    static QString s_name(const QObject * trObj =  NULL);
+    virtual QString roi_description();
 
     void setCurrentView(medAbstractView * view);
     void update(dtkAbstractView * view);
@@ -89,11 +72,9 @@ public slots:
 
     //void onViewClosed();
 
-    //void activatePolygonRoi(bool);
-    void onAddNewCurve();
+    void activatePolygonMode();
 
     //void generateBinaryImage(vtkSmartPointer<vtkPolyData> pd);
-    void generateBinaryImage();
     
     //void copyContours(); // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
     //void pasteContours(int slice1,int slice2);
@@ -101,13 +82,15 @@ public slots:
 
     //void propagateCurve();
     
-    void interpolateCurve();
+    void convertToBinaryImage(QList<medAbstractRoi*>*);
+    void interpolateRois(QList<medAbstractRoi*>*);
     
     RoiStatistics ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon);
 
     void computeStatistics();
 
 protected:
+    void interpolateRois_inListOrientation(QList<medAbstractRoi*>*);
     void binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
     void reorderPolygon(vtkPolyData * poly);
     QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
@@ -123,6 +106,7 @@ protected:
                                 double bounds[6], double *n);
 
     void emitRoiCreated(medAbstractView*, medAbstractRoi*, QString);
+    QList<medAbstractRoi*> *  sort(QList<medAbstractRoi*> *list);
 signals:
     void roiCreated(medAbstractView*,medAbstractRoi*,QString);
 
@@ -136,7 +120,8 @@ private:
     //MaskType::Pointer m_itkMask;
     dtkSmartPointer<medAbstractView> currentView;
     
-    QPushButton * addNewCurve;
+    QPushButton * polygonButton;
+    bool polygonModeON;
     QPushButton * generateBinaryImage_button;
     QPushButton * propagate;
     QPushButton * interpolate;
