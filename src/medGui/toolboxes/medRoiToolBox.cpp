@@ -41,7 +41,7 @@ void medRoiToolBox::interpolateRois(QList<medAbstractRoi*>* list)
 
 }
 
-dtkAbstractData * medRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list)
+medAbstractData *  medRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list)
 {
     return NULL;
 }

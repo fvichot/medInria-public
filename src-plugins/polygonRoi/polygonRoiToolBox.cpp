@@ -705,7 +705,7 @@ void PolygonRoiToolBox::interpolateRois_inListOrientation(QList<medAbstractRoi*>
     currentView->update();
 }
 
-dtkAbstractData * PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
+medAbstractData * PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
 {
     if (!currentView)
         return NULL;
@@ -813,7 +813,7 @@ QList<QPair<vtkPolygon*,PolygonRoiToolBox::PlaneIndexSlicePair> > PolygonRoiTool
 }
 
 
-dtkAbstractData * PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
+medAbstractData * PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     

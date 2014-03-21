@@ -16,6 +16,7 @@
 #include <medToolBox.h>
 #include <medGuiExport.h>
 #include <medAbstractRoi.h>
+#include <medAbstractData.h>
 
 class dtkAbstractView;
 class medRoiToolBoxPrivate;
@@ -31,7 +32,7 @@ public:
     ~medRoiToolBox();
     
     virtual void interpolateRois(QList<medAbstractRoi*>*);
-    virtual dtkAbstractData * convertToBinaryImage(QList<medAbstractRoi*>*); // will be the conversion to brush Roi later on ...
+    virtual medAbstractData * convertToBinaryImage(QList<medAbstractRoi*>*); // will be the conversion to brush Roi later on ...
     virtual void applyRoiToImage();
     virtual QString roi_description();
 

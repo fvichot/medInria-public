@@ -15,6 +15,7 @@ PURPOSE.
 
 #include <medRoiToolBox.h>
 #include <dtkCore/dtkAbstractView.h>
+#include <dtkCore/dtkSmartPointer.h>
 #include <medAbstractView.h>
 #include <PointRoiPluginExport.h>
 #include <medAbstractRoi.h>

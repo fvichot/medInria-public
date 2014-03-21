@@ -82,7 +82,7 @@ public slots:
 
     //void propagateCurve();
     
-    dtkAbstractData * convertToBinaryImage(QList<medAbstractRoi*>*);
+    medAbstractData * convertToBinaryImage(QList<medAbstractRoi*>*);
     void interpolateRois(QList<medAbstractRoi*>*);
     
     RoiStatistics ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon);
@@ -91,7 +91,7 @@ public slots:
 
 protected:
     void interpolateRois_inListOrientation(QList<medAbstractRoi*>*);
-    dtkAbstractData * binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
+    medAbstractData* binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys);
     void reorderPolygon(vtkPolyData * poly);
     QList<vtkPolyData* > generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb);
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly);

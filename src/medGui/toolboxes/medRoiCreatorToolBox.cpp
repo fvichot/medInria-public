@@ -332,7 +332,7 @@ void medRoiCreatorToolBox::applyRoiToImage()
     medRoiItemWidget::PairInd pair = roiItem->getIndex();
     ListRois list = d->viewsRoisSeries->value(d->currentView)->at(pair.first)->getIndices();
 
-    dtkAbstractData * data;
+    medAbstractData * data;
     foreach(medRoiToolBox * roitb,d->roiToolsTB)
     {
         if (roitb->roi_description()==list->at(0)->type())
@@ -342,12 +342,11 @@ void medRoiCreatorToolBox::applyRoiToImage()
         }
     }
     dtkAbstractProcess * maskApplicationProcess = dtkAbstractProcessFactory::instance()->create("medMaskApplication");
-    if (!maskApplicationProcess)
-        return; // TODO : add message error like the plugin is not here or something like that
+    
     int layer = 0; // TODO : add also a way to choose the layer on which u want to apply the roi
 
     maskApplicationProcess->setInput(data,0);
-    maskApplicationProcess->setInput(static_cast<dtkAbstractData*>(d->currentView->data()),layer);
+    maskApplicationProcess->setInput(reinterpret_cast<medAbstractData*>(d->currentView->data()),1);
     maskApplicationProcess->update();
 
     d->currentView->removeOverlay(layer);
@@ -382,8 +381,8 @@ void medRoiCreatorToolBox::onGenerateBinaryImage()
     {
         if (roitb->roi_description()==list->at(0)->type())
         {
-            dtkAbstractData * outputData = roitb->convertToBinaryImage(list);
-            dtkAbstractData *inputData = reinterpret_cast<dtkAbstractData*>(d->currentView->data());
+            medAbstractData * outputData = roitb->convertToBinaryImage(list);
+            medAbstractData *inputData = reinterpret_cast<medAbstractData*>(d->currentView->data());
             setOutputMetadata(inputData,outputData);    
             medDataManager::instance()->importNonPersistent(outputData);
             break;
