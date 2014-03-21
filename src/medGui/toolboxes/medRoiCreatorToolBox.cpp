@@ -381,7 +381,8 @@ void medRoiCreatorToolBox::onGenerateBinaryImage()
     {
         if (roitb->roi_description()==list->at(0)->type())
         {
-            medAbstractData * outputData = roitb->convertToBinaryImage(list);
+            dtkSmartPointer<dtkAbstractData> outputData = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageUChar3");
+            outputData->setData(roitb->convertToBinaryImage(list)->data());
             medAbstractData *inputData = reinterpret_cast<medAbstractData*>(d->currentView->data());
             setOutputMetadata(inputData,outputData);    
             medDataManager::instance()->importNonPersistent(outputData);
@@ -436,7 +437,7 @@ void medRoiCreatorToolBox::setOutputMetadata(const dtkAbstractData * inputData, 
     metaDataToCopy 
         << medMetaDataKeys::PatientName.key()
         << medMetaDataKeys::StudyDescription.key();
-
+ 
     foreach( const QString & key, metaDataToCopy ) {
         outputData->setMetaData(key, inputData->metadatas(key));
     }
