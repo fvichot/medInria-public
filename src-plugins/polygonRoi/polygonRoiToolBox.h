@@ -47,7 +47,7 @@ class dtkAbstractProcessFactory;
 
 
 //! Polygon roi toolBox
-class POLYGONROIPLUGIN_EXPORT PolygonRoiToolBox : public medRoiToolBox
+class POLYGONROIPLUGIN_EXPORT polygonRoiToolBox : public medRoiToolBox
 {
     Q_OBJECT;
 public:
@@ -59,8 +59,8 @@ public:
     typedef QList<medAbstractRoi*> * ListRois;
     typedef QHash<medAbstractView*,QList<int> *> MapPlaneIndex;
     
-    PolygonRoiToolBox( QWidget *parent );
-    ~PolygonRoiToolBox();
+    polygonRoiToolBox( QWidget *parent );
+    ~polygonRoiToolBox();
 
     virtual QString roi_description();
 

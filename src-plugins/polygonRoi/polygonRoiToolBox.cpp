@@ -11,7 +11,7 @@
 
 =========================================================================*/
 
-#include "PolygonRoiToolBox.h"
+#include "polygonRoiToolBox.h"
 
 #include <medAbstractData.h>
 #include <medAbstractDataImage.h>
@@ -111,7 +111,7 @@ public:
         //view->AddObserver(vtkImageView2D::SliceChangedEvent,this);
     }
 
-    void setToolBox ( PolygonRoiToolBox * toolBox )
+    void setToolBox ( polygonRoiToolBox * toolBox )
     {
         this->toolBox = toolBox;
     }
@@ -132,7 +132,7 @@ protected:
 private:
     int m_lock;
     vtkImageView2D *view;
-    PolygonRoiToolBox * toolBox;
+    polygonRoiToolBox * toolBox;
 };
 
 contourWidgetObserver::contourWidgetObserver()
@@ -183,7 +183,7 @@ void contourWidgetObserver::Execute ( vtkObject *caller, unsigned long event, vo
     }
 }
 
-PolygonRoiToolBox::PolygonRoiToolBox(QWidget *parent ) :
+polygonRoiToolBox::polygonRoiToolBox(QWidget *parent ) :
 medRoiToolBox( parent)
 {
     polygonButton = new QPushButton(tr("Polygon"));
@@ -212,27 +212,27 @@ medRoiToolBox( parent)
     //propagate = new QPushButton("Propagate",this);
 }
 
-PolygonRoiToolBox::~PolygonRoiToolBox(){}
+polygonRoiToolBox::~polygonRoiToolBox(){}
 
-QString PolygonRoiToolBox::roi_description()
+QString polygonRoiToolBox::roi_description()
 {
     return "Polygon";
 }
 
-bool PolygonRoiToolBox::registered()
+bool polygonRoiToolBox::registered()
 {
-    return medToolBoxFactory::instance()->registerToolBox<PolygonRoiToolBox>("polygonRoiToolBox",
+    return medToolBoxFactory::instance()->registerToolBox<polygonRoiToolBox>("polygonRoiToolBox",
                                                                              "polygonRoiToolBox",
                                                                              "polygon Roi ToolBox",
                                                                              QStringList()<<"RoiTools");
 }
 
-void PolygonRoiToolBox::emitRoiCreated(medAbstractView * view, medAbstractRoi* roi, QString type)
+void polygonRoiToolBox::emitRoiCreated(medAbstractView * view, medAbstractRoi* roi, QString type)
 {
     emit roiCreated(view,roi,type);
 }
 
-//void PolygonRoiToolBox::onViewClosed()
+//void polygonRoiToolBox::onViewClosed()
 //{
 //    medAbstractView *viewClosed = qobject_cast<medAbstractView*>(QObject::sender());
 //    m_undoStacks->value(viewClosed)->clear();
@@ -244,7 +244,7 @@ void PolygonRoiToolBox::emitRoiCreated(medAbstractView * view, medAbstractRoi* r
 //}
 
 
-void PolygonRoiToolBox::update(dtkAbstractView *view)
+void polygonRoiToolBox::update(dtkAbstractView *view)
 {
     if(!view)
     {
@@ -275,7 +275,7 @@ void PolygonRoiToolBox::update(dtkAbstractView *view)
     //                 Qt::UniqueConnection);
 }
 
-//void PolygonRoiToolBox::setCurrentView(medAbstractView * view)
+//void polygonRoiToolBox::setCurrentView(medAbstractView * view)
 //{
 //    currentView = view;
 //    
@@ -287,7 +287,7 @@ void PolygonRoiToolBox::update(dtkAbstractView *view)
 //}
 //
 
-void PolygonRoiToolBox::activatePolygonMode()
+void polygonRoiToolBox::activatePolygonMode()
 {
     bool checked = true;
     if (!currentView || !checked)
@@ -311,13 +311,13 @@ void PolygonRoiToolBox::activatePolygonMode()
     //connect(currentBezierRoi,SIGNAL(selected()),this,SLOT(computeStatistics())); // TODO : See a way to improve the computation time of this method before calling at every selection.
 }
 
-QList<medSeriesOfRoi*> * PolygonRoiToolBox::getListOfView(medAbstractView * view)
+QList<medSeriesOfRoi*> * polygonRoiToolBox::getListOfView(medAbstractView * view)
 {
     return new QList<medSeriesOfRoi*>(); // TODO : get list of roi in the view
 }
 
 // For the time these function copy and paste all the contours present on a slice. No selection of a contour is possible.
-/*void PolygonRoiToolBox::copyContours()
+/*void polygonRoiToolBox::copyContours()
 {
     if (!currentView)
         return;
@@ -341,14 +341,14 @@ QList<medSeriesOfRoi*> * PolygonRoiToolBox::getListOfView(medAbstractView * view
         }
 }*/
 
-/*void PolygonRoiToolBox::pasteContours()
+/*void polygonRoiToolBox::pasteContours()
 {
     vtkImageView2D * view2d = static_cast<vtkImageView2D *>(currentView->getView2D());
     currentSlice = view2d->GetSlice();
     pasteContours(currentSlice,currentSlice);
 }*/
 
-/*void PolygonRoiToolBox::pasteContours(int slice1,int slice2)
+/*void polygonRoiToolBox::pasteContours(int slice1,int slice2)
 {
     if (!currentView)
         return;
@@ -406,7 +406,7 @@ QList<medSeriesOfRoi*> * PolygonRoiToolBox::getListOfView(medAbstractView * view
     currentView->update();
 }*/
 
-/*void PolygonRoiToolBox::propagateCurve()
+/*void polygonRoiToolBox::propagateCurve()
 {
     if (!currentView)
         return;
@@ -417,7 +417,7 @@ QList<medSeriesOfRoi*> * PolygonRoiToolBox::getListOfView(medAbstractView * view
     pasteContours(slice1,slice2);
 }*/
 
-void PolygonRoiToolBox::reorderPolygon(vtkPolyData * poly)
+void polygonRoiToolBox::reorderPolygon(vtkPolyData * poly)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
 
@@ -475,7 +475,7 @@ void PolygonRoiToolBox::reorderPolygon(vtkPolyData * poly)
     poly->SetPoints(reorderedPoints);
 }
 
-void PolygonRoiToolBox::resampleCurve(vtkPolyData * poly,int nbPoints)
+void polygonRoiToolBox::resampleCurve(vtkPolyData * poly,int nbPoints)
 {
     vtkSmartPointer<vtkParametricSpline> spline =vtkSmartPointer<vtkParametricSpline>::New();
     poly->GetPoints()->InsertNextPoint(poly->GetPoints()->GetPoint(0));
@@ -494,7 +494,7 @@ void PolygonRoiToolBox::resampleCurve(vtkPolyData * poly,int nbPoints)
     poly->SetPoints(points);
 }
 
-QList<vtkPolyData* > PolygonRoiToolBox::generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb)
+QList<vtkPolyData* > polygonRoiToolBox::generateIntermediateCurves(vtkSmartPointer<vtkPolyData> curve1,vtkSmartPointer<vtkPolyData> curve2,int nb)
 {
     int min = curve1->GetNumberOfPoints();
     int max = curve2->GetNumberOfPoints();
@@ -560,7 +560,7 @@ QList<vtkPolyData* > PolygonRoiToolBox::generateIntermediateCurves(vtkSmartPoint
     return list;
 }
 
-QList<medAbstractRoi*> * PolygonRoiToolBox::sort(QList<medAbstractRoi*> *list)
+QList<medAbstractRoi*> * polygonRoiToolBox::sort(QList<medAbstractRoi*> *list)
 {
     QList<unsigned int> listIdSlice;
     QList<medAbstractRoi*> * newList = new QList<medAbstractRoi*>();
@@ -578,7 +578,7 @@ QList<medAbstractRoi*> * PolygonRoiToolBox::sort(QList<medAbstractRoi*> *list)
     return newList;
 }
 
-void PolygonRoiToolBox::interpolateRois(QList<medAbstractRoi*> * list)
+void polygonRoiToolBox::interpolateRois(QList<medAbstractRoi*> * list)
 {
     if ((!currentView) ||!list || list->isEmpty())
         return;
@@ -601,7 +601,7 @@ void PolygonRoiToolBox::interpolateRois(QList<medAbstractRoi*> * list)
     interpolateRois_inListOrientation(list_orientation_2);
 }
 
-void PolygonRoiToolBox::interpolateRois_inListOrientation(QList<medAbstractRoi*> * list)    
+void polygonRoiToolBox::interpolateRois_inListOrientation(QList<medAbstractRoi*> * list)    
 {
     if ((!currentView) ||!list || list->isEmpty() || list->size()==1)
         return;
@@ -705,7 +705,7 @@ void PolygonRoiToolBox::interpolateRois_inListOrientation(QList<medAbstractRoi*>
     currentView->update();
 }
 
-medAbstractData * PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
+medAbstractData * polygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>* list) 
 {
     if (!currentView)
         return NULL;
@@ -734,7 +734,7 @@ medAbstractData * PolygonRoiToolBox::convertToBinaryImage(QList<medAbstractRoi*>
 }
 
 
-QList<QPair<vtkPolygon*,PolygonRoiToolBox::PlaneIndexSlicePair> > PolygonRoiToolBox::createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly)
+QList<QPair<vtkPolygon*,polygonRoiToolBox::PlaneIndexSlicePair> > polygonRoiToolBox::createImagePolygons(QList<QPair<vtkPolyData*,PlaneIndexSlicePair> > &listPoly)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > listPolygon = QList<QPair<vtkPolygon*,PlaneIndexSlicePair> >();
@@ -813,7 +813,7 @@ QList<QPair<vtkPolygon*,PolygonRoiToolBox::PlaneIndexSlicePair> > PolygonRoiTool
 }
 
 
-medAbstractData * PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
+medAbstractData * polygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolygon*,PlaneIndexSlicePair> > polys)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
@@ -919,7 +919,7 @@ medAbstractData * PolygonRoiToolBox::binaryImageFromPolygon(QList<QPair<vtkPolyg
     return m_maskData.data();
 }
 
-void PolygonRoiToolBox::initializeMaskData( medAbstractData * imageData, medAbstractData * maskData )
+void polygonRoiToolBox::initializeMaskData( medAbstractData * imageData, medAbstractData * maskData )
 {
     typedef itk::Image<unsigned char,3> MaskType; 
     MaskType::Pointer mask = MaskType::New();
@@ -1010,7 +1010,7 @@ void PolygonRoiToolBox::initializeMaskData( medAbstractData * imageData, medAbst
     maskData->setData((QObject*)(mask.GetPointer()));
 }
 
-void PolygonRoiToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
+void polygonRoiToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
 {
     Q_ASSERT(outputData && inputData);
 
@@ -1029,7 +1029,7 @@ void PolygonRoiToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtk
     medMetaDataKeys::SeriesDescription.set(outputData,seriesDesc);
 }
 
-int PolygonRoiToolBox::computePlaneIndex()
+int polygonRoiToolBox::computePlaneIndex()
 {
     typedef  MaskType::DirectionType::InternalMatrixType::element_type ElemType;
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
@@ -1060,7 +1060,7 @@ int PolygonRoiToolBox::computePlaneIndex()
     return planeIndex;
 }
 
-RoiStatistics PolygonRoiToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon)
+RoiStatistics polygonRoiToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSlicePair> polygon)
 {
     vtkImageView2D * view2d = static_cast<medVtkViewBackend*>(currentView->backend())->view2D;
     
@@ -1228,7 +1228,7 @@ RoiStatistics PolygonRoiToolBox::ComputeHistogram(QPair<vtkPolygon*,PlaneIndexSl
     return stats;
 }
 
-void PolygonRoiToolBox::computeStatistics()
+void polygonRoiToolBox::computeStatistics()
 {
     if (!currentView)
         return;
@@ -1297,7 +1297,7 @@ polygonRoi * convertBrushRoiToPolygon(medAbstractRoi * roi)
 // Can also return -1 to indicate degenerate polygon. Note: a point in
 // bounding box check is NOT performed prior to in/out check. You may want
 // to do this to improve performance.
-int PolygonRoiToolBox::PointInPolygon (double x[3], int numPts, double *pts, 
+int polygonRoiToolBox::PointInPolygon (double x[3], int numPts, double *pts, 
                                 double bounds[6], double *n)
 {
   double *x1, *x2, xray[3], u, v;

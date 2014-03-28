@@ -15,7 +15,7 @@
 
 #include <dtkCore/dtkPlugin.h>
 
-#include "PointRoiPluginExport.h"
+#include "pointRoiPluginExport.h"
 
 
 class POINTROIPLUGIN_EXPORT PluginPrivate;

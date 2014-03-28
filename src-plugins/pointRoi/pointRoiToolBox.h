@@ -17,7 +17,7 @@ PURPOSE.
 #include <dtkCore/dtkAbstractView.h>
 #include <dtkCore/dtkSmartPointer.h>
 #include <medAbstractView.h>
-#include <PointRoiPluginExport.h>
+#include <pointRoiPluginExport.h>
 #include <medAbstractRoi.h>
 
 class pointRoiToolBoxPrivate;
