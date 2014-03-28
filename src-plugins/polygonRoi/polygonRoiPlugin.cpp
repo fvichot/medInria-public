@@ -44,7 +44,7 @@ Plugin::~Plugin()
 
 bool Plugin::initialize()
 {
-    if(!PolygonRoiToolBox::registered()) qDebug() << "Unable to register polygonRoiToolBox"; 
+    if(!polygonRoiToolBox::registered()) qDebug() << "Unable to register polygonRoiToolBox"; 
    return true;
 }
 
