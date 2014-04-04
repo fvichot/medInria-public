@@ -8,6 +8,8 @@
 #include <QVTKWidget.h>
 #include <medAbstractView.h>
 #include <medCustomViewContainer.h>
+#include <itkImageToVTKImageFilter.h>
+#include <itkImage.h>
 
 class QVTKFrame : public QFrame
 {
@@ -54,6 +56,8 @@ public slots:
   void saveImage();
   void thickSlabChanged(double);
   bool eventFilter(QObject * object,QEvent * event);
+  int SetCameraFromOrientation(vtkSmartPointer<vtkResliceImageViewer> riw,int SliceOrientation);
+  void SetViewConvention(int convention);
 
 protected:
   vtkSmartPointer< vtkResliceImageViewer > riw[3];
@@ -64,6 +68,12 @@ protected:
   QVTKFrame * frames[4];
   medAbstractView * _view;
   double outputSpacing[3];
+  unsigned char selectedView;
+  vtkMatrix4x4 * ConventionMatrix;
+  vtkSmartPointer<vtkImageData> vtkViewData;
+  typedef itk::Image<short,3> ImageType;
+  typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
+  ConnectorType::Pointer converter;
   
   
 protected slots:

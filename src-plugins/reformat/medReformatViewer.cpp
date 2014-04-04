@@ -43,6 +43,13 @@
 #include <dtkCore/dtkAbstractData.h>
 #include <dtkCore/dtkAbstractView.h>
 #include <vtkMatrix4x4.h>
+#include <vtkMath.h>
+#include <vtkCamera.h>
+#include <vtkDICOMImageReader.h>
+#include <vtkImageFlip.h>
+#include <vtkTransform.h>
+#include <itkResampleImageFilter.h>
+#include <vtkTransformFilter.h>
 
 class QVTKFrame;
 //----------------------------------------------------------------------------
@@ -142,23 +149,63 @@ public:
 medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): medCustomViewContainer(parent)
 {
     int * imageDims;
-    vtkImageData * vtkViewData;
-    vtkImageView2D * view2d;
-    if (view)
-    {
-        _view = view;
-        view2d = static_cast<medVtkViewBackend*>(view->backend())->view2D;
-        vtkViewData = view2d->GetInput();
-        double origin[3];
-        vtkViewData->GetOrigin(origin);
-        qDebug() << " origin : " << origin[0] <<" " <<origin[1] << " " << origin[2];
-        vtkViewData->SetOrigin(vtkViewData->GetCenter());
-        vtkViewData->GetOrigin(origin);
-        qDebug() << " origin : " << origin[0] <<" " <<origin[1] << " " << origin[2];
-        imageDims = vtkViewData->GetDimensions();
-    }
-    else
+    vtkImageView3D * view3d;
+    if (!view)
         return;
+       
+    _view = view;
+
+    //dtkAbstractData * data = _view->dataInList(0);
+    //typedef itk::Image<short,3> ImageType;
+    //typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
+    //ImageType::Pointer image = dynamic_cast<ImageType*>((itk::Object*)(data->data()));
+    ///*ConnectorType::Pointer */converter = ConnectorType::New();
+    //converter->SetInput(image);
+    //converter->Update();
+    //vtkViewData = converter->GetOutput();
+    
+     // ----- Hack to keep the itkImages info (origin and orientation)
+    //vtkMatrix4x4* matrix = vtkMatrix4x4::New();
+    //matrix->Identity();
+    //for (unsigned int x=0; x<3; x++) {
+    //    for (unsigned int y=0; y<3; y++) 
+    //    {
+    //        matrix->SetElement(x,y,image->GetDirection()[x][y]);
+    //    }
+    //}
+
+    //itk::ImageBase<3>::PointType origin = image->GetOrigin();
+    //double v_origin[4], v_origin2[4];
+    //for (int i=0; i<3; i++)
+    //    v_origin[i] = origin[i];
+    //v_origin[3] = 1.0;
+    //matrix->MultiplyPoint (v_origin, v_origin2);
+    //for (int i=0; i<3; i++)
+    //    matrix->SetElement (i, 3, v_origin[i]-v_origin2[i]);
+
+    //vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
+    //t->SetMatrix(matrix);
+    
+    /*vtkImageReslice * reslicerFlip = vtkImageReslice::New();
+    reslicerFlip->SetResliceTransform(t);
+    reslicerFlip->SetInterpolationModeToLinear();
+    reslicerFlip->SetInput(converter->GetOutput());
+    reslicerFlip->Update();
+    vtkViewData = reslicerFlip->GetOutput();*/
+    
+ //------------------------------------------------------
+ 
+    view3d = static_cast<medVtkViewBackend*>(view->backend())->view3D;
+    //vtkViewData = view3d->GetInput();
+    vtkSmartPointer<vtkImageFlip> flipper = vtkImageFlip::New();
+    flipper->SetInput(view3d->GetInput());
+    flipper->SetFilteredAxis(1);
+    flipper->Update();
+    vtkViewData = flipper->GetOutput();
+
+    //vtkViewData = reader->GetOutput();
+    imageDims = vtkViewData->GetDimensions();
+
     QWidget * widgetbody = new QWidget(this);
     for (int i = 0; i < 3; i++)
     {
@@ -208,7 +255,7 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
             vtkResliceCursorLineRepresentation::SafeDownCast(
             riw[i]->GetResliceCursorWidget()->GetRepresentation());
         riw[i]->SetResliceCursor(riw[2]->GetResliceCursor());
-
+        
         rep->GetResliceCursorActor()->
             GetCursorAlgorithm()->SetReslicePlaneNormal(i);
 
@@ -283,10 +330,15 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
         planeWidget[i]->SetColorMap(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
 
     }
-
+    //this->ConventionMatrix    = vtkMatrix4x4::New();
+    //this->SetViewConvention(0);
+    
     riw[0]->GetRenderer()->ResetCamera();
     riw[1]->GetRenderer()->ResetCamera();
     riw[2]->GetRenderer()->ResetCamera();
+    //this->SetCameraFromOrientation(riw[0],0);
+    //this->SetCameraFromOrientation(riw[1],1);
+    //this->SetCameraFromOrientation(riw[2],2);
 
     views[0]->show();
     views[1]->show();
@@ -449,6 +501,7 @@ void medReformatViewer::orthogonalAxisModeEnabled(bool)
 void medReformatViewer::saveImage()
 {
     vtkImageData * output;
+    vtkImageData * outputToFlip;
     //typedef itk::VTKImageToImageFilter<ImageType> VTKImageToImageType;
 
     if (riw[2]->GetThickMode())
@@ -461,7 +514,7 @@ void medReformatViewer::saveImage()
         reslicerTop->SetSlabThickness(thickSlabReslice->GetSlabThickness());
         reslicerTop->SetBlendMode(thickSlabReslice->GetBlendMode());
         reslicerTop->Update();
-        output = reslicerTop->GetOutput();
+        outputToFlip = reslicerTop->GetOutput();
     }
     else
     {
@@ -470,20 +523,25 @@ void medReformatViewer::saveImage()
             vtkResliceCursorRepresentation::SafeDownCast(riw[2]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
         reslicerTop->SetInput(riw[2]->GetInput());
         
-        reslicerTop->SetResliceAxesDirectionCosines(reslicer->GetResliceAxesDirectionCosines());
-        //reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());5
+        //reslicerTop->SetResliceAxesDirectionCosines(reslicer->GetResliceAxesDirectionCosines());
+        reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());
         //reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
         //reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
-        reslicerTop->SetBackgroundLevel(-1024); // todo: set the background value in an automatic way.
+        reslicerTop->SetBackgroundLevel(0); // todo: set the background value in an automatic way.
         reslicerTop->SetOutputSpacing(outputSpacing);
         /*reslicerTop->SetOutputOrigin  (riw[0]->GetInput()->GetOrigin());
         reslicerTop->SetOutputExtent  (riw[0]->GetInput()->GetWholeExtent());*/
         reslicerTop->SetInterpolationModeToLinear();
         reslicerTop->Update();
-        output = reslicerTop->GetOutput();
+        outputToFlip = reslicerTop->GetOutput();
     }
     
-    
+    vtkSmartPointer<vtkImageFlip> flipper = vtkImageFlip::New();
+    flipper->SetInput(outputToFlip);
+    flipper->SetFilteredAxis(1);
+    flipper->Update();
+    output = flipper->GetOutput();
+
     //output->setaxis
     // TODO : the output of the reslice need to receive all the info from the original image : spacing origin ...
     dtkSmartPointer<dtkAbstractData> outputData(NULL);
@@ -629,8 +687,8 @@ void medReformatViewer::saveImage()
         QString newDescription = "reformated";
         outputData->setMetaData(medMetaDataKeys::SeriesDescription.key(), newDescription);
 
-        QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
-        outputData->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
+        //QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
+        //outputData->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
 
         medDataManager::instance()->importNonPersistent(outputData);
     }
@@ -684,17 +742,168 @@ bool medReformatViewer::eventFilter(QObject * object,QEvent * event)
         {
             if (views[i]==object)
             {
-                frames[i]->setStyleSheet("QFrame {border : 1px solid #FF3333;}");
+                if (i==0)
+                    frames[i]->setStyleSheet("QFrame {border : 5px solid #FF0000;}");
+                else if (i==1)
+                    frames[i]->setStyleSheet("QFrame {border : 5px solid #00FF00;}");
+                else if (i==2)
+                    frames[i]->setStyleSheet("QFrame {border : 5px solid #0000FF;}");
+
+                if (selectedView==0)
+                    frames[0]->setStyleSheet("* {border : 1px solid #FF0000;}");
+                else if (selectedView==1)
+                    frames[1]->setStyleSheet("* {border : 1px solid #00FF00;}");
+                else if (selectedView==2)
+                    frames[2]->setStyleSheet("* {border : 1px solid #0000FF;}");
+
+                selectedView = i;
             }
         }
         return false;
     }
     if (event->type()==QEvent::FocusOut)
     {
-        qDebug() << "I am out";
         return false;
     }
     return false;
 }
 
 // TODO : redefine the vtkInteractorStyleImage to control the image the way u want
+
+int medReformatViewer::SetCameraFromOrientation(vtkSmartPointer<vtkResliceImageViewer> riw,int SliceOrientation)
+{
+    vtkImageView * view2D = static_cast<medVtkViewBackend*>(_view->backend())->view2D;
+    
+    // We entirely rely on the slice orientation this->SliceOrientation
+    // The ViewOrientation is "estimated", returned as id
+
+    vtkCamera *cam = riw->GetRenderer() ? riw->GetRenderer()->GetActiveCamera() : NULL;
+  if (!cam)
+    return -1;
+
+  double position[4] = {0,0,0,0}, focalpoint[4] = {0,0,0,0}, viewup[4] = {0,0,0,0};
+  double focaltoposition[3]={0,0,0};
+  std::vector<double*> viewupchoices;
+  double first[3]={0,0,0}, second[3]={0,0,0}, third[3]={0,0,0}, fourth[3]={0,0,0};
+  bool inverseposition = false;
+
+  // The viewup and the cam position are set according to the convention matrix.
+  for (unsigned int i=0; i<3; i++)
+    viewup[i]   = this->ConventionMatrix->GetElement (i, SliceOrientation);
+
+  // Apply the orientation matrix to all this information
+  if ( view2D->GetOrientationMatrix())
+    view2D->GetOrientationMatrix()->MultiplyPoint  (viewup, viewup);
+
+  // first we find the axis the closest to the focaltoposition vector
+  unsigned int id = SliceOrientation;//view2D->GetViewOrientationFromSliceOrientation (SliceOrientation, position, focalpoint);
+
+  // Compute the vector normal to the view
+  for (unsigned int i=0; i<3; i++)
+    focaltoposition[i] = position[i] - focalpoint[i];
+
+  // Now we now we have 4 choices for the View-Up information
+  for(unsigned int i=0; i<3; i++)
+  {
+    first[i]  = viewup[i];
+    second[i] = -viewup[i];
+  }
+
+  vtkMath::Cross (first, focaltoposition, third);
+  vtkMath::Cross (second, focaltoposition, fourth);
+  vtkMath::Normalize (third);
+  vtkMath::Normalize (fourth);
+
+  viewupchoices.push_back (first);
+  viewupchoices.push_back (second);
+  viewupchoices.push_back (third);
+  viewupchoices.push_back (fourth);
+
+  double conventionviewup[4]={0,0,0,0};
+  // Then we choose the convention matrix vector correspondent to the
+  // one we just found
+  for (unsigned int i=0; i<3; i++)
+    conventionviewup[i] = this->ConventionMatrix->GetElement (i, id);
+
+  // Then we pick from the 4 solutions the closest to the
+  // vector just found
+  unsigned int id2 = 0;
+  double dot2 = 0;
+  for (unsigned int i=0; i<viewupchoices.size(); i++)
+    if (dot2 < vtkMath::Dot (viewupchoices[i], conventionviewup))
+    {
+      dot2 = vtkMath::Dot (viewupchoices[i], conventionviewup);
+      id2 = i;
+    }
+
+  // We found the solution
+  for (unsigned int i=0; i<3; i++)
+    viewup[i] = viewupchoices[id2][i];
+
+  double conventionposition[4]={0,0,0,1};
+  // Then we check if we are on the right side of the image
+  conventionposition[id] = this->ConventionMatrix->GetElement (id, 3);
+  inverseposition = (vtkMath::Dot (focaltoposition, conventionposition) < 0 );
+
+  // invert the cam position if necessary (symmetry along the focal point)
+  if (inverseposition)
+    for (unsigned int i=0; i<3; i++)
+      position[i] -= 2*focaltoposition[i];
+
+  // finally set the camera with all iinformation.
+
+  cam->SetPosition(position[0], position[1], position[2]);
+  cam->SetFocalPoint(focalpoint[0], focalpoint[1], focalpoint[2]);
+  cam->SetViewUp(viewup[0], viewup[1], viewup[2]);
+
+  // return the view-orientation found by those principles.
+  // this should then be set as this->ViewOrientation.
+  return id;
+}
+
+void medReformatViewer::SetViewConvention(int convention)
+{
+  if ( (convention < vtkImageView2D::VIEW_CONVENTION_RADIOLOGICAL))
+    return;
+
+  //this->ViewConvention = convention;
+  // first vector is the view up for the yz plane (sagittal), directed towards the +z direction
+  this->ConventionMatrix->SetElement (2,0, 1);
+  // first vector is the view up for the xz plane (coronal),  directed towards the +z direction
+  this->ConventionMatrix->SetElement (2,1, 1);
+  // first vector is the view up for the xy plane (axial),    directed towards the -y direction
+  this->ConventionMatrix->SetElement (1,2, -1);
+
+  int x_watcher, y_watcher, z_watcher;
+
+  switch(convention)
+  {
+    case vtkImageView2D::VIEW_CONVENTION_RADIOLOGICAL:
+    default:
+      // for sagittal view, you look from +x point
+      x_watcher =  1;
+      // for coronal view,  you look from -y point
+      y_watcher = -1;
+      // for axial view,    you look from -z point
+      z_watcher = -1;
+      break;
+    case vtkImageView2D::VIEW_CONVENTION_NEUROLOGICAL:
+      // for sagittal view, you look from +x point
+      x_watcher =  1;
+      // for coronal view,  you look from +y point
+      y_watcher =  1;
+      // for axial view,    you look from +z point
+      z_watcher =  1;
+      break;
+      /// \todo We can define oblique convention points of view
+      /// that would match cardiologic conventions.
+      /// i.e. - A cardiologist looks a heart from short axis (R.V in the righ of plane)
+      /// i.e. - A cardiologist looks a heart from 4 chamber  (R.V in the left of plane)
+      /// ...
+  }
+  this->ConventionMatrix->SetElement (0,3, x_watcher);
+  this->ConventionMatrix->SetElement (1,3, y_watcher);
+  this->ConventionMatrix->SetElement (2,3, z_watcher);
+
+  //this->UpdateOrientation();
+}
