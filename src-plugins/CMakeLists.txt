@@ -82,6 +82,7 @@ set(PLUGIN_LIST
   itkDataSHImage                 ON
   itkDataSHImageWriter           ON
   itkDataSHImageReader           ON
+  meshMapping				ON
   )
 
 if (MEDINRIA-PLUGINS_BUILD_EXAMPLES)
