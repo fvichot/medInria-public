@@ -173,5 +173,7 @@
         <file>pixmaps/arrow-left-disabled.png</file>
         <file>pixmaps/arrow-right-disabled.png</file>
         <file>pixmaps/arrow-top-disabled.png</file>
+        <file>music_logo.png</file>
+        <file>music_logo_small.png</file>
     </qresource>
 </RCC>

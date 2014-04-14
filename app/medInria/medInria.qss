@@ -15,18 +15,34 @@
 /*******************************************************************************
     COLOR
  *******************************************************************************/
-$GREY00     = #191919;
-$GREY01     = #303030;
-$GREY02     = #383838;
-$GREY03     = #424242;
-$GREY04     = #464646;
-$GREY05     = #505050;
-$GREY06     = #606060;
-$GREY07     = #707070;
-$GREY08     = #808080;
-$GREY09     = #909090;
-$GREY10     = #A0A0A0;
-$GREY11     = #C0C0C0;
+$HUE        = 228;
+$SATURATION = 255;
+
+/*$GREY00     = hsv($HUE,$SATURATION,25);
+$GREY01     = hsv($HUE,$SATURATION,48);
+$GREY02     = hsv($HUE,$SATURATION,56);
+$GREY03     = hsv($HUE,$SATURATION,60);
+$GREY04     = hsv($HUE,$SATURATION,64);
+$GREY05     = hsv($HUE,$SATURATION,80);
+$GREY06     = hsv($HUE,$SATURATION,96);
+$GREY07     = hsv($HUE,$SATURATION,112);
+$GREY08     = hsv($HUE,$SATURATION,128);
+$GREY09     = hsv($HUE,$SATURATION,144);
+$GREY10     = hsv($HUE,$SATURATION,160);*/
+
+$GREY10     = hsv($HUE,$SATURATION,0);
+$GREY09     = hsv($HUE,$SATURATION,5);
+$GREY08     = hsv($HUE,$SATURATION,10);
+$GREY07     = hsv($HUE,$SATURATION,15);
+$GREY06     = hsv($HUE,$SATURATION,20);
+$GREY05     = hsv($HUE,$SATURATION,25);
+$GREY04     = hsv($HUE,$SATURATION,30);
+$GREY03     = hsv($HUE,$SATURATION,35);
+$GREY02     = hsv($HUE,$SATURATION,40);
+$GREY01     = hsv($HUE,$SATURATION,45);
+$GREY00     = hsv($HUE,$SATURATION,50);
+
+$GREY11     = #C0C0C0;/*hsv($HUE,$SATURATION,192);*/
 
 $GREEN      = #64FF32;
 $RED        = #FF3333;

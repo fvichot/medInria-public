@@ -196,7 +196,7 @@ medMainWindow::medMainWindow ( QWidget *parent ) : QMainWindow ( parent ), d ( n
     d->quickAccessButton->setFocusPolicy ( Qt::NoFocus );
     d->quickAccessButton->setMinimumHeight(31);
     d->quickAccessButton->setStyleSheet("border: 0px;");
-    d->quickAccessButton->setIcon(QIcon(":medInria.ico"));
+    d->quickAccessButton->setIcon(QIcon(":music_logo_small.png"));
     d->quickAccessButton->setCursor(Qt::PointingHandCursor);
     d->quickAccessButton->setText ( tr("Workspaces access menu") );
     connect ( d->quickAccessButton,  SIGNAL ( clicked() ), this, SLOT ( showQuickAccess() ) );
@@ -323,7 +323,7 @@ medMainWindow::medMainWindow ( QWidget *parent ) : QMainWindow ( parent ), d ( n
     //  The ownership of the style object is not transferred.
     //  this->setStyle(new QPlastiqueStyle());
 
-    this->setWindowTitle ( "medInria" );
+    this->setWindowTitle ( qApp->applicationName() );
 
     //  Connect the messageController with the status for notification messages management
 

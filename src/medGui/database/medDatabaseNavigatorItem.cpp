@@ -221,7 +221,7 @@ void medDatabaseNavigatorItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 void medDatabaseNavigatorItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if(d->persistent)
-        painter->setBrush(Qt::darkGray);
+        painter->setBrush(QColor(0, 6, 30));
     else
         painter->setBrush(QColor(129, 143, 164));
     painter->setPen(Qt::NoPen);

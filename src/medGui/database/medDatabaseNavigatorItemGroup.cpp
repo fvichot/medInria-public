@@ -99,7 +99,7 @@ void medDatabaseNavigatorItemGroup::paint(QPainter *painter, const QStyleOptionG
 {
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    painter->setBrush(Qt::darkGray);
+    painter->setBrush(QColor(0,6,30));
     painter->drawRoundedRect(option->rect, 5, 5);
     painter->setPen(Qt::white);
     if (d->orientation==Qt::Horizontal)
