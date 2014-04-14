@@ -55,15 +55,21 @@ public:
     QWidget * invertFilterWidget;
     QWidget * shrinkFilterWidget;
     QWidget * intensityFilterWidget;
+    QWidget * thresholdFilterWidget;
+    QWidget * componentSizeThresholdFilterWidget;
 
     QDoubleSpinBox * addFilterValue;
     QDoubleSpinBox * subtractFilterValue;
     QDoubleSpinBox * multiplyFilterValue;
     QDoubleSpinBox * divideFilterValue;
     QDoubleSpinBox * gaussianFilterValue;
+    QSpinBox * thresholdFilterValue;
+    QSpinBox * thresholdFilterValue2;
+    QRadioButton *greaterButton, *lowerButton;
     QSpinBox * shrink0Value;
     QSpinBox * shrink1Value;
     QSpinBox * shrink2Value;
+    QSpinBox * componentSizeThresholdFilterValue;;
 
     QDoubleSpinBox * intensityMinimumValue;
     QDoubleSpinBox * intensityMaximumValue;
@@ -92,7 +98,9 @@ itkFiltersToolBox::itkFiltersToolBox ( QWidget *parent ) : medFilteringAbstractT
                 << "Median filter" 
                 << "Invert intensity filter"
                 << "Shrink image filter" 
-                << "Intensity windowing filter";
+                << "Intensity windowing filter"
+                << "Threshold an image"
+                << "Remove isolated voxels/pixels";
     
     d->filters->addItems ( filtersList );
 
@@ -239,6 +247,63 @@ itkFiltersToolBox::itkFiltersToolBox ( QWidget *parent ) : medFilteringAbstractT
 
     d->intensityFilterWidget->setLayout ( intensityFilterLayout );
 
+    //Threshold filter widgets
+    d->thresholdFilterWidget = new QWidget(this);
+    d->thresholdFilterValue = new QSpinBox;
+    d->thresholdFilterValue->setRange ( -10000, 10000 );
+    d->thresholdFilterValue->setValue ( 200.0 );
+    d->thresholdFilterValue2 = new QSpinBox;
+    d->thresholdFilterValue2->setRange ( -10000, 10000 );
+    d->thresholdFilterValue2->setValue ( 0 );
+    d->greaterButton = new QRadioButton(tr(" greater than: "), this);
+    d->greaterButton->setChecked(true);
+    d->lowerButton = new QRadioButton(tr(" lower than: "), this);
+    QLabel * thresholdFilterLabel = new QLabel ( tr ( "Set pixels values  :" ) );
+    QLabel * thresholdFilterLabel2 = new QLabel ( tr ( " to :" ) );
+
+    QVBoxLayout * greaterOrLowerLayout = new QVBoxLayout;
+    greaterOrLowerLayout->addWidget(d->greaterButton);
+    greaterOrLowerLayout->addWidget(d->lowerButton);
+
+    QHBoxLayout * thresholdFilterLayout1 = new QHBoxLayout;
+    thresholdFilterLayout1->addWidget ( thresholdFilterLabel );
+    thresholdFilterLayout1->addLayout ( greaterOrLowerLayout );
+    thresholdFilterLayout1->addWidget ( d->thresholdFilterValue );
+    thresholdFilterLayout1->addStretch ( 1 );
+
+    QHBoxLayout * thresholdFilterLayout2 = new QHBoxLayout;
+    thresholdFilterLayout2->addWidget ( thresholdFilterLabel2 );
+    thresholdFilterLayout2->addWidget ( d->thresholdFilterValue2 );
+    thresholdFilterLayout2->addStretch ( 1 );
+    //Size threshold Widget
+    d->componentSizeThresholdFilterWidget = new QWidget(this);
+    d->componentSizeThresholdFilterValue = new QSpinBox;
+    d->componentSizeThresholdFilterValue->setMaximum ( 100000 );
+    d->componentSizeThresholdFilterValue->setValue ( 50 );
+    QLabel * componentSizeThresholdFilterLabel = new QLabel ( tr ( "Minimum size of an object: " ) );
+    QHBoxLayout * componentSizeThresholdFilterLayout = new QHBoxLayout;
+    componentSizeThresholdFilterLayout->addWidget ( componentSizeThresholdFilterLabel );
+    componentSizeThresholdFilterLayout->addWidget ( d->componentSizeThresholdFilterValue );
+    componentSizeThresholdFilterLayout->addStretch ( 1 );
+    d->componentSizeThresholdFilterWidget->setLayout ( componentSizeThresholdFilterLayout );
+    //Threshold filter widgets
+    d->thresholdFilterWidget = new QWidget(this);
+    d->thresholdFilterValue = new QSpinBox;
+    d->thresholdFilterValue->setRange ( -10000, 10000 );
+    d->thresholdFilterValue->setValue ( 200.0 );
+    d->thresholdFilterValue2 = new QSpinBox;
+    d->thresholdFilterValue2->setRange ( -10000, 10000 );
+    d->thresholdFilterValue2->setValue ( 0 );
+    d->greaterButton = new QRadioButton(tr(" greater than: "), this);
+    d->greaterButton->setChecked(true);
+    d->lowerButton = new QRadioButton(tr(" lower than: "), this);
+    
+    QVBoxLayout * thresholdFilterLayout = new QVBoxLayout;
+    thresholdFilterLayout->addLayout(thresholdFilterLayout1);
+    thresholdFilterLayout->addLayout(thresholdFilterLayout2);
+
+    d->thresholdFilterWidget->setLayout ( thresholdFilterLayout );
+
     // Run button:
     QPushButton *runButton = new QPushButton ( tr ( "Run" ) );
     runButton->setFocusPolicy ( Qt::NoFocus );
@@ -262,6 +327,8 @@ itkFiltersToolBox::itkFiltersToolBox ( QWidget *parent ) : medFilteringAbstractT
     layout->addWidget ( d->invertFilterWidget );
     layout->addWidget ( d->shrinkFilterWidget );
     layout->addWidget ( d->intensityFilterWidget );
+    layout->addWidget ( d->thresholdFilterWidget );
+    layout->addWidget ( d->componentSizeThresholdFilterWidget );
     layout->addWidget ( runButton );
     layout->addWidget ( d->progression_stack );
     layout->addStretch ( 1 );
@@ -696,6 +763,29 @@ void itkFiltersToolBox::setupItkWindowingProcess()
     d->process->setParameter ( d->intensityOutputMaximumValue->value(), 3 );
 }
 
+void itkFiltersToolBox::setupItkThresholdingProcess()
+{
+    d->process = dtkAbstractProcessFactory::instance()->createSmartPointer ( "itkThresholdingProcess" );
+    if (!d->process)
+        return;
+    d->process->setInput ( this->parentToolBox()->data() );
+    d->process->setParameter ( d->thresholdFilterValue->value(), 0);
+    d->process->setParameter ( d->thresholdFilterValue2->value(), 1);
+    d->process->setParameter ( d->greaterButton->isChecked(), 2);
+}
+
+void itkFiltersToolBox::setupItkComponentSizeThresholdProcess()
+{
+    d->process = dtkAbstractProcessFactory::instance()->createSmartPointer ( "itkComponentSizeThresholdProcess" );
+
+    if (!d->process)
+        return;
+
+    d->process->setInput ( this->parentToolBox()->data() );
+    d->process->setParameter ( d->componentSizeThresholdFilterValue->value(), 0 );
+}
+
+
 void itkFiltersToolBox::run ( void )
 {
     if ( !this->parentToolBox() )
@@ -743,6 +833,12 @@ void itkFiltersToolBox::run ( void )
     case 9: // intensity windowing filter
         this->setupItkWindowingProcess();
         break;
+    case 10: // intensity windowing filter
+        this->setupItkThresholdingProcess();
+        break;
+    case 11: // size thresholding filter
+        this->setupItkComponentSizeThresholdProcess();
+        break;    
     }
 
     if (! d->process)
@@ -773,6 +869,8 @@ void itkFiltersToolBox::onFiltersActivated ( int index )
     d->invertFilterWidget->hide();
     d->shrinkFilterWidget->hide();
     d->intensityFilterWidget->hide();
+    d->thresholdFilterWidget->hide();
+    d->componentSizeThresholdFilterWidget->hide();
 
     switch ( index )
     {
@@ -805,6 +903,12 @@ void itkFiltersToolBox::onFiltersActivated ( int index )
         break;
     case 9:
         d->intensityFilterWidget->show();
+        break;
+    case 10:
+        d->thresholdFilterWidget->show();
+        break;
+    case 11:
+        d->componentSizeThresholdFilterWidget->show();
         break;
     default:
         d->addFilterWidget->show();
