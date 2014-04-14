@@ -30,7 +30,16 @@ itkFiltersDilateProcess::itkFiltersDilateProcess(itkFiltersDilateProcess *parent
     
     d->filter = this;
     d->output = NULL;
-    d->radius = 5;
+    d->radius[0] = 0;
+    d->radius[1] = 0;
+    d->radius[2] = 0;
+
+    d->radiusMm[0] = 0;
+    d->radiusMm[1] = 0;
+    d->radiusMm[2] = 0;
+
+    d->isRadiusInPixels = false;
+    d->radiusInPixels = 0;
     d->description = tr("ITK Dilate filter");
 }
 
@@ -55,13 +64,22 @@ bool itkFiltersDilateProcess::registered( void )
 
 //-------------------------------------------------------------------------------------------
 
-void itkFiltersDilateProcess::setParameter(double data, int channel)
+void itkFiltersDilateProcess::setParameter(int data, int channel)
 {
-    if (channel != 0)
+    if (channel > 1)
         return;
-    
     DTK_D(itkFiltersDilateProcess);
-    d->radius = data;
+    d->radiusInPixels = data;
+
+    d->radius[0] = data;
+    d->radius[1] = data;
+    d->radius[2] = data;
+
+    if (channel == 1) // data is in pixels
+        d->isRadiusInPixels = true;
+
+    if (channel == 0) //data is in mm
+        d->isRadiusInPixels = false;
 }
 
 //-------------------------------------------------------------------------------------------

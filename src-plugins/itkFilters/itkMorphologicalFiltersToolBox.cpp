@@ -45,8 +45,8 @@ class itkMorphologicalFiltersToolBoxPrivate
 public:
     QLabel * dataTypeValue;
 
-    QWidget * filterWidget;
-    QDoubleSpinBox * kernelSize;
+    QSpinBox * kernelSize;
+    QRadioButton *mmButton, *pixelButton;
     
     QComboBox * filters;
     dtkSmartPointer <itkFiltersProcessBase> process;
@@ -75,19 +75,26 @@ itkMorphologicalFiltersToolBox::itkMorphologicalFiltersToolBox ( QWidget *parent
     dataTypeLayout->addWidget ( d->dataTypeValue );
 
     // We use the same widget for all the morphological filters
-    d->filterWidget = new QWidget(this);
-    d->kernelSize = new QDoubleSpinBox;
+    QWidget *filterWidget = new QWidget(this);
+    d->kernelSize = new QSpinBox;
     d->kernelSize->setMaximum ( 10 );
     d->kernelSize->setValue ( 1 );
     QLabel * morphoFilterLabel = new QLabel ( tr ( "Kernel radius:" ) );
     QHBoxLayout * morphoFilterLayout = new QHBoxLayout;
-    QLabel * morphoFilterLabel2 = new QLabel ( tr ( " pixels" ) );
+
+    d->mmButton = new QRadioButton(tr("mm"), this);
+    d->mmButton->setToolTip(tr("If \"mm\" is selected, the dimensions of the structuring element will be calculated in mm."));
+    d->mmButton->setChecked(true);
+
+    d->pixelButton = new QRadioButton(tr("pixels"), this);
+    d->pixelButton->setToolTip(tr("If \"pixels\" is selected, the dimensions of the structuring element will be calculated in pixels."));
+
     morphoFilterLayout->addWidget ( morphoFilterLabel );
     morphoFilterLayout->addWidget ( d->kernelSize );
-    morphoFilterLayout->addWidget ( morphoFilterLabel2 );
+    morphoFilterLayout->addWidget ( d->mmButton );
+    morphoFilterLayout->addWidget ( d->pixelButton );
     morphoFilterLayout->addStretch ( 1 );
-    d->filterWidget->setLayout ( morphoFilterLayout );
-
+    filterWidget->setLayout ( morphoFilterLayout );
 
     // Run button:
     QPushButton *runButton = new QPushButton ( tr ( "Run" ) );
@@ -102,7 +109,7 @@ itkMorphologicalFiltersToolBox::itkMorphologicalFiltersToolBox ( QWidget *parent
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget ( d->filters );
     layout->addLayout ( dataTypeLayout );
-    layout->addWidget ( d->filterWidget );
+    layout->addWidget ( filterWidget );
     layout->addWidget ( runButton );
     layout->addWidget ( d->progression_stack );
     layout->addStretch ( 1 );
@@ -120,7 +127,7 @@ itkMorphologicalFiltersToolBox::itkMorphologicalFiltersToolBox ( QWidget *parent
     setAboutPluginVisibility ( true );
 
     connect ( runButton, SIGNAL ( clicked() ), this, SLOT ( run() ) );
-
+    connect ( d->pixelButton, SIGNAL ( toggled(bool) ), this, SLOT ( changeUnit(bool) ) );
 }
 
 itkMorphologicalFiltersToolBox::~itkMorphologicalFiltersToolBox()
@@ -231,7 +238,7 @@ void itkMorphologicalFiltersToolBox::setupItkDilateProcess()
         return;
     
     d->process->setInput ( this->parentToolBox()->data() );
-    d->process->setParameter ( d->kernelSize->value(), 0 );
+    d->process->setParameter ( d->kernelSize->value(), d->pixelButton->isChecked() );
 }
 
 void itkMorphologicalFiltersToolBox::setupItkErodeProcess()
