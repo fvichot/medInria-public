@@ -518,22 +518,97 @@ void medReformatViewer::saveImage()
     }
     else
     {
-        vtkImageReslice *reslicerTop = vtkImageReslice::New();
-        vtkImageReslice *reslicer = vtkImageReslice::SafeDownCast(
+        vtkImageReslice *reslicer0 = vtkImageReslice::SafeDownCast(
+            vtkResliceCursorRepresentation::SafeDownCast(riw[0]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+        vtkImageReslice *reslicer1 = vtkImageReslice::SafeDownCast(
+            vtkResliceCursorRepresentation::SafeDownCast(riw[1]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
+        vtkImageReslice *reslicer2 = vtkImageReslice::SafeDownCast(
             vtkResliceCursorRepresentation::SafeDownCast(riw[2]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
-        reslicerTop->SetInput(riw[2]->GetInput());
+
+
+        vtkMatrix4x4 * matrixAxes = vtkMatrix4x4::New();
+        matrixAxes->SetElement(0,0,reslicer0->GetResliceAxes()->GetElement(0,0));
+        matrixAxes->SetElement(1,0,reslicer0->GetResliceAxes()->GetElement(1,0));
+        matrixAxes->SetElement(2,0,reslicer0->GetResliceAxes()->GetElement(2,0));
+        matrixAxes->SetElement(3,0,reslicer0->GetResliceAxes()->GetElement(3,0));
+
+        matrixAxes->SetElement(0,1,reslicer1->GetResliceAxes()->GetElement(0,1));
+        matrixAxes->SetElement(1,1,reslicer1->GetResliceAxes()->GetElement(1,1));
+        matrixAxes->SetElement(2,1,reslicer1->GetResliceAxes()->GetElement(2,1));
+        matrixAxes->SetElement(3,1,reslicer1->GetResliceAxes()->GetElement(3,1));
+
+        matrixAxes->SetElement(0,2,reslicer2->GetResliceAxes()->GetElement(0,2));
+        matrixAxes->SetElement(1,2,reslicer2->GetResliceAxes()->GetElement(1,2));
+        matrixAxes->SetElement(2,2,reslicer2->GetResliceAxes()->GetElement(2,2));
+        matrixAxes->SetElement(3,2,reslicer2->GetResliceAxes()->GetElement(3,2));
+
+        matrixAxes->SetElement(0,3,reslicer2->GetResliceAxes()->GetElement(0,3));
+        matrixAxes->SetElement(1,3,reslicer2->GetResliceAxes()->GetElement(1,3));
+        matrixAxes->SetElement(2,3,reslicer2->GetResliceAxes()->GetElement(2,3));
+        matrixAxes->SetElement(3,3,reslicer2->GetResliceAxes()->GetElement(3,3));
+
+        for (int i = 0;i<4;i++)
+        {
+            qDebug() << "reslicer0 " << i ;
+            QString lignei="";
+            
+            for(int j = 0;j<4;j++)
+                lignei+= " " + QString::number(reslicer0->GetResliceAxes()->GetElement(i,j));
+            qDebug () << lignei;
+        }
+
+        for (int i = 0;i<4;i++)
+        {
+            qDebug() << "reslicer1 " << i ;
+            QString lignei="";
+            for(int j = 0;j<4;j++)
+                lignei+=  " " + QString::number(reslicer1->GetResliceAxes()->GetElement(i,j));
+            qDebug () << lignei;
+        }
         
-        //reslicerTop->SetResliceAxesDirectionCosines(reslicer->GetResliceAxesDirectionCosines());
-        reslicerTop->SetResliceAxes(reslicer->GetResliceAxes());
-        //reslicerTop->SetResliceAxesOrigin(reslicer->GetResliceAxesOrigin());
-        //reslicerTop->SetResliceTransform(reslicer->GetResliceTransform());
-        reslicerTop->SetBackgroundLevel(0); // todo: set the background value in an automatic way.
-        reslicerTop->SetOutputSpacing(outputSpacing);
-        /*reslicerTop->SetOutputOrigin  (riw[0]->GetInput()->GetOrigin());
-        reslicerTop->SetOutputExtent  (riw[0]->GetInput()->GetWholeExtent());*/
-        reslicerTop->SetInterpolationModeToLinear();
-        reslicerTop->Update();
-        outputToFlip = reslicerTop->GetOutput();
+        for (int i = 0;i<4;i++)
+        {
+            qDebug() << "reslicer2 " << i ;
+            QString lignei="";
+            for(int j = 0;j<4;j++)
+                lignei+= " " + QString::number(reslicer2->GetResliceAxes()->GetElement(i,j));
+            qDebug () << lignei;
+        }
+
+        for (int i = 0;i<4;i++)
+        {
+            qDebug() << "matrixAxes " << i ;
+            QString lignei="";
+            for(int j = 0;j<4;j++)
+                lignei+= " " + QString::number(matrixAxes->GetElement(i,j));
+            qDebug () << lignei;
+        }
+
+        vtkImageReslice *reslicerTop0 = vtkImageReslice::New();
+        vtkImageReslice *reslicerTop1 = vtkImageReslice::New();
+        vtkImageReslice *reslicerTop2 = vtkImageReslice::New();
+
+        reslicerTop0->SetInput(riw[2]->GetInput());
+        reslicerTop0->SetResliceAxes(reslicer0->GetResliceAxes());
+        reslicerTop0->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
+        reslicerTop0->SetOutputSpacing(outputSpacing);
+        reslicerTop0->SetInterpolationModeToLinear();
+        reslicerTop0->Update();
+
+        reslicerTop1->SetInput(reslicerTop0->GetOutput());
+        reslicerTop1->SetResliceAxes(reslicer1->GetResliceAxes());
+        reslicerTop1->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
+        reslicerTop1->SetOutputSpacing(outputSpacing);
+        reslicerTop1->SetInterpolationModeToLinear();
+        reslicerTop1->Update();
+        
+        reslicerTop2->SetInput(reslicerTop1->GetOutput());
+        reslicerTop2->SetResliceAxes(reslicer2->GetResliceAxes());
+        reslicerTop2->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
+        reslicerTop2->SetOutputSpacing(outputSpacing);
+        reslicerTop2->SetInterpolationModeToLinear();
+        reslicerTop2->Update();
+        outputToFlip = reslicerTop2->GetOutput();
     }
     
     vtkSmartPointer<vtkImageFlip> flipper = vtkImageFlip::New();
