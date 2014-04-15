@@ -18,10 +18,7 @@
 #include "meshMappingPluginExport.h"
 
 #include "itkImage.h"
-//#include "itkImageFileReader.h"
-//#include "itkMaskImageFilter.h"
-//#include "itkImageRegionIterator.h"
-//#include "QuickView.h"
+
 
 class meshMappingPrivate;
 

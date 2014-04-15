@@ -69,7 +69,7 @@ QString meshMappingPlugin::name() const
 
 QString meshMappingPlugin::description() const
 {
-    return tr("");
+    return tr("Plugin allowing to sample data values at specified point locations.");
 }
 
 QString meshMappingPlugin::version() const
@@ -84,8 +84,7 @@ QString meshMappingPlugin::contact() const
 
 QStringList meshMappingPlugin::authors() const
 {
-    QStringList list;
-    return list;
+    return QStringList() << "Loïc Cadour <Loic.Cadour@inria.fr>";
 }
 
 QStringList meshMappingPlugin::contributors() const

@@ -47,72 +47,62 @@ class meshMappingToolBoxPrivate
 public:
     
     dtkSmartPointer <dtkAbstractProcess> process;
-    medProgressionStack * progression_stack;
-    medDropSite *dropOrOpenRoi;
-    medDropSite *dropOrOpenRoi2;
+    medDropSite *dropStructure;
+    medDropSite *dropData;
 
     dtkSmartPointer<dtkAbstractView> view;
     dtkSmartPointer<dtkAbstractData> data;
-    dtkSmartPointer<dtkAbstractData> mesh;
+    dtkSmartPointer<dtkAbstractData> structure;
 };
 
 meshMappingToolBox::meshMappingToolBox(QWidget *parent) : medFilteringAbstractToolBox(parent), d(new meshMappingToolBoxPrivate)
 {
+    this->setTitle("Mesh Mapping");
+
     QWidget *widget = new QWidget(this);
     
-        d->dropOrOpenRoi = new medDropSite(widget);
-    d->dropOrOpenRoi->setToolTip(tr("Drop the binary mesh"));
-    d->dropOrOpenRoi->setText(tr("Drop the mesh"));
-    d->dropOrOpenRoi->setCanAutomaticallyChangeAppereance(false);
+    d->dropStructure = new medDropSite(widget);
+    d->dropStructure->setToolTip(tr("Drop the dataset whose geometry will be used\n in determining positions to probe (typically a mesh)."));
+    d->dropStructure->setText(tr("Drop the structure"));
+    d->dropStructure->setCanAutomaticallyChangeAppereance(false);
+    connect (d->dropStructure, SIGNAL(objectDropped(const medDataIndex&)),  this, SLOT(importStructure(const medDataIndex&)));
 
-    d->dropOrOpenRoi2 = new medDropSite(widget);
-    d->dropOrOpenRoi2->setToolTip(tr("Drop the image"));
-    d->dropOrOpenRoi2->setText(tr("Drop the image"));
-    d->dropOrOpenRoi2->setCanAutomaticallyChangeAppereance(true);
+    d->dropData = new medDropSite(widget);
+    d->dropData->setToolTip(tr("Drop the dataset from which to obtain\n probe values (image or mesh)."));
+    d->dropData->setText(tr("Drop the data"));
+    d->dropData->setCanAutomaticallyChangeAppereance(true);
+    connect (d->dropData, SIGNAL(objectDropped(const medDataIndex&)),       this, SLOT(importData(const medDataIndex&)));
 
-    QPushButton *clearRoiButton = new QPushButton("Clear mesh", widget);
-    clearRoiButton->setToolTip(tr("Clear previously loaded mesh."));
-    QPushButton *clearInputButton = new QPushButton("Clear Image", widget);
-    clearInputButton->setToolTip(tr("Clear previously loaded image."));
+    QPushButton *clearStructureButton = new QPushButton("Clear Structure", widget);
+    clearStructureButton->setToolTip(tr("Clear previously loaded structure."));
+    connect (clearStructureButton,   SIGNAL(clicked()),                     this, SLOT(clearStructure()));
+
+    QPushButton *clearDataButton = new QPushButton("Clear Data", widget);
+    clearDataButton->setToolTip(tr("Clear previously loaded data."));
+    connect (clearDataButton,   SIGNAL(clicked()),                          this, SLOT(clearData()));
 
     QVBoxLayout *roiButtonLayout = new QVBoxLayout;
-    roiButtonLayout->addWidget(d->dropOrOpenRoi);
-    roiButtonLayout->addWidget (clearRoiButton);
-    roiButtonLayout->addWidget(d->dropOrOpenRoi2);
-    roiButtonLayout->addWidget (clearInputButton);
+    roiButtonLayout->addWidget(d->dropStructure);
+    roiButtonLayout->addWidget (clearStructureButton);
+    roiButtonLayout->addWidget(d->dropData);
+    roiButtonLayout->addWidget (clearDataButton);
     roiButtonLayout->setAlignment(Qt::AlignCenter);
 
-    QVBoxLayout *bundlingLayout = new QVBoxLayout(widget);
-    bundlingLayout->addLayout(roiButtonLayout);
-
-    connect (d->dropOrOpenRoi, SIGNAL(objectDropped(const medDataIndex&)), this, SLOT(onRoiImported(const medDataIndex&)));
-    connect (d->dropOrOpenRoi, SIGNAL(clicked()),                          this, SLOT(onDropSiteClicked()));
-    connect (d->dropOrOpenRoi2, SIGNAL(objectDropped(const medDataIndex&)), this, SLOT(onImageImported(const medDataIndex&)));
-    connect (d->dropOrOpenRoi2, SIGNAL(clicked()),                          this, SLOT(onDropSiteClicked()));
-    connect (clearRoiButton,   SIGNAL(clicked()),                          this, SLOT(onClearRoiButtonClicked()));
-    connect (clearInputButton,   SIGNAL(clicked()),                          this, SLOT(onClearInputButtonClicked()));
-
-
-    this->setTitle("Mesh Mapping");
-    this->addWidget(widget);
-
     QPushButton *runButton = new QPushButton(tr("Run"), this);
-    
-    // progression stack
-    d->progression_stack = new medProgressionStack(widget);
-    QHBoxLayout *progressStackLayout = new QHBoxLayout;
-    progressStackLayout->addWidget(d->progression_stack);
-    
-    this->addWidget(runButton);
-    this->addWidget(d->progression_stack);
-    
     connect(runButton, SIGNAL(clicked()), this, SLOT(run()));
+
+
+    QVBoxLayout *layout = new QVBoxLayout(widget);
+    layout->addLayout(roiButtonLayout);
+    layout->addWidget(runButton);
+
+    widget->setLayout(layout);
+    this->addWidget(widget);
 }
 
 meshMappingToolBox::~meshMappingToolBox()
 {
     delete d;
-    
     d = NULL;
 }
 
@@ -141,42 +131,15 @@ dtkAbstractData* meshMappingToolBox::processOutput()
 }
 
 void meshMappingToolBox::run()
-{
-    //if(!this->parentToolBox())
-    //    return;
-    
+{ 
     if (!d->process)
         d->process = dtkAbstractProcessFactory::instance()->createSmartPointer("meshMapping");
-    
-    //if(!this->parentToolBox()->data())
-    //    return;
-    //if(!d->process)
-    //    return;
-    //d->process->setInput(d->mesh, 0);
-    //d->process->setInput(d->data, 1);
-    // Set your parameters here
-    
-    //medRunnableProcess *runProcess = new medRunnableProcess;
-    //runProcess->setProcess (d->process);
-    //
-    //d->progression_stack->addJobItem(runProcess, "Progress:");
-    //
-    //d->progression_stack->disableCancel(runProcess);
-    //
-    //connect (runProcess, SIGNAL (success  (QObject*)),  this, SIGNAL (success ()));
-    //connect (runProcess, SIGNAL (failure  (QObject*)),  this, SIGNAL (failure ()));
-    //connect (runProcess, SIGNAL (cancelled (QObject*)),  this, SIGNAL (failure ()));
-    //
-    //connect (runProcess, SIGNAL(activate(QObject*,bool)),
-    //         d->progression_stack, SLOT(setActive(QObject*,bool)));
-    //
-    //medJobManager::instance()->registerJobItem(runProcess);
-    //QThreadPool::globalInstance()->start(dynamic_cast<QRunnable*>(runProcess));
-    d->process->update();
-    QString newSeriesDescription = d->data->metadata ( medMetaDataKeys::SeriesDescription.key() );
-    newSeriesDescription += " with mesh :" + d->mesh->metadata ( medMetaDataKeys::SeriesDescription.key() );
 
-    //dtkSmartPointer <dtkAbstractData> output = processOutput();
+    if(d->process->update())
+        return;
+    QString newSeriesDescription = d->data->metadata ( medMetaDataKeys::SeriesDescription.key() );
+    newSeriesDescription += " mapped on :" + d->structure->metadata ( medMetaDataKeys::SeriesDescription.key() );
+
     dtkSmartPointer <dtkAbstractData> output = d->process->output();
     setOutputMetadata(d->data, output);
     output->addMetaData ( medMetaDataKeys::SeriesDescription.key(), newSeriesDescription );
@@ -197,14 +160,13 @@ void meshMappingToolBox::setOutputMetadata(const dtkAbstractData * inputData, dt
     }
 }
 
-void meshMappingToolBox::onRoiImported(const medDataIndex& index)
+void meshMappingToolBox::importStructure(const medDataIndex& index)
 {
     dtkSmartPointer<dtkAbstractData> data = medDataManager::instance()->data(index);
-    // we accept only ROIs (itkDataImageUChar3)
+    // we only accept meshes
     if (!data || data->identifier() != "vtkDataMesh")
-    {
         return;
-    }
+
     // put the thumbnail in the medDropSite as well
     // (code copied from @medDatabasePreviewItem)
     medAbstractDbController* dbc = medDataManager::instance()->controllerForDataSource(index.dataSourceId());
@@ -217,7 +179,7 @@ void meshMappingToolBox::onRoiImported(const medDataIndex& index)
         QImage thumbImage = dbc->thumbnail(index);
         if (!thumbImage.isNull())
         {
-            d->dropOrOpenRoi->setPixmap(QPixmap::fromImage(thumbImage));
+            d->dropStructure->setPixmap(QPixmap::fromImage(thumbImage));
             shouldSkipLoading = true;
         }
     }
@@ -230,14 +192,14 @@ void meshMappingToolBox::onRoiImported(const medDataIndex& index)
     if(!d->process)
         d->process= dtkAbstractProcessFactory::instance()->create("meshMapping");
 
-    d->mesh = data;
+    d->structure = data;
     if (!d->process)
         return;
 
     d->process->setInput(data, 0);
 }
 
-void meshMappingToolBox::onImageImported(const medDataIndex& index)
+void meshMappingToolBox::importData(const medDataIndex& index)
 {
     dtkSmartPointer<dtkAbstractData> data = medDataManager::instance()->data(index);
 
@@ -253,85 +215,21 @@ void meshMappingToolBox::onImageImported(const medDataIndex& index)
         return;
 
     d->process->setInput(data, 1);
-
 }
 
-void meshMappingToolBox::onClearRoiButtonClicked(void)
+void meshMappingToolBox::clearStructure(void)
 {
-    d->dropOrOpenRoi->clear();
-    d->dropOrOpenRoi->setText(tr("Drop the mesh"));
+    d->dropStructure->clear();
+    d->dropStructure->setText(tr("Drop the structure"));
 }
 
-void meshMappingToolBox::onClearInputButtonClicked(void)
+void meshMappingToolBox::clearData(void)
 {
-    d->dropOrOpenRoi2->clear();
-    d->dropOrOpenRoi2->setText(tr("Drop the image"));
-}
-
-void meshMappingToolBox::clear(void)
-{
-    // clear ROIs and related GUI elements
-    onClearRoiButtonClicked();
-
-    d->view = 0;
-    d->data = 0;
-}
-
-void meshMappingToolBox::update(dtkAbstractView *view)
-{
-    //if (d->view==view) {
-    //    if (view)
-    //        if (dtkAbstractViewInteractor *interactor = view->interactor ("v3dViewFiberInteractor"))
-    //            this->setData (interactor->data()); // data may have changed
-    //    return;
-    //}
-
-    //d->bundlingModel->removeRows(0, d->bundlingModel->rowCount(QModelIndex()), QModelIndex());
-
-    //if (d->view) {
-    //    if (dtkAbstractViewInteractor *interactor = d->view->interactor ("v3dViewFiberInteractor")) {
-    //    }
-    //}
-
-    //if (!view) {
-    //    d->view = 0;
-    //    d->data = 0;
-    //    return;
-    //}
-
-    ///*
-    //if (view->property ("Orientation")!="3D") { // only interaction with 3D views is authorized
-    //    d->view = 0;
-    //    d->data = 0;
-    //    return;
-    //}
-    //*/
-
-    //d->view = view;
-
-    //if (dtkAbstractViewInteractor *interactor = view->interactor ("v3dViewFiberInteractor")) {
-
-
-    //    this->setData (interactor->data());
-    //}
-}
-
-void meshMappingToolBox::onDropSiteClicked()
-{
-    //if (!d->view)
-    //    return;
-
-    //QString roiFileName = QFileDialog::getOpenFileName(this, tr("Open ROI"), "", tr("Image file (*.*)"));
-
-    //if (roiFileName.isEmpty())
-    //    return;
-
-    //medDataManager* mdm = medDataManager::instance();
-    //connect(mdm, SIGNAL(dataAdded(const medDataIndex &)), this, SLOT(onRoiImported(const medDataIndex &)));
-    //mdm->importNonPersistent(roiFileName);
+    d->dropData->clear();
+    d->dropData->setText(tr("Drop the data"));
 }
 
 void meshMappingToolBox::setImage(const QImage& thumbnail)
 {
-    d->dropOrOpenRoi->setPixmap(QPixmap::fromImage(thumbnail));
+    d->dropStructure->setPixmap(QPixmap::fromImage(thumbnail));
 }

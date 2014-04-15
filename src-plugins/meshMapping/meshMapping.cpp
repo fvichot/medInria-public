@@ -22,7 +22,6 @@
 
 #include <medMetaDataKeys.h>
 #include <medAbstractDataImage.h>
-#include <medDataManager.h>
 
 #include <vtkImageData.h>
 #include <vtkPolyData.h>
@@ -32,14 +31,12 @@
 #include <vtkImageGradientMagnitude.h>
 #include <vtkProbeFilter.h>
 #include <vtkTransformPolyDataFilter.h>
-#include <vtkMetaSurfaceMesh.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
 #include <vtkImageCast.h>
 
 #include <itkImage.h>
 #include <itkImageToVTKImageFilter.h>
-#include <itkMaskImageFilter.h>
 
 // /////////////////////////////////////////////////////////////////
 // meshMappingPrivate
@@ -48,28 +45,27 @@
 class meshMappingPrivate
 {
     public:
-        dtkSmartPointer <dtkAbstractData> mesh;
-        dtkSmartPointer <dtkAbstractData> image;
+        dtkSmartPointer <dtkAbstractData> structure;
+        dtkSmartPointer <dtkAbstractData> data;
         dtkSmartPointer <dtkAbstractData> output;
 
-    template <class PixelType> int update()
+    template <class PixelType> int mapImageOnMesh()
     {
         typedef itk::Image<PixelType, 3> ImageType;
 
-        if ( !image ||!image->data() || !mesh ||!mesh->data())
+        if ( !data ||!data->data() || !structure ||!structure->data())
             return -1;
 
         //Converting the mesh
-        if(!mesh->identifier().contains("vtkDataMesh"))
-            return 0;
-        vtkMetaDataSet * _dataset = static_cast<vtkMetaDataSet*>(mesh->data());
-        vtkPolyData * polyDataMesh = static_cast<vtkPolyData*>(_dataset->GetDataSet());
-
+        if(!structure->identifier().contains("vtkDataMesh"))
+            return -1;
+        vtkMetaDataSet * structureDataset = static_cast<vtkMetaDataSet*>(structure->data());
+        vtkPolyData * structurePolydata = static_cast<vtkPolyData*>(structureDataset->GetDataSet());
 
         // Converting the image
         typedef itk::ImageToVTKImageFilter<ImageType> FilterType;
         typename FilterType::Pointer filter = FilterType::New();
-        typename ImageType::Pointer img = static_cast<ImageType *>(image->data());
+        typename ImageType::Pointer img = static_cast<ImageType *>(data->data());
         filter->SetInput(img);
         filter->Update();
 
@@ -94,13 +90,13 @@ class meshMappingPrivate
 
         vtkImageData * vtkImage = filter->GetOutput();
 
-        vtkImageCast* cast = vtkImageCast::New();
+        vtkImageCast * cast = vtkImageCast::New();
         cast->SetInput(vtkImage);
         cast->SetOutputScalarTypeToFloat();
 
         // Probe magnitude with iso-surface.
         vtkProbeFilter* probe = vtkProbeFilter::New();
-        probe->SetInput(polyDataMesh);
+        probe->SetInput(structurePolydata);
         probe->SetSource(cast->GetOutput());
         probe->SpatialMatchOn();
         probe->Update();
@@ -120,11 +116,41 @@ class meshMappingPrivate
         vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
         smesh->SetDataSet(polydata);
 
+        output->setData(smesh);
+
+        return EXIT_SUCCESS;
+    }
+
+    int mapMeshOnMesh()
+    {
+        if ( !data ||!data->data() || !structure ||!structure->data())
+            return -1;
+
+        //Converting the meshes
+        if(!structure->identifier().contains("vtkDataMesh"))
+            return -1;
+        vtkMetaDataSet * structureDataset = static_cast<vtkMetaDataSet*>(structure->data());
+        vtkPolyData * structurePolydata = static_cast<vtkPolyData*>(structureDataset->GetDataSet());
+
+        vtkMetaDataSet * dataDataset = static_cast<vtkMetaDataSet*>(data->data());
+        vtkPolyData * dataPolydata = static_cast<vtkPolyData*>(dataDataset->GetDataSet());
+
+        // Probe magnitude with iso-surface.
+        vtkProbeFilter* probe = vtkProbeFilter::New();
+        probe->SetInput(structurePolydata);
+        probe->SetSource(dataPolydata);
+        probe->SpatialMatchOn();
+        probe->Update();
+        vtkPolyData * polydata = probe->GetPolyDataOutput();
+
+        vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
+        smesh->SetDataSet(polydata);
 
         output->setData(smesh);
 
         return EXIT_SUCCESS;
     }
+
 };
 
 // /////////////////////////////////////////////////////////////////
@@ -133,8 +159,8 @@ class meshMappingPrivate
 
 meshMapping::meshMapping() : dtkAbstractProcess(), d(new meshMappingPrivate)
 {
-    d->image = NULL;
-    d->mesh = NULL;
+    d->data = NULL;
+    d->structure = NULL;
     d->output = NULL;
 }
 
@@ -160,14 +186,14 @@ void meshMapping::setInput ( dtkAbstractData *data, int channel)
     if ( channel == 0)
     {
         QString identifier = data->identifier();
-        d->mesh = data;
+        d->structure = data;
     }
 
     if ( channel == 1 )
     {
         QString identifier = data->identifier();
         d->output = dtkAbstractDataFactory::instance()->createSmartPointer ( "vtkDataMesh" );
-        d->image = data;
+        d->data = data;
     }
 }
 
@@ -179,52 +205,56 @@ void meshMapping::setParameter ( double  data, int channel )
 
 int meshMapping::update()
 {
-    if ( !d->image )
+    if ( !d->data )
         return -1;
 
-    QString id = d->image->identifier();
+    QString id = d->data->identifier();
 
     qDebug() << "itkFilters, update : " << id;
 
-    if ( id == "itkDataImageChar3" )
+    if ( id == "itkDataImageChar3" ) //TODO: create new function for meshes
     {
-        d->update<char>();
+        d->mapImageOnMesh<char>();
     }
     else if ( id == "itkDataImageUChar3" )
     {
-        d->update<unsigned char>();
+        d->mapImageOnMesh<unsigned char>();
     }
     else if ( id == "itkDataImageShort3" )
     {
-        d->update<short>();
+        d->mapImageOnMesh<short>();
     }
     else if ( id == "itkDataImageUShort3" )
     {
-        d->update<unsigned short>();
+        d->mapImageOnMesh<unsigned short>();
     }
     else if ( id == "itkDataImageInt3" )
     {
-        d->update<int>();
+        d->mapImageOnMesh<int>();
     }
     else if ( id == "itkDataImageUInt3" )
     {
-        d->update<unsigned int>();
+        d->mapImageOnMesh<unsigned int>();
     }
     else if ( id == "itkDataImageLong3" )
     {
-        d->update<long>();
+        d->mapImageOnMesh<long>();
     }
     else if ( id== "itkDataImageULong3" )
     {
-        d->update<unsigned long>();
+        d->mapImageOnMesh<unsigned long>();
     }
     else if ( id == "itkDataImageFloat3" )
     {
-        d->update<float>();
+        d->mapImageOnMesh<float>();
     }
     else if ( id == "itkDataImageDouble3" )
     {
-        d->update<double>();
+        d->mapImageOnMesh<double>();
+    }
+    else if ( id == "vtkDataMesh" )
+    {
+        d->mapMeshOnMesh();
     }
     else
     {
@@ -235,7 +265,6 @@ int meshMapping::update()
     }
 
     return EXIT_SUCCESS;
-
 }        
 
 dtkAbstractData * meshMapping::output()
