@@ -101,6 +101,7 @@ protected:
 
 public:
     void setAlgorithmParameterWidget( QWidget * widget );
+    medWorkspace * getWorkspace();
 
 private:
     medSegmentationSelectorToolBoxPrivate *d;

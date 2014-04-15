@@ -28,6 +28,12 @@ public:
     //! Parent should be a medSegmentationSelectorToolBox
              medSegmentationAbstractToolBox(QWidget *parent = 0);
     virtual ~medSegmentationAbstractToolBox();
+    virtual double * data(){return 0;}
+    virtual void setParameter (int, int){}
+
+public slots:
+    virtual void onMagicWandToggled(bool checked){}
+    virtual void onStrokePressed(){}
 
 protected:
     //! Get the segmentationToolbox (usually one instance)

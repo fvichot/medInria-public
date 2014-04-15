@@ -115,41 +115,33 @@ void vtkInteractorStyleImageView2D::OnLeftButtonDown()
     return;
   }  
   
-	this->GrabFocus(this->EventCallbackCommand);
-	
-  if (this->Interactor->GetShiftKey() || this->Interactor->GetControlKey()) 
+  this->GrabFocus(this->EventCallbackCommand);
+
+  switch(this->GetLeftButtonInteraction())
   {
-    if (this->GetLeftButtonInteraction() == InteractionTypeWindowLevel)
-      this->StartSliceMove();
-  }
-  else
-  {
-    switch(this->GetLeftButtonInteraction())
-    {
-	case InteractionTypeSlice:
-	  this->RequestedPosition[0] = x;
-	  this->RequestedPosition[1] = y;
-	  this->InvokeEvent (vtkImageView2DCommand::RequestedPositionEvent, this);
-	  this->StartSliceMove();
-	  break;
-	case InteractionTypeTime:
-	  this->RequestedPosition[0] = x;
-	  this->RequestedPosition[1] = y;
-	  // this->InvokeEvent (vtkImageView2DCommand::RequestedPositionEvent, this);
-	  this->StartTimeChange();
-	  break;
-	case InteractionTypeWindowLevel:
-	  this->Superclass::OnLeftButtonDown();
-	  break;
-	case InteractionTypeZoom:
-	  this->Superclass::OnRightButtonDown();
-	  break;
-	case InteractionTypePan:
-	  this->Superclass::OnMiddleButtonDown();
-	  break;
-	default:
-	  break;
-    }
+      case InteractionTypeSlice:
+          this->RequestedPosition[0] = x;
+          this->RequestedPosition[1] = y;
+          this->InvokeEvent (vtkImageView2DCommand::RequestedPositionEvent, this);
+          this->StartSliceMove();
+          break;
+      case InteractionTypeTime:
+          this->RequestedPosition[0] = x;
+          this->RequestedPosition[1] = y;
+          // this->InvokeEvent (vtkImageView2DCommand::RequestedPositionEvent, this);
+          this->StartTimeChange();
+          break;
+      case InteractionTypeWindowLevel:
+          this->Superclass::OnLeftButtonDown();
+          break;
+      case InteractionTypeZoom:
+          this->Superclass::OnRightButtonDown();
+          break;
+      case InteractionTypePan:
+          this->Superclass::OnMiddleButtonDown();
+          break;
+      default:
+          break;
   }
 }
 

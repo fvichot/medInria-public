@@ -34,6 +34,7 @@ public:
         layout->addWidget(spinbox);
 
         connect(slider, SIGNAL(valueChanged(int)),this,SLOT(onValueChanged()));
+        connect(slider, SIGNAL(sliderMoved(int)), this, SLOT(updateSpinbox(int)));
         connect(spinbox,SIGNAL(editingFinished()),this,SLOT(onValueChanged()));
     }
 
@@ -48,6 +49,8 @@ public:
     }
 
     int value() const { return slider->value(); }
+
+    void setSpinBoxSuffix(QString suffix) { spinbox->setSuffix(suffix); }
 
 signals:
 
@@ -65,10 +68,24 @@ public slots:
         emit(valueChanged(value));
     }
 
+    void setEnabled(bool boolean){
+        slider->setEnabled(boolean);
+        spinbox->setEnabled(boolean);
+    }
+
+    void updateSpinbox(int value)
+    {
+        spinbox->blockSignals(true);
+        spinbox->setValue(value);
+        spinbox->blockSignals(false);
+    }
+
 protected slots:
 
     void onValueChanged() {
-
+        //editingFinished is emitted when we press Enter AND when the spinBox loses focus
+        if (sender()==spinbox && !spinbox->hasFocus()) //we ignore the latter
+            return;
         slider->blockSignals(true);
         spinbox->blockSignals(true);
         if (sender()==slider)

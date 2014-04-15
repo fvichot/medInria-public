@@ -487,7 +487,7 @@ void vtkSmartVolumeMapper::ComputeRenderMode(vtkRenderer *ren, vtkVolume *vol)
 void vtkSmartVolumeMapper::ConnectMapperInput(vtkVolumeMapper *m)
 {
   assert("pre: m_exists" && m!=0);
-
+  
   vtkImageData *input2=m->GetInput();
   bool needShallowCopy=false;
   if(input2==0)

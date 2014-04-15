@@ -264,6 +264,8 @@ public:
     void setData(dtkAbstractData *data);
     void setView(medAbstractView *view, bool force = false);
     void applyTable();
+    medAbstractView * getCurrentView();
+    void forceLayer(int); // this method force the interaction to be done on a specific layer
 
 protected:
     void initializeTable();
@@ -281,6 +283,10 @@ protected slots:
     // void onDeleteAction();
     void onVertexMoved();
     void onToggleDirectUpdateAction();
+
+signals:
+    void tableUpdated(QList<double>,QList<QColor>);
+
 private:
     medClutEditorPrivate *d;
 };

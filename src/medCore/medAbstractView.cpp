@@ -46,7 +46,6 @@ public:
     QColor color; // The color used to represent this view in other views.
 
     QHash<QString, unsigned int> DataTypes;
-
 };
 
 medAbstractView::medAbstractView(medAbstractView *parent) : dtkAbstractView(parent), d (new medAbstractViewPrivate)
@@ -109,6 +108,7 @@ medAbstractView::medAbstractView(medAbstractView *parent) : dtkAbstractView(pare
     // image interaction
     this->addProperty ("MouseInteraction",      QStringList() << "Zooming" << "Windowing" << "Slicing" << "Measuring");
 
+    this->addProperty("vtkWidget",QStringList() << "None" << "ContourWidget" ); 
     // do not set properties, leave it to subclass
 }
 
@@ -169,6 +169,10 @@ bool medAbstractView::positionLinked() const
 void medAbstractView::setLinkWindowing (bool value)
 {
     d->linkWindowing = value;
+    if (value)
+        setProperty("WindowingLinked","true");
+    else
+        setProperty("WindowingLinked","false");
 }
 
 bool medAbstractView::windowingLinked() const
@@ -338,6 +342,7 @@ QColor medAbstractView::color() const
 void medAbstractView::setCurrentLayer(int layer)
 {
     d->currentLayer = layer;
+    emit layerChanged(layer);
 }
 
 int medAbstractView::currentLayer(void) const
@@ -646,4 +651,9 @@ void medAbstractView::onAppendViewToPool( medAbstractView * viewAppended )
 void medAbstractView::setFullScreen( bool state )
 {
     emit fullScreen( state );
+}
+
+void medAbstractView::close()
+{
+    emit closing();
 }

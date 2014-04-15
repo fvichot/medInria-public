@@ -244,6 +244,12 @@ void medTabbedViewContainers::hideTabBar()
     tabBar->hide();
 }
 
+void medTabbedViewContainers::showTabBar()
+{
+    QTabBar *tabBar = this->tabBar();
+    tabBar->show();
+}
+
 void medTabbedViewContainers::setContainer(const QString &name)
 {
     if (!d->containers.contains(name))

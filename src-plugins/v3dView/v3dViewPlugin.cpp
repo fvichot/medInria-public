@@ -29,6 +29,8 @@
 #include <v3dViewSHInteractor.h>
 #endif
 
+#include <meshModify.h>
+
 #include <dtkLog/dtkLog.h>
 
 // /////////////////////////////////////////////////////////////////
@@ -77,6 +79,7 @@ bool v3dViewPlugin::initialize()
     if (!v3dView4DInteractor::registered())         { dtkWarn() << "Unable to register v3dView4DInteractor type";         }
     if (!v3dViewSHInteractor::registered())         { dtkWarn() << "Unable to register v3dViewSHInteractor type";         }
     if (!v3dViewAnnotationInteractor::registered()) { dtkWarn() << "Unable to register v3dViewAnnotationInteractor type"; }
+    if (!meshModifyToolBox::registered())         { dtkWarn() << "Unable to register meshModifyToolBox type"; }
 
     return true;
 }

@@ -1600,8 +1600,8 @@ void vtkImageView2D::SetInput (vtkImageData *image, vtkMatrix4x4 *matrix, int la
         this->GetImage2DDisplayForLayer(0)->SetInput(image);
         this->Superclass::SetInput (image, matrix, layer);
         this->GetWindowLevel(0)->SetInput(image);
-        double *range = this->GetImage2DDisplayForLayer(layer)->GetInput()->GetScalarRange();
-        this->SetColorRange(range,0);
+        //double *range = this->GetImage2DDisplayForLayer(layer)->GetInput()->GetScalarRange();
+        //this->SetColorRange(range,0);
     }
 
     renderer = this->GetRenderer();

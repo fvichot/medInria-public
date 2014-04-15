@@ -271,6 +271,9 @@ public slots:
     */
     void show();
 
+    virtual void onColorChanged(int selection){}
+    virtual void onView3DChanged(bool){}
+
 
 protected slots:
     /**

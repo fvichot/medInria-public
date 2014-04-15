@@ -51,6 +51,10 @@ class MEDVIEWSEGMENTATIONPLUGIN_EXPORT AlgorithmPaintToolbox : public medSegment
     Q_OBJECT;
 public:
 
+    typedef itk::Image<unsigned char, 3> MaskType;
+    typedef itk::Image<unsigned char,2> MaskSliceType;
+    typedef QPair<MaskSliceType::Pointer,unsigned int> SlicePair;
+    typedef QPair<QList<SlicePair>,unsigned char> PairListSlicePlaneId;
 
     AlgorithmPaintToolbox( QWidget *parent );
     ~AlgorithmPaintToolbox();
@@ -70,29 +74,58 @@ public:
     /** \param trObj : Provide an object for the tr() function. If NULL qApp will be used. */
     static QString s_name(const QObject * trObj =  NULL);
 
-    inline void setPaintState( PaintState::E value){m_paintState = value;}
+    inline void setPaintState(PaintState::E value){m_paintState = value;}
     inline PaintState::E paintState(){return m_paintState;}
+    void setCurrentView(medAbstractView * view);
+
+    bool getSeedPlanted();
+    void setSeedPlanted(bool,MaskType::IndexType,unsigned int,double);
+    void setSeed(QVector3D);
+
+    inline bool getCursorOn(){return cursorOn;};
+    void setCursorOn(bool value);
+    inline void setCurrentIdSlice(unsigned int id){currentIdSlice = id;};
+    inline unsigned int getCurrentIdSlice(){return currentIdSlice;};
+    inline void setCurrentPlaneIndex(unsigned int index){currentPlaneIndex = index;};
+    inline unsigned int getCurrentPlaneIndex(){return currentPlaneIndex;};
+    void setParameter(int channel, int value);
 
 public slots:
-    void onStrokePressed();
+    void onStrokeToggled(bool);
+    void onMagicWandToggled(bool);
+  /*  void onStrokePressed();
     void onMagicWandPressed();
-
-    void onApplyButtonPressed();
-    void onClearMaskPressed();
+*/
+    void onApplyButtonClicked();
+    void onClearMaskClicked();
 
     void onLabelChanged(int newVal);
     void onSelectLabelColor();
 
-    void setWandSliderValue(double val);
-    void setWandSpinBoxValue(int val);
-
+    void synchronizeWandSpinBoxesAndSliders(void);
+    
     void updateStroke(ClickAndMoveEventFilter * filter, medAbstractView * view);
     void updateWandRegion(medAbstractView * view, QVector3D &vec);
     void updateMouseInteraction();
 
+    void onUndo();
+    void onRedo();
+    void addSliceToStack(medAbstractView * view,const unsigned char planeIndex,QList<int> listIdSlice);
+    //void saveCurrentStateForCursor(medAbstractView * view,const unsigned char planeIndex,unsigned int idSlice);
+    void onViewClosed();
+
+    void onNewSeed();
+    void onRemoveSeed();
+
+    void copySliceMask();
+    void pasteSliceMask();
+
+    void onAddBrushSize();
+    void onReduceBrushSize();
+
 protected:
     friend class ClickAndMoveEventFilter;
-
+    
     void addStroke( medAbstractView *view, const QVector3D &vec );
     void setData( dtkAbstractData *data );
 
@@ -108,6 +141,14 @@ protected:
     void generateLabelColorMap(unsigned int numLabels);
 
     void updateButtons();
+    void addBrushSize(int size);
+
+    char computePlaneIndex(const QVector3D &,MaskType::IndexType & ,bool& isInside);
+
+    void copySliceFromMask3D(itk::Image<unsigned char,2>::Pointer copy,const char planeIndex,const char * direction,const unsigned int slice);
+    void pasteSliceToMask3D(itk::Image<unsigned char,2>::Pointer image2D,const char planeIndex,const char * direction,const unsigned int slice);
+
+    void removeCursorDisplay();
 
 private:
     typedef dtkSmartPointer<medSeedPointAnnotationData> SeedPoint;
@@ -115,18 +156,26 @@ private:
     QPushButton *m_strokeButton;
     QPushButton *m_labelColorWidget;
     QSpinBox *m_strokeLabelSpinBox;
+    QPushButton * m_newSeedButton;
+    QPushButton * m_removeSeedButton;
+    QShortcut *undo_shortcut, *redo_shortcut, *copy_shortcut, *paste_shortcut, *newSeed_shortcut, *removeSeed_shortcut, *addBrushSize_shortcut, *reduceBrushSize_shortcut;
+    
     QLabel *m_colorLabel;
+    QLabel * m_wandInfo;
 
     QSlider *m_brushSizeSlider;
     QSpinBox *m_brushSizeSpinBox;
     QLabel *m_brushRadiusLabel;
 
+    QFormLayout * magicWandLayout;
     QPushButton *m_magicWandButton;
-    // The slider works on percentages of a linear scale between min and max values, i.e.
-    // wandradius = (max - min) * sliderPerc / 2.0
-    QSlider *m_wandThresholdSizeSlider;
-    QDoubleSpinBox *m_wandThresholdSizeSpinBox;
+    QSlider *m_wandUpperThresholdSlider, *m_wandLowerThresholdSlider;
+    QDoubleSpinBox *m_wandUpperThresholdSpinBox , * m_wandLowerThresholdSpinBox;
     QCheckBox *m_wand3DCheckbox;
+    QTime wandTimer;
+
+    bool seedPlanted;
+    QVector3D m_seed;
 
     double m_MinValueImage;
     double m_MaxValueImage;
@@ -135,17 +184,22 @@ private:
 
     QPushButton *m_clearMaskButton;
 
-    dtkSmartPointer< medViewEventFilter > m_viewFilter;
+    dtkSmartPointer< ClickAndMoveEventFilter > m_viewFilter;
 
     dtkSmartPointer<medImageMaskAnnotationData> m_maskAnnotationData;
 
     dtkSmartPointer<medAbstractData> m_maskData;
     dtkSmartPointer<medAbstractData> m_imageData;
-
+    
     medImageMaskAnnotationData::ColorMapType m_labelColorMap;
-
-    typedef itk::Image<unsigned char, 3> MaskType;
+    
     MaskType::Pointer m_itkMask;
+    QPair<MaskSliceType::Pointer,char> m_copy;
+    
+    // undo_redo_feature's attributes
+    QHash<medAbstractView*,QStack<PairListSlicePlaneId>*> * m_undoStacks,*m_redoStacks;
+    medAbstractView * currentView;
+    medAbstractView * viewCopied;
 
     template <typename IMAGE> void RunConnectedFilter (MaskType::IndexType &index, unsigned int planeIndex);
     template <typename IMAGE> void GenerateMinMaxValuesFromImage ();
@@ -154,11 +208,17 @@ private:
     QVector3D m_lastVpn;
     double m_sampleSpacing[2];
 
-    double m_wandRadius;
+    double m_wandRadius, m_wandUpperThreshold, m_wandLowerThreshold;
     double m_strokeRadius;
     unsigned int m_strokeLabel;
 
     PaintState::E m_paintState;
+    bool cursorOn;
+    QList<QPair<MaskType::IndexType,unsigned char> > * cursorPixels;
+    unsigned int currentPlaneIndex; //plane Index of the current/last operation
+    unsigned int currentIdSlice; // current slice;
+    bool undoRedoCopyPasteModeOn;
+    bool cursorJustReactivated;
 };
 
 } // namespace mseg

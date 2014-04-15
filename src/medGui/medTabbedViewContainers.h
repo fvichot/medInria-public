@@ -127,6 +127,12 @@ public:
      *
     */
     void hideTabBar();
+    
+    /**
+     * @brief Shows tab bar.
+     *
+    */
+    void showTabBar();
 
 signals:
     /**

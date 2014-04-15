@@ -59,6 +59,13 @@
 #include <QMenu>
 #include <QMouseEvent>
 
+
+#include <vtkCellArray.h>
+#include <vtkContourWidget.h>
+#include <vtkOrientedGlyphContourRepresentation.h>
+#include <vtkProperty.h>
+#include <vtkPolyData.h>
+
 //=============================================================================
 // Construct a QVector3d from pointer-to-double
 inline QVector3D doubleToQtVector3D ( const double * v )
@@ -181,6 +188,13 @@ void v3dViewObserver::Execute ( vtkObject *caller, unsigned long event, void *ca
         double window = this->view->currentView()->GetColorWindow();
 
         this->view->emitViewWindowingChangedEvent ( level, window );
+    }
+    break;
+
+    case vtkImageView2D::SliceChangedEvent:
+    {
+        int slice = this->view->view2d()->GetSlice();
+        this->view->emitViewSliceChangedEvent(slice);
     }
     break;
 
@@ -395,7 +409,7 @@ v3dView::v3dView() : medAbstractView(), d ( new v3dViewPrivate )
     d->setPropertyFunctions["PositionLinked"] = &v3dView::onPositionLinkedPropertySet;
     d->setPropertyFunctions["WindowingLinked"] = &v3dView::onWindowingLinkedPropertySet;
     d->setPropertyFunctions["DepthPeeling"] = &v3dView::onDepthPeelingPropertySet;
-
+    
     d->data       = 0;
     d->imageData  = 0;
     d->orientation = "Axial";
@@ -584,6 +598,7 @@ v3dView::v3dView() : medAbstractView(), d ( new v3dViewPrivate )
     //d->view2d->GetInteractorStyle()->AddObserver(vtkImageView2DCommand::SliceMoveEvent, d->observer, 0);
     d->view2d->AddObserver ( vtkImageView::CurrentPointChangedEvent, d->observer, 0 );
     d->view2d->AddObserver ( vtkImageView::WindowLevelChangedEvent,  d->observer, 0 );
+    d->view2d->AddObserver ( vtkImageView2D::SliceChangedEvent, d->observer, 0 );
     d->view2d->GetInteractorStyle()->AddObserver ( vtkImageView2DCommand::CameraZoomEvent, d->observer, 0 );
     d->view2d->GetInteractorStyle()->AddObserver ( vtkImageView2DCommand::CameraPanEvent, d->observer, 0 );
     d->view2d->AddObserver ( vtkImageView2DCommand::CameraPanEvent, d->observer, 0);
@@ -841,7 +856,8 @@ void v3dView::setSharedDataPointer ( dtkSmartPointer<dtkAbstractData> data )
 {
     if ( !data )
         return;
-     int layer = 0, imageLayer = 0;
+
+    int layer = 0, imageLayer = 0;
      dtkAbstractData * dataInLayer;
      while ( (dataInLayer = medAbstractView::dataInList( layer )) )
      {
@@ -931,6 +947,8 @@ void v3dView::setData ( dtkAbstractData *data, int layer )
 {
     if ( !data )
         return;
+
+    qDebug() << "pweoripworipweirpweirp";
 
     if ( medAbstractView::isInList ( data, layer ) )
         return;
@@ -1239,6 +1257,7 @@ void v3dView::onOrientationPropertySet ( const QString &value )
     {
         unsigned int zslice = view2d->GetSlice();
         d->slider->setValue ( zslice );
+        view2d->InvokeEvent(vtkImageView2D::SliceChangedEvent,NULL);
     }
 }
 

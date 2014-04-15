@@ -17,13 +17,14 @@
 #include <medTabbedViewContainers.h>
 #include <medVisualizationLayoutToolBox.h>
 #include <medSettingsManager.h>
+#include <medFilteringAbstractToolBox.h>
 #include <medToolBoxFactory.h>
+#include <medFilteringAbstractToolBox.h>
 
 class medVisualizationWorkspacePrivate
 {
 public:
     medVisualizationLayoutToolBox * layoutToolBox;
-
 };
 
 medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorkspace(parent), d(new medVisualizationWorkspacePrivate)
@@ -43,6 +44,8 @@ medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorks
     this->addToolBox( d->layoutToolBox );
 
     // -- View toolboxes --
+    /*medFilteringAbstractToolBox *binaryOpToolBox = qobject_cast<medFilteringAbstractToolBox*>(medToolBoxFactory::instance()->createToolBox("medBinaryOperationToolBox", parent));
+    medFilteringAbstractToolBox *maskApplicatioToolBox = qobject_cast<medFilteringAbstractToolBox*>(medToolBoxFactory::instance()->createToolBox("medMaskApplicationToolBox", parent));*/
     QList<QString> toolboxNames = medToolBoxFactory::instance()->toolBoxesFromCategory("view");
     if(toolboxNames.contains("medViewPropertiesToolBox"))
     {
@@ -52,8 +55,10 @@ medVisualizationWorkspace::medVisualizationWorkspace(QWidget *parent) : medWorks
     foreach(QString toolbox, toolboxNames)
     {
        addToolBox( medToolBoxFactory::instance()->createToolBox(toolbox, parent) );
-    }
+    }	
 
+    //this->addToolBox( maskApplicatioToolBox );
+    //this->addToolBox( binaryOpToolBox );
     connect ( this, SIGNAL(layoutModeChanged(const QString &)),
               stackedViewContainers(), SLOT(changeCurrentContainerType(const QString &)));
 }

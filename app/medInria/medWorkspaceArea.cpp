@@ -608,7 +608,7 @@ void medWorkspaceArea::updateTransferFunction()
 
     dtkAbstractView * view = current->view();
     if ( d->transFun != NULL && view != NULL ) {
-    // d->transFun->setData( static_cast<dtkAbstractData *>( view->data() ) );
+        d->transFun->setData( static_cast<dtkAbstractData *>( view->data() ) );
         d->transFun->setView( dynamic_cast<medAbstractView *>( view ), true );
         d->transFun->update();
     }

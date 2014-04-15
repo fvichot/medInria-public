@@ -1443,6 +1443,7 @@ public:
     dtkAbstractData *dtk_data;
     medAbstractView *med_view;
     QList <medClutEditorTable *> * tables;
+    unsigned int layerForced;
 };
 
 medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
@@ -1500,7 +1501,7 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
         reader.read(&file);
         file.close();
     }
-
+    d->layerForced = -1;
 }
 
 medClutEditor::~medClutEditor(void)
@@ -1558,7 +1559,7 @@ void medClutEditor::setData(dtkAbstractData *data)
 void medClutEditor::setView( medAbstractView *view, bool force )
 {
     medAbstractDataImage * image =
-        static_cast<medAbstractDataImage *>( view->data() );
+        static_cast<medAbstractDataImage *>( view->dataInList(view->currentLayer()) );
     this->setData( image );
 
     if ( !force && view == d->med_view )
@@ -1570,7 +1571,7 @@ void medClutEditor::setView( medAbstractView *view, bool force )
         QList<double> scalars;
         QList<QColor> colors;
 
-        d->med_view->getTransferFunctions( scalars, colors );
+        d->med_view->getTransferFunctions( scalars, colors);
         medClutEditorTable * table = d->scene->table();
         table->setTransferFunction( scalars, colors );
     }
@@ -1623,18 +1624,22 @@ void medClutEditor::applyTable(void)
 {
     // if (medAbstractDataImage *image =
     //     dynamic_cast<medAbstractDataImage *>(d->dtk_data)) {
+    if (d->layerForced!=-1)
+        d->med_view->setCurrentLayer(d->layerForced);
+
     if ( d->med_view != NULL ) {
 
         QList<double> scalars;
         QList<QColor> colors;
         medClutEditorTable * table = d->scene->table();
         table->getTransferFunction(scalars, colors);
-        // d->med_view->setColorLookupTable(scalars, colors);
         d->med_view->setTransferFunctions(scalars, colors);
+        d->med_view->setColorLookupTable(scalars, colors);
+        
         d->med_view->update();
+        emit tableUpdated(scalars,colors);
     }
 }
-
 
 void medClutEditor::mousePressEvent(QMouseEvent *event)
 {
@@ -1665,6 +1670,7 @@ void medClutEditor::onNewTableAction(void)
     this->initializeTable();
     if ( medClutEditorTable * table = d->scene->table() )
         table->triggerVertexChanged();
+    this->update();
 }
 
 // void medClutEditor::onColorAction(void)
@@ -1761,6 +1767,15 @@ void medClutEditor::onSaveTableAction(void)
     }
 }
 
+medAbstractView * medClutEditor::getCurrentView()
+{
+    return d->med_view;
+}
+
+void medClutEditor::forceLayer(int layer)
+{
+    d->layerForced = layer;
+}
 // void medClutEditor::onDeleteTableAction(void)
 // {
 

@@ -869,19 +869,19 @@ void medMainWindow::registerToFactories()
             registerWorkspace<medVisualizationWorkspace>
             ("Visualization",tr("Visualization"),
              tr("Visualize images, Mesh and other data types"));
-    viewerWSpaceFactory->
-            registerWorkspace<medRegistrationWorkspace>
-            ("Registration", tr("Registration"),
-             tr("Register a moving image to a fixed image"));
-    viewerWSpaceFactory->registerWorkspace
-            <medDiffusionWorkspace>("Diffusion",
-                                              tr("Diffusion"),
-                                              tr("Diffusion Tensor Images"));
+    //viewerWSpaceFactory->
+    //        registerWorkspace<medRegistrationWorkspace>
+    //        ("Registration", tr("Registration"),
+    //         tr("Register a moving image to a fixed image"));
+    //viewerWSpaceFactory->registerWorkspace
+    //        <medDiffusionWorkspace>("Diffusion",
+    //                                          tr("Diffusion"),
+    //                                          tr("Diffusion Tensor Images"));
     viewerWSpaceFactory->registerWorkspace
             <medFilteringWorkspace>("Filtering",
                                               tr("Filtering"),
                                               tr("Filter workspace"));
-    medSegmentationWorkspace::registerWithViewerWorkspaceFactory();
+    //medSegmentationWorkspace::registerWithViewerWorkspaceFactory();
 
     //Register settingsWidgets
     //TODO: get rid of the setTabName, or make it static and use it here...

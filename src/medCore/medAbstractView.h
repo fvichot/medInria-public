@@ -281,6 +281,8 @@ signals:
 
     void colorChanged();
 
+    void layerChanged(int);
+
 public slots:
     /**
        Tells the view (not to) synchronize its position with other views.
@@ -330,6 +332,8 @@ public slots:
      * property changed.
      */
     virtual void setCurrentLayer(int layer);
+
+    virtual void close();
 
 protected:
     void emitViewSliceChangedEvent    (int slice);

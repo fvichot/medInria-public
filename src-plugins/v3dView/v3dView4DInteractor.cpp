@@ -247,27 +247,27 @@ dtkAbstractViewInteractor *createV3dView4DInteractor()
 
 void v3dView4DInteractor::setCurrentTime (double time)
 {
-  if (!d->view)
-    return;
+    if (!d->view)
+        return;
 
-  double range[2] = {0,0};
-  this->sequencesRange(range);
+    double range[2] = {0,0};
+    this->sequencesRange(range);
 
-  time = std::min (range[1], time);
-  time = std::max (range[0], time);
+    time = std::min (range[1], time);
+    time = std::max (range[0], time);
 
-  this->currentTime = time;
+    this->currentTime = time;
 
-  for (int i=0; i<d->sequenceList->GetNumberOfItems(); i++)
-  {
-    vtkMetaDataSetSequence* sequence = vtkMetaDataSetSequence::SafeDownCast(d->sequenceList->GetItemAsObject (i));
-    if (!sequence)
-      continue;
-    sequence->UpdateToTime (time);
-  }
+    for (int i=0; i<d->sequenceList->GetNumberOfItems(); i++)
+    {
+        vtkMetaDataSetSequence* sequence = vtkMetaDataSetSequence::SafeDownCast(d->sequenceList->GetItemAsObject (i));
+        if (!sequence)
+            continue;
+        sequence->UpdateToTime (time);
+    }
 
-  d->view->currentView()->Modified();
-  d->view->currentView()->Render();
+    d->view->currentView()->Modified();
+    d->view->currentView()->Render();
     
     d->view->setProperty("TimePosition", QString::number(time));
 }

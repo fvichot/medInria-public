@@ -93,6 +93,10 @@ bool medViewEventFilter::mouseMoveEvent( medAbstractView *view, QMouseEvent *mou
 
 }
 
+bool medViewEventFilter::mouseWheelEvent( medAbstractView *view, QWheelEvent *wheelEvent )
+{
+    return false;
+}
 
 
 bool medViewEventFilter::eventFilter( QObject *obj, QEvent *event )
@@ -138,6 +142,11 @@ bool medViewEventFilter::eventFilter( QObject *obj, QEvent *event )
         {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent *>(event);
             return this->mouseReleaseEvent( view, mouseEvent );
+        }
+    case (QEvent::Wheel) :
+        {
+            QWheelEvent* wheelEvent = static_cast<QWheelEvent *>(event);
+            return this->mouseWheelEvent( view, wheelEvent );
         }
     default:
         {

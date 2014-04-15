@@ -38,6 +38,7 @@ set(${PROJECT_NAME}_DEVEL_HEADERS_MOC
   medViewEventFilter.h
   annotationData/medImageMaskAnnotationData.h
   annotationData/medSeedPointAnnotationData.h
+  medAbstractRoi.h
 )
 
 set(${PROJECT_NAME}_DEVEL_HEADERS
@@ -96,6 +97,7 @@ set(${PROJECT_NAME}_SOURCES
   annotationData/medImageMaskAnnotationData.cpp
   annotationData/medSeedPointAnnotationData.cpp
   medStyleSheetParser.cpp
+  medAbstractRoi.cpp
 )
 
 ## #################################################################

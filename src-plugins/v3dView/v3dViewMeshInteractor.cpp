@@ -124,6 +124,8 @@ void v3dViewMeshInteractor::setData(dtkAbstractData *data)
         vtkMetaDataSet * mesh = dynamic_cast<vtkMetaDataSet*>((vtkDataObject *)(data->data()));
         vtkPointSet * pointSet = vtkPointSet::SafeDownCast (mesh->GetDataSet());
 
+        qDebug() << mesh << pointSet;
+
         if(!d->view->hasImage())
             changeBounds(pointSet);
 
@@ -131,6 +133,12 @@ void v3dViewMeshInteractor::setData(dtkAbstractData *data)
         d->lutList.append(LutPair(NULL, "Default"));
         d->attributeList.append(NULL);
         updatePipeline(d->dataList.size()-1);
+        vtkMapper * mapper2d = d->actor2dList[d->dataList.size()-1]->GetMapper();
+        vtkMapper * mapper3d = d->actor3dList[d->dataList.size()-1]->GetMapper();
+        d->actorPropertyList[d->dataList.size()-1]->SetColor(1.0, 1.0, 1.0); //White color
+        mapper2d->SetScalarVisibility(0);
+        mapper3d->SetScalarVisibility(0);
+        d->view->update();
     }
 }
 
@@ -233,12 +241,16 @@ bool v3dViewMeshInteractor::edgeVisibility(int meshLayer) const
 
 void v3dViewMeshInteractor::setColor(int meshLayer, QColor color)
 {
+    vtkMapper * mapper2d = d->actor2dList[meshLayer]->GetMapper();
+    vtkMapper * mapper3d = d->actor3dList[meshLayer]->GetMapper();
     if( ! color.isValid())
         color.setRgb(0,0,0);
 
     double r,g,b;
     color.getRgbF(&r, &g, &b);
     d->actorPropertyList[meshLayer]->SetColor(r, g, b);
+    mapper2d->SetScalarVisibility(0);
+    mapper3d->SetScalarVisibility(0);
     d->view->update();
 }
 
@@ -417,8 +429,12 @@ void v3dViewMeshInteractor::updatePipeline (unsigned int meshLayer)
     {
         if(vtkPointSet * pointSet = vtkPointSet::SafeDownCast (d->dataList[meshLayer]->GetDataSet()))
         {
-            d->actor2dList.append(d->view->view2d()->AddDataSet(pointSet));
-            d->actor3dList.append(d->view->view3d()->AddDataSet(pointSet));
+            vtkActor* actor = d->view->view2d()->AddDataSet(pointSet);
+            d->dataList[meshLayer]->AddActor(actor);
+            d->actor2dList.append(actor);
+            actor = d->view->view3d()->AddDataSet(pointSet);
+            d->dataList[meshLayer]->AddActor(actor);
+            d->actor3dList.append(actor);
 
             d->actorPropertyList.append(v3dViewMeshInteractorPrivate::PropertySmartPointer::New());
             d->actor2dList[meshLayer]->SetProperty( d->actorPropertyList[meshLayer] );
@@ -461,18 +477,13 @@ void v3dViewMeshInteractor::changeBounds (vtkPointSet* pointSet)
             }
         }
     }
-
     if(isImageOutBounded)
     {
         vtkImageFromBoundsSource* imagegenerator = vtkImageFromBoundsSource::New();
         unsigned int imSize [3]; imSize[0]=100; imSize[1]=100; imSize[2]=100;
         imagegenerator->SetOutputImageSize(imSize);
-        //        vtkInformationDoubleVectorKey * origin = pointSet->ORIGIN();
-        //        double *originDouble= origin->Get(pointSet->GetInformation() );
-        //        imagegenerator->SetOutputImageOrigin(originDouble);
-        imagegenerator->SetOutputImageBounds(d->imageBounds);
         vtkImageData * image = imagegenerator->GetOutput();
-
+        
         if(d->view->dataInList(0))
         {
             //d->view->view2d()->RemoveDataSet();

@@ -81,7 +81,7 @@ set(PLUGIN_LIST
   qtdcmDataSource                ON
   itkDataSHImage                 ON
   itkDataSHImageWriter           ON
-  itkDataSHImageReader           ON
+  itkDataSHImageReader           ON									 
   )
 
 if (MEDINRIA-PLUGINS_BUILD_EXAMPLES)
