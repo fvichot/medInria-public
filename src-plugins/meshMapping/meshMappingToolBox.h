@@ -18,7 +18,6 @@
 #include "meshMappingPluginExport.h"
 #include "medToolBox.h"
 
-#include "medGuiExport.h"
 #include <medDataManager.h>
 
 
@@ -38,6 +37,7 @@ public:
     static bool registered();
     dtkPlugin * plugin();
     void setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData);
+    void update(dtkAbstractView *view);
     
 signals:
 
@@ -47,22 +47,10 @@ signals:
 public slots:
     void run();
 
-
-
 protected slots:
 
-    /** Slot called when dropped object finishes being imported. */
-    void importStructure(const medDataIndex &index);
-
-    void importData(const medDataIndex &index);
-
-    /**
-     * Sets the image passed as parameter as the @medDropSite image.
-     */
-    void setImage(const QImage& thumbnail);
-
-    void clearStructure();
-    void clearData();
+    void addData(dtkAbstractData* data, int layer);
+    void resetComboBoxes();
 
 private:
     meshMappingToolBoxPrivate *d;

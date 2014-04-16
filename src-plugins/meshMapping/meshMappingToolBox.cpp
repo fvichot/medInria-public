@@ -25,34 +25,31 @@
 #include <dtkCore/dtkSmartPointer.h>
 
 #include <medAbstractView.h>
-#include <medRunnableProcess.h>
-#include <medJobManager.h>
-
 #include <medAbstractDataImage.h>
 
 #include <medToolBoxFactory.h>
 #include <medFilteringSelectorToolBox.h>
-#include <medProgressionStack.h>
 #include <medPluginManager.h>
 #include <medViewManager.h>
 #include <medDataManager.h>
 #include <medAbstractDbController.h>
 #include <medDbControllerFactory.h>
 #include <medMetaDataKeys.h>
-#include <medDropSite.h>
-#include <medImageFileLoader.h>
 
 class meshMappingToolBoxPrivate
 {
 public:
     
     dtkSmartPointer <dtkAbstractProcess> process;
-    medDropSite *dropStructure;
-    medDropSite *dropData;
 
-    dtkSmartPointer<dtkAbstractView> view;
+    dtkAbstractView * view;
     dtkSmartPointer<dtkAbstractData> data;
     dtkSmartPointer<dtkAbstractData> structure;
+
+    QComboBox * layersForStructure;
+    QComboBox * layersForData;
+    int nbOfLayers; //need to reimplement the counting of layers because pb with meshes in the current counting
+
 };
 
 meshMappingToolBox::meshMappingToolBox(QWidget *parent) : medFilteringAbstractToolBox(parent), d(new meshMappingToolBoxPrivate)
@@ -61,43 +58,30 @@ meshMappingToolBox::meshMappingToolBox(QWidget *parent) : medFilteringAbstractTo
 
     QWidget *widget = new QWidget(this);
     
-    d->dropStructure = new medDropSite(widget);
-    d->dropStructure->setToolTip(tr("Drop the dataset whose geometry will be used\n in determining positions to probe (typically a mesh)."));
-    d->dropStructure->setText(tr("Drop the structure"));
-    d->dropStructure->setCanAutomaticallyChangeAppereance(false);
-    connect (d->dropStructure, SIGNAL(objectDropped(const medDataIndex&)),  this, SLOT(importStructure(const medDataIndex&)));
+    QLabel * dataLabel = new QLabel("Select the data to map: ");
+    dataLabel->setToolTip(tr("Select the dataset from which to obtain\n probe values (image or mesh)."));
+    d->layersForData = new QComboBox;
+    d->layersForData->addItem("Select the layer", 0);
 
-    d->dropData = new medDropSite(widget);
-    d->dropData->setToolTip(tr("Drop the dataset from which to obtain\n probe values (image or mesh)."));
-    d->dropData->setText(tr("Drop the data"));
-    d->dropData->setCanAutomaticallyChangeAppereance(true);
-    connect (d->dropData, SIGNAL(objectDropped(const medDataIndex&)),       this, SLOT(importData(const medDataIndex&)));
-
-    QPushButton *clearStructureButton = new QPushButton("Clear Structure", widget);
-    clearStructureButton->setToolTip(tr("Clear previously loaded structure."));
-    connect (clearStructureButton,   SIGNAL(clicked()),                     this, SLOT(clearStructure()));
-
-    QPushButton *clearDataButton = new QPushButton("Clear Data", widget);
-    clearDataButton->setToolTip(tr("Clear previously loaded data."));
-    connect (clearDataButton,   SIGNAL(clicked()),                          this, SLOT(clearData()));
-
-    QVBoxLayout *roiButtonLayout = new QVBoxLayout;
-    roiButtonLayout->addWidget(d->dropStructure);
-    roiButtonLayout->addWidget (clearStructureButton);
-    roiButtonLayout->addWidget(d->dropData);
-    roiButtonLayout->addWidget (clearDataButton);
-    roiButtonLayout->setAlignment(Qt::AlignCenter);
+    QLabel * structureLabel = new QLabel("Select the structure:");
+    structureLabel->setToolTip(tr("Select the dataset whose geometry will be used\n \
+                               in determining positions to probe (typically a mesh)."));
+    d->layersForStructure = new QComboBox;
+    d->layersForStructure->addItem("Select the layer", 0);
 
     QPushButton *runButton = new QPushButton(tr("Run"), this);
     connect(runButton, SIGNAL(clicked()), this, SLOT(run()));
-
-
     QVBoxLayout *layout = new QVBoxLayout(widget);
-    layout->addLayout(roiButtonLayout);
+    layout->addWidget(dataLabel);
+    layout->addWidget(d->layersForData);
+    layout->addWidget(structureLabel);
+    layout->addWidget(d->layersForStructure);
     layout->addWidget(runButton);
 
     widget->setLayout(layout);
     this->addWidget(widget);
+
+    d->nbOfLayers = 0;
 }
 
 meshMappingToolBox::~meshMappingToolBox()
@@ -112,7 +96,7 @@ bool meshMappingToolBox::registered()
     registerToolBox<meshMappingToolBox>("meshMappingToolBox",
                                tr("Mesh Mapping"),
                                tr("Map data on a mesh"),
-                               QStringList()<< "filtering");
+                               QStringList()<< "view");
 }
 
 dtkPlugin* meshMappingToolBox::plugin()
@@ -135,17 +119,69 @@ void meshMappingToolBox::run()
     if (!d->process)
         d->process = dtkAbstractProcessFactory::instance()->createSmartPointer("meshMapping");
 
+    medAbstractView * medView = static_cast<medAbstractView *> (d->view);
+    if ( !medView )
+        return;
+    int structureLayer = d->layersForStructure->currentIndex() -1;
+    qDebug()<<"structureLayer : "<<structureLayer;
+    d->process->setInput(medView->dataInList(structureLayer), 0);
+
+    int dataLayer = d->layersForData->currentIndex() -1;
+    qDebug()<<"dataLayer : "<<dataLayer;
+    d->process->setInput(medView->dataInList(dataLayer), 1);
+
     if(d->process->update())
         return;
-    QString newSeriesDescription = d->data->metadata ( medMetaDataKeys::SeriesDescription.key() );
-    newSeriesDescription += " mapped on :" + d->structure->metadata ( medMetaDataKeys::SeriesDescription.key() );
+    QString newSeriesDescription = medView->dataInList(dataLayer)->metadata ( medMetaDataKeys::SeriesDescription.key() );
+    newSeriesDescription += " mapped on :" + medView->dataInList(structureLayer)->metadata ( medMetaDataKeys::SeriesDescription.key() );
 
     dtkSmartPointer <dtkAbstractData> output = d->process->output();
-    setOutputMetadata(d->data, output);
+    setOutputMetadata(medView->dataInList(structureLayer), output);
     output->addMetaData ( medMetaDataKeys::SeriesDescription.key(), newSeriesDescription );
     medDataManager::instance()->importNonPersistent(output);
 }
 
+void meshMappingToolBox::update(dtkAbstractView *view)
+{
+    medToolBox::update(view);
+
+    medAbstractView * medView = dynamic_cast<medAbstractView *> (view);
+    if ( !medView )
+        return;
+
+    d->view = medView;
+    if(medView->layerCount()==1 && d->nbOfLayers == 0)
+        addData(static_cast<dtkAbstractData*>(d->view->data()), 0); //dataAdded is not sent for the first image dropped
+
+    QObject::connect(d->view, SIGNAL(dataAdded(dtkAbstractData*, int)),
+                     this, SLOT(addData(dtkAbstractData*, int)),
+                     Qt::UniqueConnection);
+
+    //TODO: deal with closing a layer, once refactoring is done
+
+    QObject::connect(d->view, SIGNAL(closing()),
+                     this, SLOT(resetComboBoxes()),
+                     Qt::UniqueConnection);
+}
+
+void meshMappingToolBox::resetComboBoxes()
+{
+    for (int i=0; i<d->layersForStructure->count();i++)
+    {
+        d->layersForStructure->removeItem(i);
+        d->layersForData->removeItem(i);
+    }
+    d->layersForStructure->setItemText(0,"Select a layer");
+    d->layersForData->setItemText(0,"Select a layer");
+    d->nbOfLayers = 0;
+}
+
+void meshMappingToolBox::addData(dtkAbstractData* data, int layer) //we can't trust layer value with meshes
+{
+    d->nbOfLayers += 1;
+    d->layersForStructure->addItem("Layer "+ QString::number(d->nbOfLayers-1)); //start with layer 0
+    d->layersForData->addItem("Layer "+ QString::number(d->nbOfLayers-1)); //start with layer 0
+}
 void meshMappingToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
 {
     Q_ASSERT(outputData && inputData);
@@ -158,78 +194,4 @@ void meshMappingToolBox::setOutputMetadata(const dtkAbstractData * inputData, dt
     foreach( const QString & key, metaDataToCopy ) {
         outputData->setMetaData(key, inputData->metadatas(key));
     }
-}
-
-void meshMappingToolBox::importStructure(const medDataIndex& index)
-{
-    dtkSmartPointer<dtkAbstractData> data = medDataManager::instance()->data(index);
-    // we only accept meshes
-    if (!data || data->identifier() != "vtkDataMesh")
-        return;
-
-    // put the thumbnail in the medDropSite as well
-    // (code copied from @medDatabasePreviewItem)
-    medAbstractDbController* dbc = medDataManager::instance()->controllerForDataSource(index.dataSourceId());
-    QString thumbpath = dbc->metaData(index, medMetaDataKeys::ThumbnailPath);
-
-    bool shouldSkipLoading = false;
-    if ( thumbpath.isEmpty() )
-    {
-        // first try to get it from controller
-        QImage thumbImage = dbc->thumbnail(index);
-        if (!thumbImage.isNull())
-        {
-            d->dropStructure->setPixmap(QPixmap::fromImage(thumbImage));
-            shouldSkipLoading = true;
-        }
-    }
-    if (!shouldSkipLoading) {
-        medImageFileLoader *loader = new medImageFileLoader(thumbpath);
-
-        connect(loader, SIGNAL(completed(const QImage&)), this, SLOT(setImage(const QImage&)));
-        QThreadPool::globalInstance()->start(loader);
-    }
-    if(!d->process)
-        d->process= dtkAbstractProcessFactory::instance()->create("meshMapping");
-
-    d->structure = data;
-    if (!d->process)
-        return;
-
-    d->process->setInput(data, 0);
-}
-
-void meshMappingToolBox::importData(const medDataIndex& index)
-{
-    dtkSmartPointer<dtkAbstractData> data = medDataManager::instance()->data(index);
-
-    if (!data)
-        return;
-    
-    if(!d->process)
-        d->process= dtkAbstractProcessFactory::instance()->create("meshMapping");
-
-    d->data = data;
-    
-    if (!d->process)
-        return;
-
-    d->process->setInput(data, 1);
-}
-
-void meshMappingToolBox::clearStructure(void)
-{
-    d->dropStructure->clear();
-    d->dropStructure->setText(tr("Drop the structure"));
-}
-
-void meshMappingToolBox::clearData(void)
-{
-    d->dropData->clear();
-    d->dropData->setText(tr("Drop the data"));
-}
-
-void meshMappingToolBox::setImage(const QImage& thumbnail)
-{
-    d->dropStructure->setPixmap(QPixmap::fromImage(thumbnail));
 }
