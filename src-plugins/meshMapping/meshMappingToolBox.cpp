@@ -123,11 +123,9 @@ void meshMappingToolBox::run()
     if ( !medView )
         return;
     int structureLayer = d->layersForStructure->currentIndex() -1;
-    qDebug()<<"structureLayer : "<<structureLayer;
     d->process->setInput(medView->dataInList(structureLayer), 0);
 
     int dataLayer = d->layersForData->currentIndex() -1;
-    qDebug()<<"dataLayer : "<<dataLayer;
     d->process->setInput(medView->dataInList(dataLayer), 1);
 
     if(d->process->update())

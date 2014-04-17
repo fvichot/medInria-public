@@ -30,7 +30,7 @@
 #include <vtkMatrix4x4.h>
 #include <vtkImageGradientMagnitude.h>
 #include <vtkProbeFilter.h>
-#include <vtkTransformPolyDataFilter.h>
+#include <vtkTransformFilter.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
 #include <vtkImageCast.h>
@@ -94,24 +94,22 @@ class meshMappingPrivate
         cast->SetInput(vtkImage);
         cast->SetOutputScalarTypeToFloat();
 
-        // Probe magnitude with iso-surface.
-        vtkProbeFilter* probe = vtkProbeFilter::New();
-        probe->SetInput(structurePolydata);
-        probe->SetSource(cast->GetOutput());
-        probe->SpatialMatchOn();
-        probe->Update();
-        vtkPolyData * polydata = probe->GetPolyDataOutput();
-
         //To get the itkImage infos back
         vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
         t->SetMatrix(matrix);
 
-        vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-        transformFilter->SetInput(polydata);
+        vtkSmartPointer<vtkTransformFilter> transformFilter = vtkSmartPointer<vtkTransformFilter>::New();
+        transformFilter->SetInputConnection(cast->GetOutputPort());
         transformFilter->SetTransform(t);
-        transformFilter->Update();
 
-        polydata->DeepCopy(transformFilter->GetOutput());
+        // Probe magnitude with iso-surface.
+        vtkProbeFilter* probe = vtkProbeFilter::New();
+        probe->SetInput(structurePolydata);
+        probe->SetSourceConnection(transformFilter->GetOutputPort());
+        probe->SpatialMatchOn();
+        probe->Update();
+        vtkPolyData * polydata = probe->GetPolyDataOutput();
+
 
         vtkMetaSurfaceMesh * smesh = vtkMetaSurfaceMesh::New();
         smesh->SetDataSet(polydata);
