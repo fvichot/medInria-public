@@ -48,7 +48,7 @@ public:
 
     QComboBox * layersForStructure;
     QComboBox * layersForData;
-    int nbOfLayers; //need to reimplement the counting of layers because pb with meshes in the current counting
+    int nbOfImageLayers, nbOfMeshLayers; //need to reimplement the counting of layers because pb with meshes in the current counting
 
 };
 
@@ -81,7 +81,8 @@ meshMappingToolBox::meshMappingToolBox(QWidget *parent) : medFilteringAbstractTo
     widget->setLayout(layout);
     this->addWidget(widget);
 
-    d->nbOfLayers = 0;
+    d->nbOfMeshLayers = 0;
+    d->nbOfImageLayers = 0;
 }
 
 meshMappingToolBox::~meshMappingToolBox()
@@ -148,7 +149,7 @@ void meshMappingToolBox::update(dtkAbstractView *view)
         return;
 
     d->view = medView;
-    if(medView->layerCount()==1 && d->nbOfLayers == 0)
+    if(medView->layerCount()==1 && (d->nbOfMeshLayers+d->nbOfImageLayers) == 0)
         addData(static_cast<dtkAbstractData*>(d->view->data()), 0); //dataAdded is not sent for the first image dropped
 
     QObject::connect(d->view, SIGNAL(dataAdded(dtkAbstractData*, int)),
@@ -164,21 +165,28 @@ void meshMappingToolBox::update(dtkAbstractView *view)
 
 void meshMappingToolBox::resetComboBoxes()
 {
-    for (int i=0; i<d->layersForStructure->count();i++)
-    {
-        d->layersForStructure->removeItem(i);
-        d->layersForData->removeItem(i);
-    }
-    d->layersForStructure->setItemText(0,"Select a layer");
-    d->layersForData->setItemText(0,"Select a layer");
-    d->nbOfLayers = 0;
+    d->layersForStructure->clear();
+    d->layersForData->clear();
+    d->layersForStructure->addItem("Select a layer");
+    d->layersForData->addItem("Select a layer");
+    d->nbOfMeshLayers = 0;
+    d->nbOfImageLayers = 0;
 }
 
 void meshMappingToolBox::addData(dtkAbstractData* data, int layer) //we can't trust layer value with meshes
 {
-    d->nbOfLayers += 1;
-    d->layersForStructure->addItem("Layer "+ QString::number(d->nbOfLayers-1)); //start with layer 0
-    d->layersForData->addItem("Layer "+ QString::number(d->nbOfLayers-1)); //start with layer 0
+    if(data && !data->identifier().contains("vtkDataMesh"))
+    {
+        d->nbOfImageLayers += 1;
+        d->layersForStructure->addItem(QString::number(d->nbOfImageLayers-1)); //start with layer 0
+        d->layersForData->addItem(QString::number(d->nbOfImageLayers-1)); //start with layer 0
+    }
+    else
+    {
+        d->nbOfMeshLayers += 1;
+        d->layersForStructure->addItem("Mesh "+ QString::number(d->nbOfMeshLayers-1)); //start with layer 0
+        d->layersForData->addItem("Mesh "+ QString::number(d->nbOfMeshLayers-1)); //start with layer 0
+    }
 }
 void meshMappingToolBox::setOutputMetadata(const dtkAbstractData * inputData, dtkAbstractData * outputData)
 {
