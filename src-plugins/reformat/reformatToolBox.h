@@ -26,5 +26,6 @@ public slots:
     void propagateThickModeActivated();
     void propagateBlendModeChosen();
     void displayInfoOnCurrentView();
+    void saveReformatedImage();
 };
 

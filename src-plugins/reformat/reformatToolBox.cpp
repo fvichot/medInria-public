@@ -27,12 +27,14 @@ public:
     QLabel *spacingXLab,*spacingYLab,*spacingZLab;
     QDoubleSpinBox * spacingX,* spacingY,* spacingZ;
     medAbstractView * currentView;
+    dtkAbstractData * currentData;
     medWorkspace * workspace;
     QGroupBox * thickMode;
     QSlider * thickSlab;
     /*QGroupBox * blendModes;*/
     QRadioButton * maxIP,*minIP,*meanIP;
     medReformatViewer * reformatViewer;
+    dtkAbstractData * reformatedImage;
 };
 
 reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new reformatToolBoxPrivate)
@@ -155,6 +157,7 @@ void reformatToolBox::startReformat(bool val)
 
             d->reformatViewer = new medReformatViewer(d->currentView,d->workspace->stackedViewContainers());
             d->reformatViewer->setAcceptDrops(false);
+            connect(d->reformatViewer,SIGNAL(imageReformatedGenerated()),this,SLOT(saveReformatedImage()));
             d->workspace->stackedViewContainers()->addContainer("Reformat",d->reformatViewer);
             d->workspace->setCurrentViewContainer("Reformat");
             d->workspace->stackedViewContainers()->lockTabs();
@@ -206,9 +209,10 @@ void reformatToolBox::update(dtkAbstractView* view)
         return;
 
     d->currentView = qobject_cast<medAbstractView*>(view);
-
+    
     if (d->currentView)
     {
+        d->currentData = reinterpret_cast< dtkAbstractData * >( d->currentView->data() );
         displayInfoOnCurrentView();
     }
 }
@@ -253,4 +257,24 @@ void reformatToolBox::displayInfoOnCurrentView()
     d->spacingX->setValue(spacing[0]);
     d->spacingY->setValue(spacing[1]);
     d->spacingZ->setValue(spacing[2]);
+}
+
+void reformatToolBox::saveReformatedImage()
+{
+     d->reformatedImage = d->reformatViewer->getOutput();
+     if (d->reformatedImage && d->reformatedImage->data())
+    {
+        foreach(QString metaData, d->currentData->metaDataList())
+            d->reformatedImage->addMetaData(metaData,d->currentData->metaDataValues(metaData));
+
+        foreach(QString property,d->currentData->propertyList())
+            d->reformatedImage->addProperty(property,d->currentData->propertyValues(property));
+        QString newDescription = "reformated";
+        d->reformatedImage->setMetaData(medMetaDataKeys::SeriesDescription.key(), newDescription);
+
+        //QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
+        //outputData->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
+
+        medDataManager::instance()->importNonPersistent(d->reformatedImage);
+    }
 }

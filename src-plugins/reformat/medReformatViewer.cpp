@@ -196,12 +196,12 @@ medReformatViewer::medReformatViewer(medAbstractView * view,QWidget * parent): m
  //------------------------------------------------------
  
     view3d = static_cast<medVtkViewBackend*>(view->backend())->view3D;
-    //vtkViewData = view3d->GetInput();
+    vtkViewData = view3d->GetInput();
     vtkSmartPointer<vtkImageFlip> flipper = vtkImageFlip::New();
     flipper->SetInput(view3d->GetInput());
     flipper->SetFilteredAxis(1);
     flipper->Update();
-    vtkViewData = flipper->GetOutput();
+    //vtkViewData = flipper->GetOutput();
 
     //vtkViewData = reader->GetOutput();
     imageDims = vtkViewData->GetDimensions();
@@ -524,28 +524,132 @@ void medReformatViewer::saveImage()
             vtkResliceCursorRepresentation::SafeDownCast(riw[1]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
         vtkImageReslice *reslicer2 = vtkImageReslice::SafeDownCast(
             vtkResliceCursorRepresentation::SafeDownCast(riw[2]->GetResliceCursorWidget()->GetRepresentation())->GetReslice());
-
+        
+        
 
         vtkMatrix4x4 * matrixAxes = vtkMatrix4x4::New();
-        matrixAxes->SetElement(0,0,reslicer0->GetResliceAxes()->GetElement(0,0));
-        matrixAxes->SetElement(1,0,reslicer0->GetResliceAxes()->GetElement(1,0));
-        matrixAxes->SetElement(2,0,reslicer0->GetResliceAxes()->GetElement(2,0));
-        matrixAxes->SetElement(3,0,reslicer0->GetResliceAxes()->GetElement(3,0));
+        vtkMatrix4x4 * Axes0 = reslicer0->GetResliceAxes();
+        vtkMatrix4x4 * Axes1 = reslicer1->GetResliceAxes();
+        vtkMatrix4x4 * Axes2 = reslicer2->GetResliceAxes();
+  
+        
+        // vector Product
+        double v0x[3],v0y[3],vecX[3]; 
+        double v1x[3],v1y[3],vecY[3];
+        double v2x[3],v2y[3],vecZ[3];
 
-        matrixAxes->SetElement(0,1,reslicer1->GetResliceAxes()->GetElement(0,1));
-        matrixAxes->SetElement(1,1,reslicer1->GetResliceAxes()->GetElement(1,1));
-        matrixAxes->SetElement(2,1,reslicer1->GetResliceAxes()->GetElement(2,1));
-        matrixAxes->SetElement(3,1,reslicer1->GetResliceAxes()->GetElement(3,1));
+        v0x[0] = Axes0->GetElement(0,0);
+        v0x[1] = Axes0->GetElement(1,0);
+        v0x[2] = Axes0->GetElement(2,0);
 
-        matrixAxes->SetElement(0,2,reslicer2->GetResliceAxes()->GetElement(0,2));
-        matrixAxes->SetElement(1,2,reslicer2->GetResliceAxes()->GetElement(1,2));
-        matrixAxes->SetElement(2,2,reslicer2->GetResliceAxes()->GetElement(2,2));
-        matrixAxes->SetElement(3,2,reslicer2->GetResliceAxes()->GetElement(3,2));
+        v0y[0] = Axes0->GetElement(0,1);
+        v0y[1] = Axes0->GetElement(1,1);
+        v0y[2] = Axes0->GetElement(2,1);
 
-        matrixAxes->SetElement(0,3,reslicer2->GetResliceAxes()->GetElement(0,3));
-        matrixAxes->SetElement(1,3,reslicer2->GetResliceAxes()->GetElement(1,3));
-        matrixAxes->SetElement(2,3,reslicer2->GetResliceAxes()->GetElement(2,3));
-        matrixAxes->SetElement(3,3,reslicer2->GetResliceAxes()->GetElement(3,3));
+        vecX[0]= v0x[1]*v0y[2]-v0x[2]*v0y[1];
+        vecX[1]= v0x[2]*v0y[0]-v0x[0]*v0y[2];
+        vecX[2]= v0x[0]*v0y[1]-v0x[1]*v0y[0];
+
+        v1x[0] = Axes1->GetElement(0,0);
+        v1x[1] = Axes1->GetElement(1,0);
+        v1x[2] = Axes1->GetElement(2,0);
+
+        v1y[0] = Axes1->GetElement(0,1);
+        v1y[1] = Axes1->GetElement(1,1);
+        v1y[2] = Axes1->GetElement(2,1);
+
+        vecY[0]= v1x[1]*v1y[2]-v1x[2]*v1y[1];
+        vecY[1]= v1x[2]*v1y[0]-v1x[0]*v1y[2];
+        vecY[2]= v1x[0]*v1y[1]-v1x[1]*v1y[0];
+
+        v2x[0] = Axes2->GetElement(0,0);
+        v2x[1] = Axes2->GetElement(1,0);
+        v2x[2] = Axes2->GetElement(2,0);
+
+        v2y[0] = Axes2->GetElement(0,1);
+        v2y[1] = Axes2->GetElement(1,1);
+        v2y[2] = Axes2->GetElement(2,1);
+
+        vecZ[0]= v2x[1]*v2y[2]-v2x[2]*v2y[1];
+        vecZ[1]= v2x[2]*v2y[0]-v2x[0]*v2y[2];
+        vecZ[2]= v2x[0]*v2y[1]-v2x[1]*v2y[0];
+
+        //////////////////////////////////////////
+        //matrixAxes->SetElement(0,0,vecY[0]);
+        //matrixAxes->SetElement(1,0,vecY[1]);
+        //matrixAxes->SetElement(2,0,vecY[2]);
+        //matrixAxes->SetElement(3,0,0);
+
+        //matrixAxes->SetElement(0,1,vecX[0]);
+        //matrixAxes->SetElement(1,1,vecX[1]);
+        //matrixAxes->SetElement(2,1,vecX[2]);
+        //matrixAxes->SetElement(3,1,0);
+        //
+        //matrixAxes->SetElement(0,2,vecZ[0]);
+        //matrixAxes->SetElement(1,2,vecZ[1]);
+        //matrixAxes->SetElement(2,2,vecZ[2]);
+        //matrixAxes->SetElement(3,2,0);
+
+        //matrixAxes->SetElement(0,3,reslicer2->GetResliceAxes()->GetElement(0,3));
+        //matrixAxes->SetElement(1,3,reslicer2->GetResliceAxes()->GetElement(1,3));
+        //matrixAxes->SetElement(2,3,reslicer2->GetResliceAxes()->GetElement(2,3));
+        //matrixAxes->SetElement(3,3,reslicer2->GetResliceAxes()->GetElement(3,3));
+        ////////////////////////////////////////////
+        //  //////////////////////////////////////////
+        //matrixAxes->SetElement(0,0,v0x[0]);
+        //matrixAxes->SetElement(1,0,v0x[1]);
+        //matrixAxes->SetElement(2,0,v0x[2]);
+        //matrixAxes->SetElement(3,0,0);
+
+        //matrixAxes->SetElement(0,1,v1x[0]);
+        //matrixAxes->SetElement(1,1,v1x[1]);
+        //matrixAxes->SetElement(2,1,v1x[2]);
+        //matrixAxes->SetElement(3,1,0);
+        //
+        //matrixAxes->SetElement(0,2,v2x[0]);
+        //matrixAxes->SetElement(1,2,v2x[1]);
+        //matrixAxes->SetElement(2,2,v2x[2]);
+        //matrixAxes->SetElement(3,2,0);
+
+        //matrixAxes->SetElement(0,3,reslicer2->GetResliceAxes()->GetElement(0,3));
+        //matrixAxes->SetElement(1,3,reslicer2->GetResliceAxes()->GetElement(1,3));
+        //matrixAxes->SetElement(2,3,reslicer2->GetResliceAxes()->GetElement(2,3));
+        //matrixAxes->SetElement(3,3,reslicer2->GetResliceAxes()->GetElement(3,3));
+        //////////////////////////////////////////
+          //////////////////////////////////////////
+        matrixAxes->SetElement(0,0,1);
+        matrixAxes->SetElement(1,0,0);
+        matrixAxes->SetElement(2,0,0);
+        matrixAxes->SetElement(3,0,0);
+
+        matrixAxes->SetElement(0,1,0);
+        matrixAxes->SetElement(1,1,0);
+        matrixAxes->SetElement(2,1,1);
+        matrixAxes->SetElement(3,1,0);
+        
+        matrixAxes->SetElement(0,2,0);
+        matrixAxes->SetElement(1,2,1);
+        matrixAxes->SetElement(2,2,0);
+        matrixAxes->SetElement(3,2,0);
+
+        matrixAxes->SetElement(0,3,0);
+        matrixAxes->SetElement(1,3,0);
+        matrixAxes->SetElement(2,3,0);
+        matrixAxes->SetElement(3,3,1);
+
+        //////////////////////////////////////////
+        for (int i = 0;i<4;i++)
+        {
+            qDebug() << "Axes2 " << i ;
+            QString lignei="";
+            
+            for(int j = 0;j<4;j++)
+                lignei+= " " + QString::number(Axes2->GetElement(i,j));
+            qDebug () << lignei;
+        }
+
+
+
 
         for (int i = 0;i<4;i++)
         {
@@ -584,42 +688,49 @@ void medReformatViewer::saveImage()
             qDebug () << lignei;
         }
 
-        vtkImageReslice *reslicerTop0 = vtkImageReslice::New();
-        vtkImageReslice *reslicerTop1 = vtkImageReslice::New();
+        //vtkImageReslice *reslicerTop0 = vtkImageReslice::New();
+        //vtkImageReslice *reslicerTop1 = vtkImageReslice::New();
         vtkImageReslice *reslicerTop2 = vtkImageReslice::New();
 
-        reslicerTop0->SetInput(riw[2]->GetInput());
-        reslicerTop0->SetResliceAxes(reslicer0->GetResliceAxes());
-        reslicerTop0->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
-        reslicerTop0->SetOutputSpacing(outputSpacing);
-        reslicerTop0->SetInterpolationModeToLinear();
-        reslicerTop0->Update();
+        //reslicerTop0->SetInput(riw[2]->GetInput());
+        //reslicerTop0->SetResliceAxes(reslicer0->GetResliceAxes());
+        //reslicerTop0->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
+        //reslicerTop0->SetOutputSpacing(outputSpacing);
+        //reslicerTop0->SetInterpolationModeToLinear();
+        //reslicerTop0->Update();
 
-        reslicerTop1->SetInput(reslicerTop0->GetOutput());
-        reslicerTop1->SetResliceAxes(reslicer1->GetResliceAxes());
-        reslicerTop1->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
-        reslicerTop1->SetOutputSpacing(outputSpacing);
-        reslicerTop1->SetInterpolationModeToLinear();
-        reslicerTop1->Update();
-        
-        reslicerTop2->SetInput(reslicerTop1->GetOutput());
-        reslicerTop2->SetResliceAxes(reslicer2->GetResliceAxes());
+        //reslicerTop1->SetInput(reslicerTop0->GetOutput());
+        //reslicerTop1->SetResliceAxes(reslicer1->GetResliceAxes());
+        //reslicerTop1->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
+        //reslicerTop1->SetOutputSpacing(outputSpacing);
+        //reslicerTop1->SetInterpolationModeToLinear();
+        //reslicerTop1->Update();
+        //
+        reslicerTop2->SetInput(riw[2]->GetInput());
+        reslicerTop2->SetResliceAxes(matrixAxes);
+        //reslicerTop2->SetResliceAxesDirectionCosines(vecX,vecY,v1y);
+        //reslicerTop2->SetResliceAxesOrigin(reslicer1->GetResliceAxesOrigin());
         reslicerTop2->SetBackgroundLevel(riw[2]->GetInput()->GetScalarRange()[0]); // todo: set the background value in an automatic way.
         reslicerTop2->SetOutputSpacing(outputSpacing);
         reslicerTop2->SetInterpolationModeToLinear();
         reslicerTop2->Update();
         outputToFlip = reslicerTop2->GetOutput();
+        //reslicer2->Update();
+        //
+        //outputToFlip = reslicer2->GetOutput();
+        
     }
     
     vtkSmartPointer<vtkImageFlip> flipper = vtkImageFlip::New();
     flipper->SetInput(outputToFlip);
     flipper->SetFilteredAxis(1);
     flipper->Update();
-    output = flipper->GetOutput();
+    //output = flipper->GetOutput();
+    output = outputToFlip;
 
     //output->setaxis
     // TODO : the output of the reslice need to receive all the info from the original image : spacing origin ...
-    dtkSmartPointer<dtkAbstractData> outputData(NULL);
+    
     qDebug () << "Type of the image " <<  output->GetScalarTypeAsString() << " "  << output->GetScalarType();
 
     switch (output->GetScalarType())
@@ -750,23 +861,7 @@ void medReformatViewer::saveImage()
         }
     }
 
-    if (outputData && outputData->data())
-    {
-        dtkAbstractData *currentData = reinterpret_cast< dtkAbstractData * >( _view->data() );
-
-        foreach(QString metaData, currentData->metaDataList())
-            outputData->addMetaData(metaData,currentData->metaDataValues(metaData));
-
-        foreach(QString property,currentData->propertyList())
-            outputData->addProperty(property,currentData->propertyValues(property));
-        QString newDescription = "reformated";
-        outputData->setMetaData(medMetaDataKeys::SeriesDescription.key(), newDescription);
-
-        //QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
-        //outputData->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
-
-        medDataManager::instance()->importNonPersistent(outputData);
-    }
+   emit imageReformatedGenerated();
 }
 
 void medReformatViewer::thickSlabChanged(double val)
@@ -981,4 +1076,9 @@ void medReformatViewer::SetViewConvention(int convention)
   this->ConventionMatrix->SetElement (2,3, z_watcher);
 
   //this->UpdateOrientation();
+}
+
+dtkAbstractData * medReformatViewer::getOutput()
+{
+    return outputData;
 }

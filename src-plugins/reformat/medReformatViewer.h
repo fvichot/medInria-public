@@ -2,6 +2,7 @@
 
 #include "vtkSmartPointer.h"
 #include "vtkResliceImageViewer.h"
+#include <vtkResliceCursorRepresentation.h>
 #include "vtkImagePlaneWidget.h"
 //#include "vtkDistanceWidget.h"
 #include "vtkResliceImageViewerMeasurements.h"
@@ -10,6 +11,7 @@
 #include <medCustomViewContainer.h>
 #include <itkImageToVTKImageFilter.h>
 #include <itkImage.h>
+#include <dtkCore/dtkAbstractData.h>
 
 class QVTKFrame : public QFrame
 {
@@ -30,7 +32,8 @@ private:
 
 class medReformatViewer : public medCustomViewContainer
 {
-  Q_OBJECT
+    Q_OBJECT
+
 public:
 
   // Constructor/Destructor
@@ -58,6 +61,10 @@ public slots:
   bool eventFilter(QObject * object,QEvent * event);
   int SetCameraFromOrientation(vtkSmartPointer<vtkResliceImageViewer> riw,int SliceOrientation);
   void SetViewConvention(int convention);
+  dtkAbstractData * getOutput();
+
+signals:
+  void imageReformatedGenerated();
 
 protected:
   vtkSmartPointer< vtkResliceImageViewer > riw[3];
@@ -74,6 +81,7 @@ protected:
   typedef itk::Image<short,3> ImageType;
   typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
   ConnectorType::Pointer converter;
+  dtkSmartPointer<dtkAbstractData> outputData;
   
   
 protected slots:
