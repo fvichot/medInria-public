@@ -17,6 +17,12 @@
 #include <string>
 #include <vector>
 
+#if defined __APPLE__
+#include <ext/hash_map>
+#else
+#include <hash_map>
+#endif
+
 #include <vtkDataSet.h>
 
 //#include <vtkActor.h>
@@ -40,6 +46,7 @@ class vtkActor;
 class vtkActorCollection;
 class vtkScalarsToColors;
 class vtkPolyData;
+class vtkLookupTable;
 
 
 class vtkMetaDataSet: public vtkDataObject
@@ -146,6 +153,18 @@ class vtkMetaDataSet: public vtkDataObject
   vtkGetObjectMacro(Property, vtkObject);
   vtkSetObjectMacro(Property, vtkObject);
 
+	
+	/**
+     Access to the visualization property of the metadataset
+     downcast the object to the write type :
+     Lookuptable specified in the vtkfile for vtkMetaSurfaceMesh
+	 */ 
+	void SetLookupTable (vtkLookupTable* array);
+	vtkLookupTable* GetLookupTable (void)
+	{
+		return this->LookupTable;
+	}
+	
   /**
      Add an actor to the metadataset. Use this method
      to be able to handle several actors of the same metadataset at the same time :
@@ -230,6 +249,8 @@ class vtkMetaDataSet: public vtkDataObject
      nb dim (integers. nb is the number of Tuples of the field; dim is the Tuple size)\n\n
   */
   virtual void ReadData (const char* filename);
+  virtual void ReadCSVData(const char* filename); // specific for CSV files
+
   /**
      read and assign some scalars to the dataset (should be point set). 
      Either vtkMetaSurfaceMesh or vtkMetaVolumeMesh. The scalars are casted in float type
@@ -332,6 +353,10 @@ class vtkMetaDataSet: public vtkDataObject
     this->CurrentScalarArray = array;
   }
 
+  virtual double GetScalarNullValue(const char * arrayName);
+
+  virtual void SetScalarNullValue(const char * arrayName, double nullValue);
+
   virtual double* GetCurrentScalarRange();
   
   
@@ -385,6 +410,7 @@ class vtkMetaDataSet: public vtkDataObject
   double      Time;
   vtkObject*  Property;
   vtkDataArrayCollection* ArrayCollection;
+  vtkLookupTable*  LookupTable;
 
   vtkDataArray* CurrentScalarArray;
   
@@ -406,6 +432,7 @@ class vtkMetaDataSet: public vtkDataObject
   //ETX
 
   vtkPolyData* WirePolyData;
+  std::map<const char *, double> ScalarNullValues;
   
   
  

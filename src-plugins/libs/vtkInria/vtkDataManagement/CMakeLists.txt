@@ -30,6 +30,13 @@ set(vtkDataManagement_SRCS
   vtkXMLFiberDataSetWriter.cxx
 )
 
+# We need to use some functions from vtkVisuManagement, but can't link to it
+# because that would be a circular dependency. So instead, allow undefined symbols
+if (APPLE)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
+ENDIF()
+
+
 if (VTK_MAJOR_VERSION GREATER 4)
   if (VTK_MINOR_VERSION GREATER 0)
     set(${PROJECT_NAME}_SRCS

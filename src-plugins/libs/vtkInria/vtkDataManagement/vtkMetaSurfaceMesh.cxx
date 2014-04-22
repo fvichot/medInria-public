@@ -97,6 +97,11 @@ void vtkMetaSurfaceMesh::ReadVtkFile (const char* filename)
   {
     reader->Update();
     this->SetDataSet (reader->GetOutput());
+
+	  if(reader->GetOutput()->GetPointData()->GetScalars())
+		  if(reader->GetOutput()->GetPointData()->GetScalars()->GetLookupTable())
+			  this->SetLookupTable(reader->GetOutput()->GetPointData()->GetScalars()->GetLookupTable());
+	  
   }
   catch (vtkErrorCode::ErrorIds error)
   {
@@ -521,60 +526,6 @@ void vtkMetaSurfaceMesh::ReadMeshFile (const char* filename)
     
 }
 
-// void vtkMetaSurfaceMesh::CreateWirePolyDataOld()
-// {
-//   if (this->GetWirePolyData())
-//     return;
-
-//   vtkPolyData* dataset = vtkPolyData::SafeDownCast (this->GetDataSet());
-  
-//   if (!dataset)
-//     return;
-
-//   vtkCellArray* celldata = vtkCellArray::New();
-//   celldata->Initialize();
-
-//   for(unsigned int i=0;i<dataset->GetPolys()->GetNumberOfCells();++i)
-//   {
-//     vtkIdList* pointids = vtkIdList::New();
-//     dataset->GetCellPoints(i, pointids);
-//     if (pointids->GetNumberOfIds() != 3)
-//     {
-//       std::cout<<"strange triangle"<<std::endl;
-//       continue;
-//     }
-    
-//     vtkLine* line1 = vtkLine::New();
-//     line1->GetPointIds()->SetId (0, pointids->GetId (0));
-//     line1->GetPointIds()->SetId (1, pointids->GetId (2));
-//     celldata->InsertNextCell (line1);
-//     line1->Delete();
-//     vtkLine* line2 = vtkLine::New();
-//     line2->GetPointIds()->SetId (0, pointids->GetId (2));
-//     line2->GetPointIds()->SetId (1, pointids->GetId (1));
-//     celldata->InsertNextCell (line2);
-//     line2->Delete();
-//     vtkLine* line3 = vtkLine::New();
-//     line3->GetPointIds()->SetId (0, pointids->GetId (1));
-//     line3->GetPointIds()->SetId (1, pointids->GetId (0));
-//     celldata->InsertNextCell (line3);
-//     line3->Delete();
-    
-//     pointids->Delete();
-//     i++;
-    
-//   }
-
-// //   dataset->SetLines (celldata);
-//   celldata->Delete();
-
-//   dataset->Modified();
-//   this->Modified();
-  
-  
-// }
-
-
 void vtkMetaSurfaceMesh::CreateWirePolyData()
 {
   if (this->GetWirePolyData())
@@ -590,47 +541,6 @@ void vtkMetaSurfaceMesh::CreateWirePolyData()
   this->SetWirePolyData (extractor->GetOutput());
 
   extractor->Delete();
-  
-
-//   vtkPolyData* dataset = vtkPolyData::New();
-//   dataset->SetPoints (this->GetPolyData()->GetPoints());
-//   dataset->Allocate();
-
-  
-//   for(unsigned int i=0;i<this->GetPolyData()->GetPolys()->GetNumberOfCells();++i)
-//   {
-//     vtkIdList* pointids = vtkIdList::New();
-//     this->GetPolyData()->GetCellPoints(i, pointids);
-//     if (pointids->GetNumberOfIds() != 3)
-//     {
-//       vtkWarningMacro(<<"warning : wrong type of cells !"<<endl);
-//       pointids->Delete();
-//       dataset->Delete();
-      
-//       return;
-//     }
-    
-//     vtkIdList* list = vtkIdList::New();
-//     list->SetNumberOfIds(2);
-    
-//     list->SetId (0, pointids->GetId (0));
-//     list->SetId (1, pointids->GetId (1));
-//     dataset->InsertNextCell (VTK_LINE, list);
-//     list->SetId (0, pointids->GetId (1));
-//     list->SetId (1, pointids->GetId (2));
-//     dataset->InsertNextCell (VTK_LINE, list);
-//     list->SetId (0, pointids->GetId (2));
-//     list->SetId (1, pointids->GetId (0));
-//     dataset->InsertNextCell (VTK_LINE, list);
-
-//     list->Delete();
-//     pointids->Delete();
-//     i++;
-    
-//   }
-
-//   this->SetWirePolyData (dataset);
-//   dataset->Delete();
   
   this->Modified();
 }
