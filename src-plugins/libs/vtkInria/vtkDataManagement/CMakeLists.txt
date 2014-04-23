@@ -70,6 +70,7 @@ set(${PROJECT_NAME}_LIBS
   vtkGraphics
   vtkFiltering
   vtkImaging
+  vtkInfovis
   vtkIO
   vtkRendering
   itkIOAddOn
