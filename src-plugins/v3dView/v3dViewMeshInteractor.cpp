@@ -308,6 +308,7 @@ void v3dViewMeshInteractor::setAttribute(int meshLayer, const QString & attribut
     {
         d->attributeList[meshLayer] = attributes->GetArray(qPrintable(attributeName));
         attributes->SetActiveScalars(qPrintable(attributeName));
+        d->dataList[meshLayer]->SetCurrentActiveArray(attributes->GetArray(qPrintable(attributeName)));
 
         mapper2d->SelectColorArray(qPrintable(attributeName));
         mapper3d->SelectColorArray(qPrintable(attributeName));
