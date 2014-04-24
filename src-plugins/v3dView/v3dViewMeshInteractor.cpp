@@ -314,7 +314,7 @@ void v3dViewMeshInteractor::setAttribute(int meshLayer, const QString & attribut
         mapper3d->SelectColorArray(qPrintable(attributeName));
 
         this->setLut(meshLayer, d->lutList[meshLayer].first);
-
+        
         mapper2d->SetScalarVisibility(1);
         mapper3d->SetScalarVisibility(1);
     }
@@ -530,10 +530,14 @@ void v3dViewMeshInteractor::setLut(int meshLayer, vtkLookupTable * lut)
     vtkMapper * mapper2d = d->actor2dList[meshLayer]->GetMapper();
     vtkMapper * mapper3d = d->actor3dList[meshLayer]->GetMapper();
 
-    mapper2d->SetLookupTable(lut);
+    //mapper2d->SetLookupTable(lut);
     mapper2d->UseLookupTableScalarRangeOn();
-    mapper3d->SetLookupTable(lut);
+    mapper2d->InterpolateScalarsBeforeMappingOn();
+    //mapper3d->SetLookupTable(lut);
     mapper3d->UseLookupTableScalarRangeOn();
+    mapper3d->InterpolateScalarsBeforeMappingOn();
+
+    d->dataList[meshLayer]->GetCurrentScalarArray()->SetLookupTable(lut);    
 }
 
 // /////////////////////////////////////////////////////////////////
