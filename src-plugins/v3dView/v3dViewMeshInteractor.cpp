@@ -43,7 +43,7 @@
 #include <vtkMetaDataSet.h>
 #include <vtkMetaDataSetSequence.h>
 #include <vtkDataArrayCollection.h>
-
+#include <vtkScalarBarActor.h>
 #include <vector>
 
 typedef QPair<vtkSmartPointer<vtkLookupTable>, QString> LutPair;
@@ -536,6 +536,8 @@ void v3dViewMeshInteractor::setLut(int meshLayer, vtkLookupTable * lut)
     mapper3d->SetLookupTable(lut);
     mapper3d->UseLookupTableScalarRangeOn();
     mapper3d->InterpolateScalarsBeforeMappingOn();
+    d->view->view2d()->GetScalarBar()->SetLookupTable(lut);
+    d->view->view3d()->GetScalarBar()->SetLookupTable(lut);
 }
 
 // /////////////////////////////////////////////////////////////////
