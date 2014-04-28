@@ -508,7 +508,7 @@ void v3dViewMeshInteractor::setLut(int meshLayer, vtkLookupTable * lut)
 
     if ( ! lut )
     {
-        lut = d->attributeList[meshLayer]->GetLookupTable();
+        lut = d->dataList[meshLayer]->GetLookupTable();  // we try to find the lookupTable associated to the mesh
         d->lutList[meshLayer] = LutPair(lut, "Default");
         // no ? then bail, nothing to do here.
         if ( ! lut )
