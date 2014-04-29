@@ -40,6 +40,7 @@
 #include <medDatabaseSettingsWidget.h>
 #include <medAbstractDataFactory.h>
 #include <medSettingsWidget.h>
+#include <medDataManager.h>
 
 
 class medApplicationPrivate
@@ -229,6 +230,7 @@ void medApplication::redirectMessageToSplash(const QString &message)
 
 void medApplication::registerToFactories()
 {
+    medDataManager::initialize();
     // Registering different workspaces
     medWorkspaceFactory * viewerWSpaceFactory = medWorkspaceFactory::instance();
     viewerWSpaceFactory->registerWorkspace<medVisualizationWorkspace>();
