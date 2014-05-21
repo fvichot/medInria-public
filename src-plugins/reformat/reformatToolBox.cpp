@@ -34,7 +34,8 @@ public:
     /*QGroupBox * blendModes;*/
     QRadioButton * maxIP,*minIP,*meanIP;
     medReformatViewer * reformatViewer;
-    dtkAbstractData * reformatedImage;
+    dtkSmartPointer<dtkAbstractData> reformatedImage;  
+    QCheckBox * showCutting;
 };
 
 reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new reformatToolBoxPrivate)
@@ -82,6 +83,11 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     spacingSpinBoxLayout->addWidget(d->spacingZLab);
     spacingSpinBoxLayout->addWidget(d->spacingZ);
     spinBoxes->setLayout(spacingSpinBoxLayout);
+    d->showCutting = new QCheckBox();
+    QLabel * showCuttingLabel = new QLabel("Show The Cutting : ");
+    QHBoxLayout * showCuttingLayout = new QHBoxLayout();
+    showCuttingLayout->addWidget(showCuttingLabel);
+    showCuttingLayout->addWidget(d->showCutting);
 
     d->thickSlab = new QSlider(Qt::Horizontal,reformatToolBoxBody);
     d->thickSlab->setRange(0,10); // TODO : set based on the image 
@@ -105,6 +111,7 @@ reformatToolBox::reformatToolBox (QWidget *parent) : medToolBox (parent), d(new 
     reformatToolBoxLayout->addWidget(help1); 
     reformatToolBoxLayout->addWidget(help2);
     reformatToolBoxLayout->addWidget(spinBoxes);
+    reformatToolBoxLayout->addLayout(showCuttingLayout);
     reformatToolBoxLayout->addWidget(d->thickMode);
     reformatToolBoxLayout->addWidget(d->b_saveImage);
     /*reformatToolBoxLayout->addWidget(d->thickSlab);*/
@@ -261,8 +268,8 @@ void reformatToolBox::displayInfoOnCurrentView()
 
 void reformatToolBox::saveReformatedImage()
 {
-     d->reformatedImage = d->reformatViewer->getOutput();
-     if (d->reformatedImage && d->reformatedImage->data())
+    d->reformatedImage.takePointer(d->reformatViewer->getOutput());
+    if (d->reformatedImage && d->reformatedImage->data())
     {
         foreach(QString metaData, d->currentData->metaDataList())
             d->reformatedImage->addMetaData(metaData,d->currentData->metaDataValues(metaData));

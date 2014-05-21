@@ -44,7 +44,8 @@ set(${PROJECT_NAME}_HEADERS_MOC
   reformatToolBox.h
   resampleToolBox.h
   resampleProcess.h
-  medReformatViewer.h)
+  medReformatViewer.h
+  medResliceCursor.h)
 
 set(${PROJECT_NAME}_HEADERS
   ${${PROJECT_NAME}_HEADERS_MOC})
@@ -55,7 +56,8 @@ set(${PROJECT_NAME}_SOURCES
   reformatToolBox.cpp
   resampleToolBox.cpp
   resampleProcess.cpp
-  medReformatViewer.cpp)
+  medReformatViewer.cpp
+  medResliceCursor.cxx)
 
 ## #################################################################
 ## Build rules
