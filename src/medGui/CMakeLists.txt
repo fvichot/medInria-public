@@ -74,6 +74,7 @@ set(${PROJECT_NAME}_HEADERS_MOC
   commonWidgets/medMultipleImageSelectionWidget.h
   commonWidgets/medThumbnailContainer.h
   commonWidgets/medHomepageButton.h
+  commonWidgets/medRoiItemWidget.h
 
   # factories
   factories/medSettingsWidgetFactory.h
@@ -109,7 +110,8 @@ set(${PROJECT_NAME}_HEADERS_MOC
   toolboxes/medCompositeDataSetImporterSelectorToolBox.h
   toolboxes/medCompositeDataSetImporterAbstractToolBox.h
   toolboxes/medActionsToolBox.h
-
+  toolboxes/medRoiCreatorToolBox.h
+  toolboxes/medRoiToolBox.h
 
   # viewContainers:
   viewContainers/medCompareViewContainer.h
@@ -152,6 +154,7 @@ set(${PROJECT_NAME}_SOURCES
   commonWidgets/medMultipleImageSelectionWidget.cpp
   commonWidgets/medThumbnailContainer.cpp
   commonWidgets/medHomepageButton.cpp
+  commonWidgets/medRoiItemWidget.cpp
 
   # db related items
   database/medDatabaseSearchPanel.cpp
@@ -218,6 +221,8 @@ set(${PROJECT_NAME}_SOURCES
   toolboxes/medCompositeDataSetImporterSelectorToolBox.cpp
   toolboxes/medCompositeDataSetImporterAbstractToolBox.cpp
   toolboxes/medActionsToolBox.cpp
+  toolboxes/medRoiCreatorToolBox.cpp
+  toolboxes/medRoiToolBox.cpp
 
 
   # viewContainers:

@@ -20,6 +20,8 @@ vtkOrientationAnnotation.cxx
 vtkOrientedBoxWidget.cxx
 vtkRulerWidget.cxx
 vtkInteractorStyleTrackballCamera2.cxx
+vtkContourOverlayRepresentation.cxx
+vtkConstantBalloonWidget.cxx
 )
 
 set(${PROJECT_NAME}_LIBS

@@ -23,6 +23,7 @@
 #include <medWorkspaceFactory.h>
 #include <medVisualizationLayoutToolBox.h>
 #include <medToolBoxFactory.h>
+#include <medRoiCreatorToolBox.h>
 
 #include <dtkLog/dtkLog.h>
 
@@ -42,7 +43,7 @@ public:
     medVisualizationLayoutToolBox *layoutToolBox;
 
     medSegmentationSelectorToolBox *segmentationToolBox;
-    medToolBox * meshToolBox;
+    medRoiCreatorToolBox * roiCreator_Manager;
 };
 
 // /////////////////////////////////////////////////////////////////
@@ -97,7 +98,9 @@ medWorkspace(parent), d(new medSegmentationWorkspacePrivate)
     }
 
     this->addToolBox( d->segmentationToolBox );
-    this->addToolBox( d->meshToolBox );
+    
+    d->roiCreator_Manager = new medRoiCreatorToolBox(parent);
+    this->addToolBox(d->roiCreator_Manager);
 }
 
 medSegmentationWorkspace::~medSegmentationWorkspace(void)
