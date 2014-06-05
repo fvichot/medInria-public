@@ -1016,7 +1016,7 @@ void medVtkFibersDataInteractor::setRoiNullOperation(bool value)
 
 void medVtkFibersDataInteractor::importROI(const medDataIndex& index)
 {
-    dtkSmartPointer<medAbstractData> data = medDataManager::instance()->data(index);
+    dtkSmartPointer<medAbstractData> data = medDataManager::instance()->retrieveData(index);
 
     // we accept only ROIs (itkDataImageUChar3)
     // TODO try dynamic_cast of medAbstractMaskData would be better - RDE
