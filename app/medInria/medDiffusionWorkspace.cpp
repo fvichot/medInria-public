@@ -168,7 +168,7 @@ void medDiffusionWorkspace::cancelProcess()
 void medDiffusionWorkspace::getOutput()
 {
     this->stackedViewContainers()->setEnabled(true);
-    dtkSmartPointer <medAbstractData> outputData = dynamic_cast <medAbstractData *> (d->currentProcess->output());
+    medAbstractData *outputData = dynamic_cast <medAbstractData *> (d->currentProcess->output());
 
     if (!outputData)
         return;
@@ -230,7 +230,7 @@ void medDiffusionWorkspace::updateToolBoxesInputs()
 
 void medDiffusionWorkspace::addToolBoxInput(medAbstractData *data)
 {
-    dtkSmartPointer <medAbstractImageData> medData = dynamic_cast <medAbstractImageData *> (data);
+    medAbstractImageData *medData = dynamic_cast <medAbstractImageData *> (data);
     if (!medData)
         return;
 

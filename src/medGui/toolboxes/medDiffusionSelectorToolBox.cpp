@@ -17,7 +17,6 @@
 
 #include <medAbstractImageData.h>
 #include <medPluginManager.h>
-#include <medViewManager.h>
 
 #include <medDropSite.h>
 #include <medDataManager.h>
@@ -50,6 +49,7 @@ public:
 
     //QLabel *inputLabel;
     QComboBox *chooseInput;
+    //TODO smartPointing have to be managed only in abstract processes -rde
     QMap <QString, dtkSmartPointer <medAbstractImageData> > inputsMap;
 };
 

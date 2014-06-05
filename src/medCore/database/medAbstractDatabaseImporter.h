@@ -210,7 +210,7 @@ protected:
     * @param readOnlyImageInformation - if true only image header is read, otherwise the full image
     * @return a @medAbstractData containing the read data
     **/
-    dtkSmartPointer<medAbstractData> tryReadImages ( const QStringList& filesPath,const bool readOnlyImageInformation );
+    medAbstractData *tryReadImages ( const QStringList& filesPath,const bool readOnlyImageInformation );
 
     /**
     * Determines the filename where the medData object will be written (if importing).

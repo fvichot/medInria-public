@@ -29,7 +29,7 @@ class medAbstractDatabaseImporterPrivate
 {
 public:
     QString file;
-    dtkSmartPointer<medAbstractData> data;
+    medAbstractData *data;
     static QMutex mutex;
     QString lastSuccessfulReaderDescription;
     QString lastSuccessfulWriterDescription;
@@ -199,7 +199,7 @@ void medAbstractDatabaseImporter::importFile ( void )
 
         QFileInfo fileInfo ( file );
 
-        dtkSmartPointer<medAbstractData> medData;
+        medAbstractData *medData;
 
         // 2.1) Try reading file information, just the header not the whole file
 
@@ -332,7 +332,7 @@ void medAbstractDatabaseImporter::importFile ( void )
 
         //qDebug() << currentImageIndex << ": " << aggregatedFileName << "with " << filesPaths.size() << " files";
 
-        dtkSmartPointer<medAbstractData> imagemedData;
+        medAbstractData *imagemedData;
 
         QFileInfo imagefileInfo ( filesPaths[0] );
 
@@ -459,7 +459,7 @@ void medAbstractDatabaseImporter::importData()
         
 
     QString size ="";
-    if ( medAbstractImageData *imagedata = dynamic_cast<medAbstractImageData*> ( d->data.data() ) )
+    if ( medAbstractImageData *imagedata = dynamic_cast<medAbstractImageData*> ( d->data) )
         size = QString::number ( imagedata->zDimension() );
     d->data->addMetaData ( medMetaDataKeys::Size.key(), size );
 
@@ -797,9 +797,9 @@ QStringList medAbstractDatabaseImporter::getAllFilesToBeProcessed ( QString file
 
 //-----------------------------------------------------------------------------------------------------------
 
-dtkSmartPointer<medAbstractData> medAbstractDatabaseImporter::tryReadImages ( const QStringList& filesPaths,const bool readOnlyImageInformation )
+medAbstractData* medAbstractDatabaseImporter::tryReadImages ( const QStringList& filesPaths,const bool readOnlyImageInformation )
 {
-    dtkSmartPointer<medAbstractData> medData = 0;
+    medAbstractData *medData = NULL;
 
     dtkSmartPointer<dtkAbstractDataReader> dataReader;
     dataReader = getSuitableReader ( filesPaths );
