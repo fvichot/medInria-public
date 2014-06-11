@@ -52,6 +52,14 @@ public:
                 loadedDataObjectTracker.remove(i);
     }
 
+    medAbstractDbController* controllerForDataSource(int id) {
+        if (dbController->dataSourceId() == id)
+            return dbController;
+        else if (nonPersDbController->dataSourceId() == id)
+            return dbController;
+        else
+            return NULL;
+    }
 
     QMutex mutex;
     QHash<medDataIndex, dtkSmartPointer<medAbstractData> > loadedDataObjectTracker;
@@ -121,17 +129,28 @@ medAbstractData* medDataManager::retrieveData(const medDataIndex& index)
         d->loadedDataObjectTracker.insert(index, dataObjRef);
         return dataObjRef;
     }
-    // unlock mutex before emitting, as this could trigger code in others threads
-    // which would try to access the data manager, and we don't want to deadlock.
-    locker.unlock();
-
-    emit retrievingFailed(index);
+    return NULL;
 }
+
+
+QUuid medDataManager::importData(medAbstractData *data)
+{
+    if (!data)
+        return QUuid();
+
+    Q_D(medDataManager);
+    QUuid uuid = QUuid::createUuid();
+    d->dbController->importData(data, uuid);
+    return uuid;
+}
+
 
 void medDataManager::exportData(medAbstractData* data)
 {
     if (!data)
         return;
+
+    Q_D(medDataManager);
 
     QList<QString> allWriters = medAbstractDataFactory::instance()->writers();
     QHash<QString, dtkAbstractDataWriter*> possibleWriters;
@@ -189,7 +208,7 @@ void medDataManager::exportData(medAbstractData* data)
     exportDialog->setLayout(gridbox);
 
     // Set a default filename based on the series's description
-    medAbstractDbController * dbController = controllerForDataSource(data->dataIndex().dataSourceId());
+    medAbstractDbController * dbController = d->controllerForDataSource(data->dataIndex().dataSourceId());
     if (dbController)
     {
         QString defaultName = dbController->metaData(data->dataIndex(), medMetaDataKeys::SeriesDescription);
@@ -220,6 +239,16 @@ void medDataManager::exportDataToFile(medAbstractData *data, const QString & fil
 
     medJobManager::instance()->registerJobItem(exporter);
     QThreadPool::globalInstance()->start(exporter);
+}
+
+bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, const QString & value)
+{
+    if ( ! index.isValid())
+        return false;
+
+    Q_D(medDataManager);
+    medAbstractDbController * dbC = d->controllerForDataSource(index.dataSourceId());
+    return dbC->setMetaData(index, key, value);
 }
 
 

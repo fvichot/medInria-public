@@ -16,6 +16,7 @@
 #include <QObject>
 
 #include <medCoreExport.h>
+#include <medMetaDataKeys.h>
 
 class medDataManagerPrivate;
 class medAbstractData;
@@ -30,6 +31,9 @@ public:
     static medDataManager * instance();
 
     medAbstractData* retrieveData(const medDataIndex& index);
+
+    QUuid importData(medAbstractData* data);
+
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
@@ -40,11 +44,11 @@ public:
     bool transferDataToPersistentDatabase(medAbstractData* data);
 
     bool updateData(const medDataIndex& index, medAbstractData* data);
-    bool updateMetadata(const medDataIndex& index, const medMetaDataKeys::Key& md, const QString& value);
+    bool setMetadata(const medDataIndex& index, const QString& key, const QString& value);
     void removeData(const medDataIndex& index);
 
 signals:
-    void retrievingFailed(const medDataIndex& index);
+    void metadataModified(const medDataIndex& index, const QString& key, const QString& value);
     void dataImported(const medDataIndex& index);
     void dataUpdated(const medDataIndex& index);
     void metadataUpdated(const medDataIndex& index, const QString& key, const QString& value);
@@ -65,9 +69,5 @@ private:
 
     Q_DECLARE_PRIVATE(medDataManager)
 };
-
-
-
-
 
 

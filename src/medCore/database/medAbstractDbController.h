@@ -41,13 +41,6 @@ public:
     */
     virtual bool isConnected() const = 0;
 
-    /**
-    * return the size that the data behind the medDataIndex in byte
-    * @param const medDataIndex& index the index for the data
-    * @return estimated size of data
-    */
-    virtual qint64 getEstimatedSize(const medDataIndex& index) const = 0;
-
     /** Unique Id used in medDataIndex to recognize this DB.*/
     virtual int dataSourceId() const = 0;
 
@@ -69,9 +62,6 @@ public:
 
     /** Set metadata for specific item. Return true on success, false otherwise. */
     virtual bool setMetaData(const medDataIndex& index, const QString& key, const QString& value) = 0;
-
-    /** Get thumbnail. */
-    virtual QImage thumbnail( const medDataIndex& index) const = 0;
 
     /** return true if this is a persistent controller*/
     virtual bool isPersistent() const = 0;
@@ -114,7 +104,7 @@ public slots:
     * @param importUuid a string representation of a unique token (QUuid recommended),
     * If omited, an empty string will be used. It allows for actions specific to the caller of the importation. Only the caller should react to particular requests.
     */
-    virtual void import(const QString& file, QString importUuid=QString()) = 0;
+    virtual void importPath(const QString& path, const QUuid& importUuid) = 0;
 
     /**
     * @brief Imports a data into the db.
@@ -124,14 +114,7 @@ public slots:
     * @param data a pointer to some data to import.
     * @param importUuid the caller's identifier.
     */
-    virtual void import(medAbstractData *data, QString importUuid=QString()) = 0;
-
-    /**
-     * This method allows importing data from other databases
-     * @param const medDataIndex & index The data index used in the referenced db (source)
-     * @param const medAbstractDbController & controller  The referenced db (source)
-     */
-    virtual void import(const medDataIndex& index, const medAbstractDbController& controller);
+    virtual void importData(medAbstractData *data, const QUuid& importUuid) = 0;
 
     /**
     * Import data into the db read from file
@@ -139,7 +122,7 @@ public slots:
     * @param bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    virtual void import(const QString& file,bool indexWithoutCopying) = 0;
+    virtual void importPath(const QString& file,bool indexWithoutCopying) = 0;
 
     /**
      * This method allows removing one data from the database

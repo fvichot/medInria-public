@@ -35,7 +35,7 @@ class MEDCORE_EXPORT medOldDataManager : public QObject
     Q_OBJECT
 
 public:
-
+#if 0
     
     bool setMetaData( const medDataIndex& index, const QString& key, const QString& value );
 
@@ -145,40 +145,6 @@ public:
     QList<int> dataSourceIds() const;
 
     /**
-     * Check if the program was compiled using 32bit compiler
-     */
-    static bool is32Bit();
-
-    /**
-    * Returns the memory usage of the current process in bytes.
-    * On linux, this refers to the virtual memory allocated by
-    * the process (the VIRT column in top).
-    * On windows, this refers to the size in bytes of the working
-    * set pages (the "Memory" column in the task manager).
-    * Code taken from mitk (bsd)
-    */
-    static size_t getProcessMemoryUsage();
-
-    /**
-    * Returns the total size of physical memory in bytes
-    */
-    static size_t getTotalSizeOfPhysicalRam();
-
-    /**
-    * Return the hard limit the process can allocate
-    * Result depends on the platform
-    * If this threshold is crossed the manager will not
-    * allocate memory to ensure system stability
-    */
-    static quint64 getUpperMemoryThreshold();
-
-    /**
-    * Return the memory limit where the system should try to stay
-    * This ensures optimal memory usage to avoid paging
-    */
-    static size_t getOptimalMemoryThreshold();
-
-    /**
      * Clear all items stored in the data manager
      */
     void clearCache();
@@ -227,33 +193,9 @@ protected:
      medOldDataManager();
     ~medOldDataManager();
 
-
-    /**
-    * Compares the process memory usage with the upper threshold, frees memory to reach lower threshold
-    * @return bool success or failure
-    */
-    bool manageMemoryUsage(const medDataIndex& index, medAbstractDbController* controller);
-
-    /**
-    * Helper for linux
-    */
-    static int ReadStatmFromProcFS( int* size, int* res, int* shared, int* text, int* sharedLibs, int* stack, int* dirtyPages );
-
     /** Remove all matching items from the cache. */
     void removeDataFromCache( const medDataIndex &index);
 
-    /**
-     * Print available memory
-     */
-    void printMemoryStatus(size_t requiredMemoryInKb = 0);
-
-    /**
-    * Releases all own references to let all stored smartpointers get out of scope
-    * All remaining references will be restored (probably not thread safe)
-    * @return void
-    */
-    bool tryFreeMemory(size_t memoryLimit);
-    
     /**
     * Defines writers priorities
     */
@@ -265,6 +207,7 @@ protected slots:
 
 private:
     medOldDataManagerPrivate *d;
+#endif
 };
 
 

@@ -393,15 +393,15 @@ medDataIndex medDatabaseController::indexForImage(const QString &patientName, co
     return medDataIndex();
 }
 
-void medDatabaseController::import(const QString& file, QString importUuid)
+void medDatabaseController::importPath(const QString& file, const QUuid &importUuid)
 {
     //No one does anything with this importUuid for the permanent db yet.
     //Just override the import(file,indexWithoutcopying method to enable this).
     Q_UNUSED(importUuid)
-    import(file,false);
+    importPath(file,false);
 }
 
-void medDatabaseController::import(const QString& file,bool indexWithoutCopying)
+void medDatabaseController::importPath(const QString& file,bool indexWithoutCopying)
 {
     QFileInfo info(file);
     medDatabaseImporter *importer = new medDatabaseImporter(info.absoluteFilePath(),indexWithoutCopying);
@@ -424,7 +424,7 @@ void medDatabaseController::import(const QString& file,bool indexWithoutCopying)
     QThreadPool::globalInstance()->start(importer);
 }
 
-void medDatabaseController::import( medAbstractData *data, QString importUuid)
+void medDatabaseController::importData( medAbstractData *data, const QUuid & importUuid)
 {    
     medDatabaseImporter *importer = new medDatabaseImporter(data, importUuid);
     medMessageProgress *message = medMessageController::instance()->showProgress("Saving database item");
@@ -562,9 +562,9 @@ bool medDatabaseController::moveDatabase( QString newLocation)
     }
 
     if (res)
-        emit copyMessage(tr("copying database: success"), Qt::AlignBottom, QColor((Qt::white)));
+        qDebug() << "copying database: success";
     else
-        emit copyMessage(tr("copying database: failure"), Qt::AlignBottom, QColor((Qt::red)));
+        qDebug() << "copying database: failure";
 
 
     // only switch to the new location if copying succeeded
@@ -590,16 +590,16 @@ bool medDatabaseController::moveDatabase( QString newLocation)
 
         // now delete the old archive
         if(medStorage::removeDir(oldLocation, d->emitter))
-            emit copyMessage(tr("deleting old database: success"), Qt::AlignBottom, QColor((Qt::white)));
+            qDebug() << "deleting old database: success";
         else
-            emit copyMessage(tr("deleting old database: failure"), Qt::AlignBottom, QColor((Qt::red)));
+            qDebug() << "deleting old database: failure";
 
     }
 
     if (res)
-        emit copyMessage(tr("relocating database successful"), Qt::AlignBottom, QColor((Qt::white)));
+        qDebug() << "relocating database successful";
     else
-        emit copyMessage(tr("relocating database failed"), Qt::AlignBottom, QColor((Qt::red)));
+        qDebug() << "relocating database failed";
     return res;
 }
 
@@ -613,25 +613,12 @@ medDatabaseController::medDatabaseController() : d(new medDatabaseControllerPriv
     d->buildMetaDataLookup();
     d->isConnected = false;
     d->emitter = new SigEmitter();
-    connect(d->emitter, SIGNAL(message(QString)), this, SLOT(forwardMessage(QString)));
 }
 
 medDatabaseController::~medDatabaseController()
 {
     delete d->emitter;
     delete d;
-}
-
-void medDatabaseController::forwardMessage( QString msg)
-{
-    copyMessage(msg, Qt::AlignBottom, QColor(Qt::white));
-}
-
-qint64 medDatabaseController::getEstimatedSize( const medDataIndex& index ) const
-{
-    QScopedPointer<medDatabaseReader> reader(new medDatabaseReader(index));
-    uint size = reader->getDataSize();
-    return size + (size/100 * 3); // add 3% margin
 }
 
 void medDatabaseController::remove( const medDataIndex& index )
@@ -909,12 +896,6 @@ QList<medDataIndex> medDatabaseController::images( const medDataIndex& index) co
         ret.push_back( medDataIndex(this->dataSourceId(), index.patientId(), index.studyId(), index.seriesId(), query.value(0).toInt()));
     }
     return ret;
-}
-
-QImage medDatabaseController::thumbnail( const medDataIndex& index ) const
-{
-    DTK_DEFAULT_IMPLEMENTATION;
-    return QImage();
 }
 
 bool medDatabaseController::isPersistent(  ) const

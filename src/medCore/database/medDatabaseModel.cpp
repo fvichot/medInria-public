@@ -347,7 +347,7 @@ bool medDatabaseModel::setData(const QModelIndex& index, const QVariant& value, 
     QString attribute = item->attribute(index.column()).toString();
 
     //first, we try to set metadata
-    result = medDataManager::instance()->setMetaData( dataIndex, attribute, value.toString() );
+    result = medDataManager::instance()->setMetadata( dataIndex, attribute, value.toString() );
 
     if ( !result )
     {
@@ -462,6 +462,8 @@ QMimeData *medDatabaseModel::mimeData(const QModelIndexList &indexes) const
 
 bool medDatabaseModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
 {
+    Q_UNUSED(row);
+
     if (action == Qt::IgnoreAction)
         return true;
 
@@ -474,10 +476,8 @@ bool medDatabaseModel::dropMimeData(const QMimeData *data, Qt::DropAction action
         if (column > 0)
             return false;
 
-        int rows = 0;
-
-        for (int i = 0; i < data->urls().size(); ++i, ++rows)
-            medDatabaseController::instance()->import(data->urls().at(i).path());
+        for (int i = 0; i < data->urls().size(); ++i)
+            medDatabaseController::instance()->importPath(data->urls().at(i).path(),QUuid::createUuid());
 
         return true;
     }
@@ -487,7 +487,6 @@ bool medDatabaseModel::dropMimeData(const QMimeData *data, Qt::DropAction action
 
         medDataIndex destinationDataIndex = destinationItem->dataIndex();
         medDataIndex originDataIndex = medDataIndex::readMimeData(data);
-        medDataIndex originDataIndex2 = destinationItem->dataIndex();
 
         QList<medDataIndex> newIndexList;
 

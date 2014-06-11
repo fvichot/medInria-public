@@ -63,17 +63,9 @@ public:
     */
     bool isConnected() const;
 
-    /**
-    * return the size that the data behind the medDataIndex in byte
-    * @param const medDataIndex& index the index for the data
-    * @return estimated size of data
-    */
-    qint64 getEstimatedSize(const medDataIndex& index) const;
-
     /** List all the items in the DB */
     QList<medDataIndex> availableItems() const;
     virtual QString metaData(const medDataIndex& index, const QString& key) const;
-    virtual QImage thumbnail( const medDataIndex& index) const;
 
     /**Implement base class */
     virtual int dataSourceId() const;
@@ -103,14 +95,14 @@ public slots:
     * @param data data to be stored
     * @param callerUuid
     */
-    void import(medAbstractData *data, QString callerUuid);
+    void importData(medAbstractData *data, const QUuid & callerUuid);
 
     /**
      * Stores data temporarily referenced by temp index
      * @param file data stored at file path.
      * @param callerUuid caller's identifier.
      */
-    void import(const QString& file, QString callerUuid);
+    void importPath(const QString& file, const QUuid & callerUuid);
 
     /**
      * Remove data referenced by index from temporary database
@@ -145,7 +137,7 @@ public slots:
     * @param bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    virtual void import(const QString& file,bool indexWithoutCopying);
+    virtual void importPath(const QString& file,bool indexWithoutCopying);
 
 
 

@@ -71,13 +71,6 @@ public:
     */
     bool isConnected() const;
 
-    /**
-    * return the size that the data behind the medDataIndex in byte
-    * @param const medDataIndex& index the index for the data
-    * @return estimated size of data
-    */
-    qint64 getEstimatedSize(const medDataIndex& index) const;
-
     /** Enumerate all patients stored in this DB*/
     virtual QList<medDataIndex> patients() const;
 
@@ -101,11 +94,6 @@ public:
 
 signals:
     /**
-     * Status message from controller to some user interface
-     */
-    void copyMessage(QString, int, QColor);
-
-    /**
      * This signal is emitted when the import/index process
      * detects an attempt of partial importing. That is when the user
      * tried to import, in 2 separate steps, images belonging
@@ -122,19 +110,19 @@ public slots:
     * @params bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    void import(const QString& file, bool indexWithoutCopying);
+    void importPath(const QString& file, bool indexWithoutCopying);
 
     /**
      * Calls import(const QString& file,bool indexWithoutCopying) with indexWithoutCopying = false.
      *
     */
-    void import(const QString& file, QString importUuid=QString());
+    void importPath(const QString& file, const QUuid & importUuid);
 
     /**
     * Import data into the db read from memory
     * @params medAbstractData * data dataObject
     */
-    void import(medAbstractData *data, QString importUuid=QString());
+    void importData(medAbstractData *data, const QUuid & importUuid);
 
 
     /** override base class */
@@ -154,8 +142,6 @@ public slots:
      */
     medDataIndex moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy);
 
-    virtual QImage thumbnail( const medDataIndex& index) const;
-
     /**Implement base class */
     virtual int dataSourceId() const;
 
@@ -164,7 +150,6 @@ public slots:
      virtual void removeAll();
 
 protected slots:
-    void forwardMessage(QString);
     void showOpeningError(QObject *sender);
 
 private:

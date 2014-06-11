@@ -11,13 +11,4 @@
 
 =========================================================================*/
 
-#include <medAbstractDbController.h>
-#include <medDataIndex.h>
 
-
-void medAbstractDbController::import( const medDataIndex& index, const medAbstractDbController& controller )
-{
-    qDebug() << "DEBUG : entering medAbstractDbController::import(const medDataIndex& index, const medAbstractDbController& controller )";
-    medAbstractData* data( controller.retrieve(index));
-    this->import(data);
-}

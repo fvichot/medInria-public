@@ -99,7 +99,7 @@ void medDatabaseNonPersistentController::insert(medDataIndex index, medDatabaseN
     d->items.insert(index, item);
 }
 
-void medDatabaseNonPersistentController::import(const QString& file,QString importUuid)
+void medDatabaseNonPersistentController::importPath(const QString& file,const QUuid & importUuid)
 {
     medDatabaseNonPersistentImporter *reader =
             new medDatabaseNonPersistentImporter(file,importUuid);
@@ -149,8 +149,8 @@ bool medDatabaseNonPersistentController::isConnected() const
     return true;
 }
 
-void medDatabaseNonPersistentController::import(medAbstractData *data,
-                                                    QString callerUuid)
+void medDatabaseNonPersistentController::importData(medAbstractData *data,
+                                                    const QUuid & callerUuid)
 {
     medDatabaseNonPersistentImporter *importer = new medDatabaseNonPersistentImporter(data,callerUuid);
     medMessageProgress *message = medMessageController::instance()->showProgress("Importing data item");
@@ -205,12 +205,6 @@ void medDatabaseNonPersistentController::remove(const medDataIndex &index)
         remove(medDataIndex(index.dataSourceId(), index.patientId(),-1, -1, -1));
 }
 
-qint64 medDatabaseNonPersistentController::getEstimatedSize( const medDataIndex& index ) const
-{
-    Q_UNUSED(index);
-    return 0;
-}
-
 QList<medDataIndex> medDatabaseNonPersistentController::availableItems() const
 {
     return d->items.keys();
@@ -236,38 +230,6 @@ bool medDatabaseNonPersistentController::contains( const medDataIndex& index ) c
         }
     }
     return false;
-}
-
-QImage medDatabaseNonPersistentController::thumbnail( const medDataIndex &index ) const
-{
-    medDatabaseNonPersistentItem * item = NULL;
-    if ( d->items.contains(index) ) {
-        item = d->items.find(index).value();
-    } else {
-        typedef medDatabaseNonPersistentControllerPrivate::DataHashMapType MapType;
-        // Cannot find an exact match for the given index. Find first data that may match
-        // using ordered map, and scan while index matches.
-        MapType::const_iterator it = d->items.lowerBound( index );
-        if (it != d->items.end() && medDataIndex::isMatch(it.key() , index ) ) {
-            item = it.value();
-        }
-        // Since this does not contain real images, but series, search on the series index too.
-        if ( !item && index.isValidForImage() ) {
-            medDataIndex seriesIndex = medDataIndex::makeSeriesIndex(index.dataSourceId(), index.patientId(), index.studyId(), index.seriesId() );
-            MapType::const_iterator it = d->items.lowerBound( seriesIndex );
-            if ( it != d->items.end() &&  medDataIndex::isMatch(it.key() , seriesIndex ) ) {
-                item = it.value();
-            }
-        }
-    }
-    if ( item && item->data())
-    {
-        return item->data()->thumbnail();
-    }
-    else
-    {
-        return QImage();
-    }
 }
 
 int medDatabaseNonPersistentController::dataSourceId() const
@@ -601,7 +563,7 @@ medAbstractData* medDatabaseNonPersistentController::retrieve(const medDataIndex
 }
 
 
-void medDatabaseNonPersistentController::import(const QString& file,bool indexWithoutCopying)
+void medDatabaseNonPersistentController::importPath(const QString& file,bool indexWithoutCopying)
 {
     qWarning() << "no sense to indexWithoutCopying in NonPersisten database";
     //TODO - medAbstractDbController::importconst QString& file,bool indexWithoutCopying) shouldn't exist - RDE
