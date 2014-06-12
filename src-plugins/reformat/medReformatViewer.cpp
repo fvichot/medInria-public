@@ -29,11 +29,11 @@
 #include "vtkPointHandleRepresentation3D.h"
 #include "vtkPointHandleRepresentation2D.h"
 #include <QVTKWidget.h>
-#include <QGridLayout.h>
+#include <QGridLayout>
 #include <medVtkViewBackend.h>
 #include <vtkImageView2D.h>
 #include <medWorkspace.h>
-#include <itkVtkImageToImageFilter.h>
+#include <itkVTKImageToImageFilter.h>
 #include <itkImageToVTKImageFilter.h>
 #include <dtkCore/dtkAbstractData.h>
 #include <medMetaDataKeys.h>

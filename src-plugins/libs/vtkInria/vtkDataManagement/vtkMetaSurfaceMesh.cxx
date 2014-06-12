@@ -101,7 +101,8 @@ void vtkMetaSurfaceMesh::ReadVtkFile (const char* filename)
     //Needed to extract info (Patient name + ID) from CARTO files
     if (reader->GetHeader())
     {
-        std::istringstream header = (std::istringstream) reader->GetHeader();
+        std::string headerStr(reader->GetHeader());
+        std::istringstream header(headerStr);
         std::string info;
         std::vector<std::string> patientInfo;
 
