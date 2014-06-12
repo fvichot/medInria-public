@@ -10,7 +10,7 @@
 #  PURPOSE.
 #
 #######################################################################
-
+cmake_minimum_required(VERSION 2.8.12)
 project(medInria)
 
 ## #################################################################
@@ -192,4 +192,6 @@ if (MEDINRIA_ACTIVATE_WALL_OPTION)
   add_definitions(-DACTIVATE_WALL_OPTION)
 endif()
 
+string(TIMESTAMP BUILD_DATE "\"%d_%m_%Y\"")
+add_definitions(-DMEDINRIA_BUILD_DATE=${BUILD_DATE})
 
