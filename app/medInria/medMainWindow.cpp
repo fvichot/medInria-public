@@ -881,7 +881,7 @@ void medMainWindow::registerToFactories()
             <medFilteringWorkspace>("Filtering",
                                               tr("Filtering"),
                                               tr("Filter workspace"));
-    //medSegmentationWorkspace::registerWithViewerWorkspaceFactory();
+    medSegmentationWorkspace::registerWithViewerWorkspaceFactory();
 
     //Register settingsWidgets
     //TODO: get rid of the setTabName, or make it static and use it here...

@@ -98,6 +98,25 @@ void vtkMetaSurfaceMesh::ReadVtkFile (const char* filename)
     reader->Update();
     this->SetDataSet (reader->GetOutput());
 
+    //Needed to extract info (Patient name + ID) from CARTO files
+    if (reader->GetHeader())
+    {
+        std::istringstream header = (std::istringstream) reader->GetHeader();
+        std::string info;
+        std::vector<std::string> patientInfo;
+
+        while ( std::getline( header, info, '"' ) )
+        {
+            if(info != " ")
+                patientInfo.push_back(info);
+        }
+        std::string patientName, patientID;
+        patientName = patientInfo[2] + " " + patientInfo[1];
+        patientID = patientInfo[3];
+        this->SetMetaData( "PatientName", patientName);
+        this->SetMetaData( "PatientID", patientID);
+    }
+
 	  if(reader->GetOutput()->GetPointData()->GetScalars())
 		  if(reader->GetOutput()->GetPointData()->GetScalars()->GetLookupTable())
 			  this->SetLookupTable(reader->GetOutput()->GetPointData()->GetScalars()->GetLookupTable());
