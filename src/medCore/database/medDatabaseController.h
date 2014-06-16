@@ -110,13 +110,7 @@ public slots:
     * @params bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    void importPath(const QString& file, bool indexWithoutCopying);
-
-    /**
-     * Calls import(const QString& file,bool indexWithoutCopying) with indexWithoutCopying = false.
-     *
-    */
-    void importPath(const QString& file, const QUuid & importUuid);
+    void importPath(const QString& file, const QUuid& importUuid, bool indexWithoutCopying);
 
     /**
     * Import data into the db read from memory

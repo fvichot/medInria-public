@@ -393,15 +393,7 @@ medDataIndex medDatabaseController::indexForImage(const QString &patientName, co
     return medDataIndex();
 }
 
-void medDatabaseController::importPath(const QString& file, const QUuid &importUuid)
-{
-    //No one does anything with this importUuid for the permanent db yet.
-    //Just override the import(file,indexWithoutcopying method to enable this).
-    Q_UNUSED(importUuid)
-    importPath(file,false);
-}
-
-void medDatabaseController::importPath(const QString& file,bool indexWithoutCopying)
+void medDatabaseController::importPath(const QString& file, const QUuid &importUuid, bool indexWithoutCopying)
 {
     QFileInfo info(file);
     medDatabaseImporter *importer = new medDatabaseImporter(info.absoluteFilePath(),indexWithoutCopying);

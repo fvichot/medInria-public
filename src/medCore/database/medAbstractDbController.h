@@ -107,22 +107,12 @@ public slots:
     virtual void importPath(const QString& path, const QUuid& importUuid) = 0;
 
     /**
-    * @brief Imports a data into the db.
-    *
-    * This method doesn't return any value since it should be run asynchronously. updated(const medDataIndex &) is called when the importation is complete.
-    *
-    * @param data a pointer to some data to import.
-    * @param importUuid the caller's identifier.
-    */
-    virtual void importData(medAbstractData *data, const QUuid& importUuid) = 0;
-
-    /**
     * Import data into the db read from file
     * @param const QString & file The file containing the data
     * @param bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    virtual void importPath(const QString& file,bool indexWithoutCopying) = 0;
+    virtual void importPath(const QString& file, const QUuid& importUuid, bool indexWithoutCopying) = 0;
 
     /**
      * This method allows removing one data from the database

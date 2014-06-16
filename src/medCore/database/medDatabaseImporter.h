@@ -15,17 +15,12 @@
 
 #include <medCoreExport.h>
 
-#include <QtCore>
-#include <QtSql>
+#include <QSqlDatabase>
 
 #include <medAbstractDatabaseImporter.h>
 #include <medDataIndex.h>
 
-class medDatabaseImporterPrivate;
 class medAbstractData;
-class QFileInfo;
-class dtkAbstractDataReader;
-class dtkAbstractDataWriter;
 
 /**
 * @class medDatabaseImporter
@@ -43,8 +38,8 @@ class MEDCORE_EXPORT medDatabaseImporter : public medAbstractDatabaseImporter
     Q_OBJECT
 
 public:
-    medDatabaseImporter ( const QString& file, bool indexWithoutImporting = false, const QString& callerUuid = QString() );
-    medDatabaseImporter ( medAbstractData* medData, const QString& callerUuid );
+    medDatabaseImporter ( const QString& file, const QUuid& uuid, bool indexWithoutImporting = false);
+    medDatabaseImporter ( medAbstractData* medData, const QUuid& callerUuid );
     ~medDatabaseImporter ( void );
 
 

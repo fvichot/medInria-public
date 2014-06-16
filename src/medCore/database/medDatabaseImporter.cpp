@@ -29,14 +29,14 @@
 
 //-----------------------------------------------------------------------------------------------------------
 
-medDatabaseImporter::medDatabaseImporter ( const QString& file, bool indexWithoutImporting, const QString& callerUuid ) : medAbstractDatabaseImporter(file,indexWithoutImporting, callerUuid)
+medDatabaseImporter::medDatabaseImporter ( const QString& file, const QUuid& uuid, bool indexWithoutImporting) : medAbstractDatabaseImporter(file, uuid, indexWithoutImporting)
 {
 
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-medDatabaseImporter::medDatabaseImporter ( medAbstractData* medData, const QString& callerUuid ) : medAbstractDatabaseImporter(medData,false, callerUuid)
+medDatabaseImporter::medDatabaseImporter ( medAbstractData* medData, const QUuid& uuid ) : medAbstractDatabaseImporter(medData, uuid, false)
 {
 
 }

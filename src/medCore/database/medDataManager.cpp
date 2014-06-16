@@ -145,6 +145,18 @@ QUuid medDataManager::importData(medAbstractData *data)
 }
 
 
+QUuid medDataManager::importInDatabase(const QString& dataPath, bool indexWithoutCopying)
+{
+    if (!data)
+        return QUuid();
+
+    Q_D(medDataManager);
+    QUuid uuid = QUuid::createUuid();
+    d->dbController->importPath(dataPath, uuid);
+    return uuid;
+}
+
+
 void medDataManager::exportData(medAbstractData* data)
 {
     if (!data)

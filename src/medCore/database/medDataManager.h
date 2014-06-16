@@ -37,10 +37,11 @@ public:
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
-    medDataIndex importInDatabase(medAbstractData* data);
-    medDataIndex importInDatabase(const QString& dataPath, bool indexWithoutCopying);
-    medDataIndex importInNonPersistentDatabase(medAbstractData* data);
-    medDataIndex importInNonPersistentDatabase(const QString& dataPath);
+    QUuid importInDatabase(medAbstractData* data);
+    QUuid importInDatabase(const QString& dataPath, bool indexWithoutCopying);
+    QUuid importInNonPersistentDatabase(medAbstractData* data);
+    QUuid importInNonPersistentDatabase(const QString& dataPath);
+
     bool transferDataToPersistentDatabase(medAbstractData* data);
 
     bool updateData(const medDataIndex& index, medAbstractData* data);
@@ -50,8 +51,6 @@ public:
 signals:
     void metadataModified(const medDataIndex& index, const QString& key, const QString& value);
     void dataImported(const medDataIndex& index);
-    void dataUpdated(const medDataIndex& index);
-    void metadataUpdated(const medDataIndex& index, const QString& key, const QString& value);
     void dataRemoved(const medDataIndex& index);
 
 private slots:

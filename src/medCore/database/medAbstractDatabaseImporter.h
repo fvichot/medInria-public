@@ -26,9 +26,6 @@
 
 class medAbstractDatabaseImporterPrivate;
 class medAbstractData;
-class QFileInfo;
-class dtkAbstractDataReader;
-class dtkAbstractDataWriter;
 
 /**
 * @class medAbstractDatabaseImporter
@@ -46,8 +43,8 @@ class MEDCORE_EXPORT medAbstractDatabaseImporter : public medJobItem
     Q_OBJECT
 
 public:
-    medAbstractDatabaseImporter ( const QString& file, bool indexWithoutImporting, const QString& callerUuid = QString() );
-    medAbstractDatabaseImporter ( medAbstractData* medData, bool writePersistentFile, const QString& callerUuid = QString() );
+    medAbstractDatabaseImporter (const QString& file, const QUuid &uuid, bool indexWithoutImporting = false);
+    medAbstractDatabaseImporter ( medAbstractData* medData, const QUuid& uuid);
 
     ~medAbstractDatabaseImporter ( void );
 

@@ -31,8 +31,6 @@ public:
     QString file;
     medAbstractData *data;
     static QMutex mutex;
-    QString lastSuccessfulReaderDescription;
-    QString lastSuccessfulWriterDescription;
     bool isCancelled;
     bool indexWithoutImporting;
     medDataIndex index;
@@ -42,35 +40,31 @@ public:
 
     QMap<int, QString> volumeIdToImageFile;
     
-    QString callerUuid;
+    QUuid uuid;
 };
 
 QMutex medAbstractDatabaseImporterPrivate::mutex;
 
 //-----------------------------------------------------------------------------------------------------------
 
-medAbstractDatabaseImporter::medAbstractDatabaseImporter ( const QString& file, bool indexWithoutImporting, const QString& callerUuid ) : medJobItem(), d ( new medAbstractDatabaseImporterPrivate )
+medAbstractDatabaseImporter::medAbstractDatabaseImporter ( const QString& file, const QUuid& uuid, bool indexWithoutImporting) : medJobItem(), d ( new medAbstractDatabaseImporterPrivate )
 {
     d->isCancelled = false;
-    d->lastSuccessfulReaderDescription = "";
-    d->lastSuccessfulWriterDescription = "";
     d->file = file;
     d->data = NULL;
     d->indexWithoutImporting = indexWithoutImporting;
-    d->callerUuid = callerUuid;
+    d->uuid = uuid;
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-medAbstractDatabaseImporter::medAbstractDatabaseImporter ( medAbstractData* medData, bool indexWithoutImporting, const QString& callerUuid ) : medJobItem(), d ( new medAbstractDatabaseImporterPrivate )
+medAbstractDatabaseImporter::medAbstractDatabaseImporter ( medAbstractData* medData, const QUuid& uuid) : medJobItem(), d ( new medAbstractDatabaseImporterPrivate )
 {
     d->isCancelled = false;
-    d->lastSuccessfulReaderDescription = "";
-    d->lastSuccessfulWriterDescription = "";
     d->data = medData;
     d->file = QString("");
-    d->indexWithoutImporting = indexWithoutImporting;
-    d->callerUuid = callerUuid;
+    d->indexWithoutImporting = false;
+    d->uuid = uuid;
 }
 
 //-----------------------------------------------------------------------------------------------------------
@@ -125,7 +119,7 @@ medDataIndex medAbstractDatabaseImporter::index() const
 
 QString medAbstractDatabaseImporter::callerUuid()
 {
-    return d->callerUuid;
+    return d->uuid;
 }
     
 
@@ -392,9 +386,9 @@ void medAbstractDatabaseImporter::importFile ( void )
         QString pathToStoreThumbnails = aggregatedFileNameFileInfo.dir().path() + "/" + aggregatedFileNameFileInfo.completeBaseName() + "/";
         index = this->populateDatabaseAndGenerateThumbnails ( imagemedData, pathToStoreThumbnails );
         
-        if(!d->callerUuid.isEmpty())
+        if(!d->uuid.isEmpty())
         {
-            emit addedIndex ( index, d->callerUuid );
+            emit addedIndex ( index, d->uuid );
         }
         else 
         {
@@ -527,10 +521,10 @@ void medAbstractDatabaseImporter::importData()
     emit progress(this, 100);
     emit success(this);
 
-    if (d->callerUuid == "")
+    if (d->uuid == "")
         emit addedIndex(index);
     else
-        emit addedIndex(index,d->callerUuid);
+        emit addedIndex(index,d->uuid);
     
 }
 
