@@ -34,7 +34,7 @@ public:
 
     virtual ~itkFiltersThresholdingProcessPrivate(void) {}
     
-    int threshold;
+    double threshold;
     int outsideValue;
     bool comparisonOperator;
     

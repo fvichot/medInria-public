@@ -27,7 +27,7 @@ class medAbstractView;
 
 class medClutEditorVertexPrivate;
 
-class medClutEditorVertex : public QObject, public QGraphicsItem
+class MEDGUI_EXPORT medClutEditorVertex : public QObject, public QGraphicsItem
 {
     Q_OBJECT
 
@@ -82,7 +82,7 @@ private :
 // /////////////////////////////////////////////////////////////////
 class medClutEditorTablePrivate;
 
-class medClutEditorTable : public QObject, public QGraphicsItem
+class MEDGUI_EXPORT medClutEditorTable : public QObject, public QGraphicsItem
 {
     Q_OBJECT
 
@@ -198,7 +198,7 @@ private:
 class medClutEditorView;
 class medClutEditorScenePrivate;
 
-class medClutEditorScene : public QGraphicsScene
+class MEDGUI_EXPORT medClutEditorScene : public QGraphicsScene
 {
 public:
      medClutEditorScene(QObject *parent = 0);
@@ -266,6 +266,7 @@ public:
     void applyTable();
     medAbstractView * getCurrentView();
     void forceLayer(int); // this method force the interaction to be done on a specific layer
+    medClutEditorScene * getScene();
 
 protected:
     void initializeTable();

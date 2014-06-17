@@ -59,18 +59,18 @@ bool itkFiltersThresholdingProcess::registered( void )
 
 //-------------------------------------------------------------------------------------------
 
-void itkFiltersThresholdingProcess::setParameter(int data, int channel)
+void itkFiltersThresholdingProcess::setParameter(double data, int channel)
 {
     if (channel > 2)
         return;
-    
+
     DTK_D(itkFiltersThresholdingProcess);
     if (channel == 0)
         d->threshold = data;
     if (channel == 1)
         d->outsideValue = data;
     if (channel == 2)
-        d->comparisonOperator = data;
+        d->comparisonOperator = (bool)data;
 }
 
 //-------------------------------------------------------------------------------------------

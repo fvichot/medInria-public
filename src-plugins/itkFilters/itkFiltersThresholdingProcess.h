@@ -34,7 +34,7 @@ public:
     
 public slots:
 
-    void setParameter ( int  data, int channel );
+    void setParameter ( double  data, int channel );
     int update ( void );
 
 private:

@@ -1521,6 +1521,11 @@ medClutEditor::~medClutEditor(void)
     delete d;
 }
 
+medClutEditorScene * medClutEditor::getScene()
+{
+    return d->scene;
+}
+
 void medClutEditor::setData(dtkAbstractData *data)
 {
     if ( data == NULL ) {
