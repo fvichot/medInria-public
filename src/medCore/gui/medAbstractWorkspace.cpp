@@ -277,7 +277,7 @@ void medAbstractWorkspace::updateLayersToolBox()
     d->selectedLayers.clear();
     d->poolIndicators.clear();
 
-    delete d->layerListWidget;
+//    delete d->layerListWidget;
     d->layerListWidget = new medListWidget;
     d->layerListWidget->setAlternatingRowColors(true);
 

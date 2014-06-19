@@ -92,13 +92,18 @@ medViewContainer::medViewContainer(medViewContainerSplitter *parent): QFrame(par
 
     d->defaultWidget = new QWidget;
     d->defaultWidget->setObjectName("defaultWidget");
-    QLabel *defaultLabel = new QLabel(tr("Drag'n drop series here from the left panel or"));
-    QPushButton *openButton = new QPushButton(tr("open a file from your system"));
+    QIcon dropIcon(":/medGui/pixmaps/drop_arrow.svg");
+    QLabel* dropIconLabel = new QLabel();
+    dropIconLabel->setAlignment(Qt::AlignCenter);
+    dropIconLabel->setPixmap(dropIcon.pixmap(64, 64));
+    QLabel* defaultLabel = new QLabel(tr("Drop a data item here\nfrom the left panel."));
+    defaultLabel->setAlignment(Qt::AlignCenter);
+    QPushButton *openButton = new QPushButton(tr("Open file..."));
     QVBoxLayout *defaultLayout = new QVBoxLayout(d->defaultWidget);
+    defaultLayout->addWidget(dropIconLabel);
     defaultLayout->addWidget(defaultLabel);
     defaultLayout->addWidget(openButton);
     connect(openButton, SIGNAL(clicked()), this, SLOT(openFromSystem()));
-
 
     d->closeContainerButton = new QPushButton(this);
     d->closeContainerButton->setIcon(QIcon(":/pixmaps/closebutton.png"));
@@ -106,18 +111,18 @@ medViewContainer::medViewContainer(medViewContainerSplitter *parent): QFrame(par
     d->closeContainerButton->setFocusPolicy(Qt::NoFocus);
 
     d->vSplitButton = new QPushButton(this);
-    d->vSplitButton->setIcon(QIcon(":/pixmaps/splitbutton_vertical.png"));
+    d->vSplitButton->setIcon(QIcon(":/medGui/pixmaps/window_split_vertical.svg"));
     d->vSplitButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->vSplitButton->setFocusPolicy(Qt::NoFocus);
     connect(d->vSplitButton, SIGNAL(clicked()), this, SIGNAL(vSplitRequest()));
     d->hSplitButton = new QPushButton(this);
-    d->hSplitButton->setIcon(QIcon(":/pixmaps/splitbutton_horizontal.png"));
+    d->hSplitButton->setIcon(QIcon(":/medGui/pixmaps/window_split_horizontal.svg"));
     d->hSplitButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->hSplitButton->setFocusPolicy(Qt::NoFocus);
     connect(d->hSplitButton, SIGNAL(clicked()), this, SIGNAL(hSplitRequest()));
 
     // make it a parameter to get synch between state of the container and the maximized button.
-    d->maximizedParameter = new medBoolParameter("maximied view", this);
+    d->maximizedParameter = new medBoolParameter("maximized view", this);
     d->maximizedParameter->getPushButton()->setMaximumHeight(18);
     d->maximizedParameter->getPushButton()->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->maximizedParameter->getPushButton()->setFocusPolicy(Qt::NoFocus);
@@ -324,20 +329,23 @@ bool medViewContainer::isSelected() const
     return d->selected;
 }
 
-void medViewContainer::setSelected(bool selec)
+void medViewContainer::setSelected(bool selected)
 {
-    if(selec == d->selected)
+    if ( ! d->view)
+        return;
+
+    if(selected == d->selected)
     {
         if(QApplication::keyboardModifiers() == Qt::ControlModifier)
         {
-            this->setSelected(!selec);
+            this->setSelected(!selected);
         }
         //clear focus in order to select/unselect successively twice the same container
         //this->clearFocus();
         return;
     }
 
-    d->selected = selec;
+    d->selected = selected;
     if(d->selected)
     {
         emit containerSelected(d->uuid);

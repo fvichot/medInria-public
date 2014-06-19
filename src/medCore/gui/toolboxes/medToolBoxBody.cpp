@@ -85,6 +85,7 @@ void medToolBoxBody::clear()
     {
         wid->hide();
         d->layout->removeWidget(wid);
+        delete wid;
     }
     
     d->widgets.clear();

@@ -6,5 +6,9 @@
         <file>pixmaps/splitbutton_horizontal.png</file>
         <file>pixmaps/splitbutton_vertical.png</file>
         <file>pixmaps/default_thumbnail.png</file>
+        <file>pixmaps/drop_arrow.svg</file>
+        <file>pixmaps/window_extract.svg</file>
+        <file>pixmaps/window_split_horizontal.svg</file>
+        <file>pixmaps/window_split_vertical.svg</file>
     </qresource>
 </RCC>
