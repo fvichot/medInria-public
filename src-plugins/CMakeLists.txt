@@ -82,6 +82,7 @@ set(PLUGIN_LIST
   itkDataSHImage                 ON
   itkDataSHImageWriter           ON
   itkDataSHImageReader           ON									 
+  meshMapping			 ON
   reformat                       ON
   pointRoi                       ON
   polygonRoi                     ON
