@@ -13,33 +13,29 @@
 
 #pragma once
 
+#include <QtCore>
+
 #include <medWorkspace.h>
 
-#include "reformatPluginExport.h"
 
-class reformatWorkspacePrivate;
-    
-class REFORMATPLUGIN_EXPORT reformatWorkspace : public medWorkspace
+class medMeshingWorkspacePrivate;
+
+class medMeshingWorkspace : public medWorkspace
 {
     Q_OBJECT
-    
-public:
-    reformatWorkspace(QWidget *parent = 0);
-    virtual ~reformatWorkspace();
-    
-    virtual QString description() const;
 
-    virtual QString identifier() const;
+public:
+     medMeshingWorkspace(QWidget *parent = 0);
+    ~medMeshingWorkspace();
 
     virtual void setupViewContainerStack();
 
+    virtual QString identifier()  const;
+    virtual QString description() const;
     static bool isUsable();
 
-    static bool registered();
-
-    void showViewPropertiesToolBox(bool val);
-
-    
 private:
-    reformatWorkspacePrivate *d;
+    medMeshingWorkspacePrivate *d;
 };
+
+

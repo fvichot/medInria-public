@@ -97,7 +97,7 @@ bool meshMappingToolBox::registered()
     registerToolBox<meshMappingToolBox>("meshMappingToolBox",
                                tr("Mesh Mapping"),
                                tr("Map data on a mesh"),
-                               QStringList()<< "view");
+                               QStringList()<< "mesh");
 }
 
 dtkPlugin* meshMappingToolBox::plugin()

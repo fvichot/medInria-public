@@ -31,6 +31,7 @@ set(${PROJECT_NAME}_HEADERS_MOC
   medRegistrationWorkspace.h
   medSegmentationWorkspace.h
   medFilteringWorkspace.h
+  medMeshingWorkspace.h
   medPacsDataSource.h
   medFileSystemDataSource.h
   medDatabaseDataSource.h
@@ -71,6 +72,7 @@ set(${PROJECT_NAME}_SOURCES
   medRegistrationWorkspace.cpp
   medSegmentationWorkspace.cpp
   medFilteringWorkspace.cpp
+  medMeshingWorkspace.cpp
   medPacsDataSource.cpp
   medFileSystemDataSource.cpp
   medDatabaseDataSource.cpp
