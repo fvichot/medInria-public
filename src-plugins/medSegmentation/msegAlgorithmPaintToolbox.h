@@ -25,6 +25,10 @@
 #include <medDataIndex.h>
 #include <medViewEventFilter.h>
 #include <medImageMaskAnnotationData.h>
+#include <itkApproximateSignedDistanceMapImageFilter.h>
+#include <itkReinitializeLevelSetImageFilter.h>
+#include <itkBinaryThresholdImageFilter.h>
+#include <itkExtractImageFilter.h>
 
 #include <QVector3D>
 #include <QTextEdit>
@@ -45,15 +49,28 @@ struct PaintState {
     enum E{ None, Wand, Stroke, DeleteStroke };
 };
 
+typedef itk::Image <unsigned char, 3>              MaskType;
+typedef itk::Image <float, 3>                      MaskFloatType;
+typedef itk::ImageRegionIterator <MaskType>        MaskIterator;
+typedef itk::ImageRegionIterator <MaskFloatType>   MaskFloatIterator;
+
+typedef itk::Image <unsigned char, 2>              Mask2dType;
+typedef itk::ImageRegionIterator<Mask2dType>       Mask2dIterator;
+typedef itk::Image <float, 2>                      Mask2dFloatType;
+typedef itk::ImageRegionIterator <Mask2dFloatType> Mask2dFloatIterator;
+
+typedef itk::BinaryThresholdImageFilter              < MaskType, MaskType >          BinaryThresholdImageFilterType;
+typedef itk::ExtractImageFilter                      < MaskType, Mask2dType >        Extract2DType;
+typedef itk::ApproximateSignedDistanceMapImageFilter < Mask2dType, Mask2dFloatType > DistanceMap2DType;
+typedef itk::ReinitializeLevelSetImageFilter         < Mask2dType >                  LevelSetFilterType;
+
 //! Segmentation toolbox to allow manual painting of pixels
 class MEDVIEWSEGMENTATIONPLUGIN_EXPORT AlgorithmPaintToolbox : public medSegmentationAbstractToolBox
 {
     Q_OBJECT;
 public:
 
-    typedef itk::Image<unsigned char, 3> MaskType;
-    typedef itk::Image<unsigned char,2> MaskSliceType;
-    typedef QPair<MaskSliceType::Pointer,unsigned int> SlicePair;
+    typedef QPair<Mask2dType::Pointer,unsigned int> SlicePair;
     typedef QPair<QList<SlicePair>,unsigned char> PairListSlicePlaneId;
 
     AlgorithmPaintToolbox( QWidget *parent );
@@ -90,6 +107,14 @@ public:
     inline unsigned int getCurrentPlaneIndex(){return currentPlaneIndex;};
     void setParameter(int channel, int value);
 
+    bool isData(Mask2dType::Pointer input,unsigned char label);
+    Mask2dType::Pointer extract2DImageSlice(MaskType::Pointer input,int plane,int slice,MaskType::SizeType size,MaskType::IndexType start);
+    Mask2dFloatType::Pointer computeDistanceMap(Mask2dType::Pointer img);
+    void computeIntermediateSlice(Mask2dFloatType::Pointer distanceMapImg0,Mask2dFloatType::Pointer distanceMapImg1,int nbinterslice,
+                                                              int slice0,
+                                                              int slice1,int j,MaskFloatIterator ito,MaskIterator itMask);
+                                                
+
 public slots:
     void onStrokeToggled(bool);
     void onMagicWandToggled(bool);
@@ -122,6 +147,8 @@ public slots:
 
     void onAddBrushSize();
     void onReduceBrushSize();
+
+    void onInterpolate();
 
 protected:
     friend class ClickAndMoveEventFilter;
@@ -181,6 +208,7 @@ private:
     double m_MaxValueImage;
 
     QPushButton *m_applyButton;
+    QPushButton *m_interpolateButton;
 
     QPushButton *m_clearMaskButton;
 
@@ -194,7 +222,7 @@ private:
     medImageMaskAnnotationData::ColorMapType m_labelColorMap;
     
     MaskType::Pointer m_itkMask;
-    QPair<MaskSliceType::Pointer,char> m_copy;
+    QPair<Mask2dType::Pointer,char> m_copy;
     
     // undo_redo_feature's attributes
     QHash<medAbstractView*,QStack<PairListSlicePlaneId>*> * m_undoStacks,*m_redoStacks;

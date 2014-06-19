@@ -39,11 +39,22 @@
 #include <itkImageSliceIteratorWithIndex.h>
 #include <itkConstSliceIterator.h>
 #include <itkImageLinearIteratorWithIndex.h>
+#include <itkContourExtractor2DImageFilter.h>
+#include <itkExtractImageFilter.h>
 #include <QtCore>
 #include <QColorDialog>
 
 #include <algorithm>
 #include <set>
+
+
+#include <itkSignedDanielssonDistanceMapImageFilter.h>
+#include <itkLinearInterpolateImageFunction.h>
+#include <itkBinaryThresholdImageFilter.h>
+#include <itkImageDuplicator.h>
+#include <itkResampleImageFilter.h>
+#include <itkIdentityTransform.h>
+#include <medDataManager.h>
 
 namespace mseg 
 {
@@ -97,12 +108,12 @@ public:
                 if (m_cb->getCursorOn())
                     m_cb->removeCursorDisplay();
                 
-                m_cb->setCursorOn(false);
-                m_cb->undoRedoCopyPasteModeOn = false;
+                //m_cb->setCursorOn(false);
+                //m_cb->undoRedoCopyPasteModeOn = false;
 
                 // add current state to undo stack//
                 bool isInside;
-                AlgorithmPaintToolbox::MaskType::IndexType index;
+                MaskType::IndexType index;
                 m_cb->setCurrentPlaneIndex(m_cb->computePlaneIndex(posImage,index,isInside));
                 m_cb->setCurrentIdSlice(index[m_cb->currentPlaneIndex]);
                 QList<int> listIdSlice;
@@ -137,8 +148,8 @@ public:
 
         if (m_paintState == PaintState::None && (m_cb->m_paintState == PaintState::Stroke || m_cb->m_paintState == PaintState::DeleteStroke) && (m_cb->getCursorOn() || m_cb->undoRedoCopyPasteModeOn))
         {
-            m_cb->undoRedoCopyPasteModeOn = false;
-            m_cb->setCursorOn(true);
+            //m_cb->undoRedoCopyPasteModeOn = false;
+            //m_cb->setCursorOn(true);
             medAbstractViewCoordinates * coords = view->coordinates();
             m_cb->setCurrentView(view);
             mouseEvent->accept();
@@ -159,7 +170,7 @@ public:
                 QVector3D posImage = coords->displayToWorld( mouseEvent->posF() );
             
                 bool isInside;
-                AlgorithmPaintToolbox::MaskType::IndexType index;
+                MaskType::IndexType index;
                 unsigned int planeIndex = m_cb->computePlaneIndex(posImage,index,isInside);
                 unsigned int idSlice = index[planeIndex];
                 
@@ -289,6 +300,8 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     m_strokeButton->setToolTip(tr("Left-click: Start painting with specified label.\nRight-click: Erase painted voxels."));
     m_strokeButton->setCheckable(true);
 
+    m_interpolateButton = new QPushButton( tr("Interpolate") , displayWidget);
+    
     m_magicWandButton = new QPushButton(tr("Magic Wand"), displayWidget);
     QPixmap pixmap(":medSegmentation/pixmaps/magic_wand.png");
     QIcon buttonIcon(pixmap);
@@ -299,6 +312,7 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     QHBoxLayout * ButtonLayout = new QHBoxLayout();
     ButtonLayout->addWidget( m_strokeButton );
     ButtonLayout->addWidget( m_magicWandButton );
+    ButtonLayout->addWidget( m_interpolateButton );
     layout->addLayout( ButtonLayout );
 
     QHBoxLayout * brushSizeLayout = new QHBoxLayout();
@@ -446,6 +460,9 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
 
     connect (m_applyButton,     SIGNAL(clicked()),
         this, SLOT(onApplyButtonClicked()));
+
+    connect (m_interpolateButton, SIGNAL(clicked()),
+        this,SLOT(onInterpolate()));
 
     /*connect (medViewManager::instance(), SIGNAL(viewOpened()), 
         this, SLOT(updateMouseInteraction()));*/
@@ -1255,9 +1272,9 @@ void AlgorithmPaintToolbox::onUndo()
     unsigned char planeIndex = previousState.second;
     
     MaskType::RegionType requestedRegion = m_itkMask->GetLargestPossibleRegion();
-    MaskSliceType::IndexType index2d;
-    MaskSliceType::RegionType region;
-    MaskSliceType::RegionType::SizeType size;
+    Mask2dType::IndexType index2d;
+    Mask2dType::RegionType region;
+    Mask2dType::RegionType::SizeType size;
     
     unsigned int i, j;
     char direction[2];
@@ -1278,7 +1295,7 @@ void AlgorithmPaintToolbox::onUndo()
     region.SetSize(size);
     region.SetIndex(index2d);
 
-    undoRedoCopyPasteModeOn = true;
+    //undoRedoCopyPasteModeOn = true;
 
     if (getCursorOn())
     {
@@ -1290,7 +1307,7 @@ void AlgorithmPaintToolbox::onUndo()
     for(int i = 0;i<previousState.first.length();i++)
     {
         unsigned int idSlice = previousState.first[i].second;
-        MaskSliceType::Pointer currentSlice = MaskSliceType::New();
+        Mask2dType::Pointer currentSlice = Mask2dType::New();
         currentSlice->SetRegions(region);
         currentSlice->Allocate();
         copySliceFromMask3D(currentSlice,planeIndex,direction,idSlice);
@@ -1324,9 +1341,9 @@ void AlgorithmPaintToolbox::onRedo()
     PairListSlicePlaneId nextState = redo_stack->pop();
     unsigned char planeIndex = nextState.second;
     MaskType::RegionType requestedRegion = m_itkMask->GetLargestPossibleRegion();
-    MaskSliceType::IndexType index2d;
-    MaskSliceType::RegionType region;
-    MaskSliceType::RegionType::SizeType size;
+    Mask2dType::IndexType index2d;
+    Mask2dType::RegionType region;
+    Mask2dType::RegionType::SizeType size;
     
     unsigned int i, j;
     char direction[2];
@@ -1347,7 +1364,7 @@ void AlgorithmPaintToolbox::onRedo()
     region.SetSize(size);
     region.SetIndex(index2d);
 
-    undoRedoCopyPasteModeOn = true;
+    //undoRedoCopyPasteModeOn = true;
 
     if (getCursorOn())
     {
@@ -1359,7 +1376,7 @@ void AlgorithmPaintToolbox::onRedo()
     for(int i = 0;i<nextState.first.length();i++)
     {
         unsigned int idSlice = nextState.first[i].second;
-        MaskSliceType::Pointer currentSlice = MaskSliceType::New();
+        Mask2dType::Pointer currentSlice = Mask2dType::New();
         currentSlice->SetRegions(region);
         currentSlice->Allocate();
         copySliceFromMask3D(currentSlice,planeIndex,direction,idSlice);
@@ -1389,9 +1406,9 @@ void AlgorithmPaintToolbox::addSliceToStack(medAbstractView * view,const unsigne
 
     // copy code
     MaskType::RegionType requestedRegion = m_itkMask->GetLargestPossibleRegion();
-    MaskSliceType::IndexType index2d;
-    MaskSliceType::RegionType region;
-    MaskSliceType::RegionType::SizeType size;
+    Mask2dType::IndexType index2d;
+    Mask2dType::RegionType region;
+    Mask2dType::RegionType::SizeType size;
     
     unsigned int i, j;
     char direction[2];
@@ -1417,7 +1434,7 @@ void AlgorithmPaintToolbox::addSliceToStack(medAbstractView * view,const unsigne
     for(int i = 0;i<listIdSlice.length();i++)
     {
         unsigned int idSlice = listIdSlice[i];
-        MaskSliceType::Pointer currentSlice = MaskSliceType::New();
+        Mask2dType::Pointer currentSlice = Mask2dType::New();
         currentSlice->SetRegions(region);
         currentSlice->Allocate();
         copySliceFromMask3D(currentSlice,planeIndex,direction,idSlice);
@@ -1439,9 +1456,9 @@ void AlgorithmPaintToolbox::addSliceToStack(medAbstractView * view,const unsigne
 //
 //    // copy code
 //    MaskType::RegionType requestedRegion = m_itkMask->GetLargestPossibleRegion();
-//    MaskSliceType::IndexType index2d;
-//    MaskSliceType::RegionType region;
-//    MaskSliceType::RegionType::SizeType size;
+//    Mask2dType::IndexType index2d;
+//    Mask2dType::RegionType region;
+//    Mask2dType::RegionType::SizeType size;
 //    
 //    unsigned int i, j;
 //    char direction[2];
@@ -1463,7 +1480,7 @@ void AlgorithmPaintToolbox::addSliceToStack(medAbstractView * view,const unsigne
 //    region.SetIndex(index2d);
 //
 //    //if (!currentStateForCursor)
-//        currentStateForCursor = MaskSliceType::New();
+//        currentStateForCursor = Mask2dType::New();
 //    
 //    currentStateForCursor->SetRegions(region);
 //    currentStateForCursor->Allocate();
@@ -1582,12 +1599,12 @@ void AlgorithmPaintToolbox::copySliceMask()
     
     int slice = index3D[planeIndex];
 
-    typedef itk::ImageLinearIteratorWithIndex< MaskSliceType > LinearIteratorType;
+    typedef itk::ImageLinearIteratorWithIndex< Mask2dType > LinearIteratorType;
     typedef itk::ImageSliceIteratorWithIndex< MaskType> SliceIteratorType;
 
-    MaskSliceType::RegionType region;
-    MaskSliceType::RegionType::SizeType size;
-    MaskSliceType::RegionType::IndexType index2d;
+    Mask2dType::RegionType region;
+    Mask2dType::RegionType::SizeType size;
+    Mask2dType::RegionType::IndexType index2d;
 
     MaskType::RegionType requestedRegion = m_itkMask->GetLargestPossibleRegion();
 
@@ -1610,7 +1627,7 @@ void AlgorithmPaintToolbox::copySliceMask()
     region.SetSize(size);
     region.SetIndex(index2d);
 
-    undoRedoCopyPasteModeOn = true;
+    //undoRedoCopyPasteModeOn = true;
 
     if (getCursorOn())
     {
@@ -1618,7 +1635,7 @@ void AlgorithmPaintToolbox::copySliceMask()
         cursorOn = false;
     }
 
-    m_copy.first = MaskSliceType::New();
+    m_copy.first = Mask2dType::New();
 
     m_copy.first->SetRegions(region);
     m_copy.first->Allocate();
@@ -1645,9 +1662,9 @@ void AlgorithmPaintToolbox::pasteSliceMask()
     
     int slice = index3D[planeIndex];
 
-    MaskSliceType::RegionType region;
-    MaskSliceType::RegionType::SizeType size;
-    MaskSliceType::RegionType::IndexType index2d;
+    Mask2dType::RegionType region;
+    Mask2dType::RegionType::SizeType size;
+    Mask2dType::RegionType::IndexType index2d;
 
     unsigned int i, j;
     char direction[2];
@@ -1706,7 +1723,6 @@ char AlgorithmPaintToolbox::computePlaneIndex(const QVector3D & vec,MaskType::In
             for (unsigned int j = 0;j < 3;++j)
             {
                 dotProduct += direction(j,i) * vecVpn[j];
-                qDebug() << "direction(j,i) : " << direction(j,i);
             }
 
             if (fabs(dotProduct) > absDotProductMax)
@@ -1840,9 +1856,9 @@ void AlgorithmPaintToolbox::onReduceBrushSize()
 
 void AlgorithmPaintToolbox::setCursorOn(bool value)
 {
-    if (!currentView)
-        return;
-    cursorOn = value;
+    //if (!currentView)
+    //    return;
+    //cursorOn = value;
     /*if (value)
         if (m_paintState != PaintState::DeleteStroke)
             currentView->setProperty("Cursor","None");  
@@ -1850,4 +1866,330 @@ void AlgorithmPaintToolbox::setCursorOn(bool value)
         currentView->setProperty("Cursor","Normal");*/
 }
 
+void AlgorithmPaintToolbox::onInterpolate()
+{
+
+    unsigned char label = 1; // need to be a parameter
+    // step 1 : Determine the higher and lower slices of the image I1
+    // step 2 : Extract those slices 
+    // step 3 : call contourExtractor2D on these images
+    // step 4 : convert the polyLine to a vtkpolydata
+    // step 5 : use the code of polygonRoi to do the interpolation
+    // step 6 : generate a binary image I2 from it.
+    // step 7 : Union of I1 and I2
+
+
+    //step 1
+
+    //// step 2
+    //itk::ExtractImageFilter<itk::Image<unsigned char,3>, itk::Image<unsigned char,2> >::Pointer extractorImage = itk::ExtractImageFilter<itk::Image<unsigned char,3>, itk::Image<unsigned char,2> >::New();
+    //// step 3    
+    //itk::ContourExtractor2DImageFilter<itk::Image<unsigned char> >::Pointer extractorContour = itk::ContourExtractor2DImageFilter<itk::Image<unsigned char> >::New() ;
+    ////extractor->SetInput(m_itkmask);
+    //extractorContour->SetContourValue(m_strokeLabel);
+    //extractorContour->Update();
+    //itk::PolyLineParametricPath< 2 >::Pointer contour = extractorContour->GetOutput();
+    //contour->
+
+
+    ///----------------------------(*_*)-------------------->--------HEADSHOT--------
+    // Maxime's idea : shape based interpolation
+    // step 1 : Determiner les slices qui contiennent du brush selon Z
+    // step 2 : calculer carte de distance pour chacune des slices
+    // step 3 : interpolation entre couple de slice
+    // step 4 : seuillage sur volume 3d cree
+    
+    //step 1
+
+    MaskType::RegionType inputRegion = m_itkMask->GetLargestPossibleRegion();
+    MaskType::SizeType   size      = inputRegion.GetSize();
+    MaskType::IndexType  start     = inputRegion.GetIndex();
+
+    MaskFloatType::Pointer volumOut = MaskFloatType::New();
+    MaskType::RegionType region;
+    region.SetSize( size );
+    region.SetIndex( start );
+    volumOut->SetRegions( region );
+    volumOut->Allocate();
+
+    MaskFloatIterator itVolumOut(volumOut,volumOut->GetBufferedRegion()); //Create image iterator
+    itVolumOut.GoToBegin();
+
+    MaskIterator itMask(m_itkMask,m_itkMask->GetBufferedRegion()); //Create image iterator
+    itMask.GoToBegin();
+
+    Mask2dType::Pointer      img0              = Mask2dType::New();
+    Mask2dType::Pointer      img1              = Mask2dType::New();
+    Mask2dFloatType::Pointer distanceMapImg0   = Mask2dFloatType::New();
+    Mask2dFloatType::Pointer distanceMapImg1   = Mask2dFloatType::New();
+
+    bool isD0,isD1;
+    int sizeZ = size[2];
+    img1 = extract2DImageSlice(m_itkMask, 2, 0, size, start);
+    isD1 = isData(img1,label);
+    isD0 = false;
+    unsigned int slice0,slice1=0; 
+        
+        for (int i=0; i<(sizeZ-1); ++i)
+        {
+            if (!isD0 && isD1)
+            {
+            img0 = img1;
+            isD0 = isD1;
+            slice0=slice1;
+            }
+            
+            img1 = extract2DImageSlice(m_itkMask, 2, i+1, size, start);
+            isD1 = isData(img1,label);
+            slice1= i+1;
+
+            if (isD0 && isD1 && slice1-slice0>1)  // if both images not empty
+            {
+                distanceMapImg0 = computeDistanceMap(img0);
+                distanceMapImg1 = computeDistanceMap(img1);
+                // Interpolate the "j" intermediate slice (float) // float->unsigned char 0/255 and copy into output volume
+                for (int j=slice0+1; j<slice1; ++j) // for each intermediate slice
+                    computeIntermediateSlice(distanceMapImg0, distanceMapImg1,slice1-slice0 ,slice0,slice1, j,itVolumOut,itMask);
+                isD0=false;
+            }
+        } // end for each slice
+    
+    dtkSmartPointer<dtkAbstractData> data = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageFloat3");
+    data->setData(volumOut);
+    data->copyMetaDataFrom(m_imageData);
+    medDataManager::instance()->importNonPersistent( data );
+    //
+
+
+    //typedef itk::Image<int,3> distanceMapType;
+    //typedef itk::DanielssonDistanceMapImageFilter<MaskType,distanceMapType> DistanceMapImageFilterType;
+    //typedef itk::LinearInterpolateImageFunction<distanceMapType> InterpolationFunction;
+    //typedef itk::BinaryThresholdImageFilter<distanceMapType,MaskType> BinaryThresholdFilterType;
+    //typedef itk::ImageDuplicator<distanceMapType> DuplicatorType;
+    //typedef itk::IdentityTransform<double, 3> TransformType;
+    //typedef itk::ResampleImageFilter<distanceMapType, distanceMapType> ResampleImageFilterType;
+    //
+    //
+    //DistanceMapImageFilterType::Pointer distanceMapFilter = DistanceMapImageFilterType::New();
+    //ResampleImageFilterType::Pointer resample = ResampleImageFilterType::New();
+    //InterpolationFunction::Pointer interpolateFunction = InterpolationFunction::New();
+    //BinaryThresholdFilterType::Pointer binaryFilter = BinaryThresholdFilterType::New();
+    //DuplicatorType::Pointer duplicator = DuplicatorType::New();
+    //
+    //distanceMapFilter->SetInput(m_itkMask);
+    //distanceMapFilter->Update();
+    //distanceMapType::Pointer distanceMap = distanceMapFilter->GetOutput();
+
+    //dtkSmartPointer<dtkAbstractData> data = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageInt3");
+    //data->setData(distanceMap);
+    //data->copyMetaDataFrom(m_imageData);
+    //medDataManager::instance()->importNonPersistent( data );
+    //resample->SetInput(distanceMap);
+    ////resample->SetInterpolator(interpolateFunction);
+    //resample->SetTransform(TransformType::New());
+    //resample->UpdateLargestPossibleRegion();
+    //
+    //distanceMapType::Pointer interpolatedImage = resample->GetOutput(); 
+    //dtkSmartPointer<dtkAbstractData> data2 = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageInt3");
+    //data2->setData(interpolatedImage);
+    //data2->copyMetaDataFrom(m_imageData);
+    //medDataManager::instance()->importNonPersistent( data2 );
+
+    //binaryFilter->SetInput(distanceMap);
+    //binaryFilter->SetUpperThreshold(5);
+    //binaryFilter->SetInsideValue(m_strokeLabel);
+    //binaryFilter->SetOutsideValue(medSegmentationSelectorToolBox::MaskPixelValues::Unset);
+    //binaryFilter->UpdateLargestPossibleRegion();
+
+    //MaskType::Pointer binaryImage = binaryFilter->GetOutput(); 
+    //dtkSmartPointer<dtkAbstractData> data3 = dtkAbstractDataFactory::instance()->createSmartPointer("itkDataImageUChar3");
+    //data3->setData(binaryImage);
+    //data3->copyMetaDataFrom(m_imageData);
+    //medDataManager::instance()->importNonPersistent( data3 );
+    //
+    //MaskType::Pointer interpolatedMask = binaryFilter->GetOutput();
+    //
+    //interpolatedMask->CopyInformation(m_itkMask);
+    //m_itkMask->Graft(interpolatedMask);
+
+
+    ////interpolateFunction->SetInputImage(distanceMap);
+    ////duplicator->SetInputImage(distanceMap);
+    //duplicator->Update();
+    //distanceMapType::Pointer interpolatedImage = duplicator->GetOutput(); 
+    //itk::ImageRegionIterator<distanceMapType> it(interpolatedImage,interpolatedImage->GetRequestedRegion());
+    //QList<int> list;
+    //it.GoToBegin();
+    //while(!it.IsAtEnd())
+    //{
+    //    it.Set(interpolateFunction->EvaluateAtIndex(it.GetIndex()));
+    //    list.append(interpolateFunction->EvaluateAtIndex(it.GetIndex()));
+    //    ++it;
+    //}
+    //
+    //qSort(list.begin(), list.end(), qGreater<int>());
+    //int maxValue = list[0];
+    //qSort(list.begin(), list.end(), qLess<int>());
+    //int minValue = list[0] ;
+    //qDebug()<< "valeur max " << maxValue ;
+    //qDebug()<< "valeur min " << minValue ;
+
+    //binaryFilter->SetInput(interpolatedImage);
+    //binaryFilter->SetLowerThreshold(0);
+    //binaryFilter->SetUpperThreshold(30);
+    //binaryFilter->SetInsideValue(m_strokeLabel);
+    //binaryFilter->SetOutsideValue(medSegmentationSelectorToolBox::MaskPixelValues::Unset);
+    //binaryFilter->Update();
+    //
+    //MaskType::Pointer interpolatedMask = binaryFilter->GetOutput();
+    //
+    //interpolatedMask->CopyInformation(m_itkMask);
+    //m_itkMask->Graft(interpolatedMask);
+
+    //m_itkMask->Modified();
+    //m_itkMask->GetPixelContainer()->Modified();
+    //m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
+    //m_maskAnnotationData->invokeModified();
+
+
+
+
+
+    ///----------------------------(*_*)-------------------->--------HEADSHOT--------
+    
+}
+
+// Is there data to observe in the image ?
+bool AlgorithmPaintToolbox::isData(Mask2dType::Pointer input,unsigned char label)
+{
+    Mask2dIterator it(input, input->GetBufferedRegion());
+
+    for (it.GoToBegin(); !it.IsAtEnd(); ++it)
+    {
+        if (it.Get() == label) //data
+            return true;
+    }
+    return false;
+}
+
+Mask2dType::Pointer AlgorithmPaintToolbox::extract2DImageSlice(MaskType::Pointer input,
+                                                                        int plane,
+                                                                        int slice,
+                                                                        MaskType::SizeType size,
+                                                                        MaskType::IndexType start
+                                                                        )
+{
+    size[plane] = 0;
+    const unsigned int sliceNumber = slice;
+    start[plane] = sliceNumber;
+
+    // create the desired region
+    MaskType::RegionType desiredRegion;
+    desiredRegion.SetSize(size);
+    desiredRegion.SetIndex(start);
+
+    // associate previous sequence and desired region
+    Extract2DType::Pointer filter = Extract2DType::New();
+    filter->SetExtractionRegion(desiredRegion);
+    filter->SetInput(input);
+    filter->SetDirectionCollapseToGuess();
+    filter->Update();
+
+    // extract the image
+    return filter->GetOutput();
+}
+#if 0
+Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img)
+{
+    LevelSetFilterType::Pointer levelSetFilter = LevelSetFilterType::New();
+    levelSetFilter->SetInput(img);
+    levelSetFilter->Update();
+
+    typedef itk::DanielssonDistanceMapImageFilter<Mask2dType,Mask2dFloatType> DistanceMapImageFilterType;
+
+    DistanceMap2DType::Pointer distMapFilter = DistanceMap2DType::New();
+    distMapFilter->SetInput(levelSetFilter->GetOutput());
+    distMapFilter->SetInsideValue(0);
+    distMapFilter->SetOutsideValue(255);
+    distMapFilter->Update();
+
+    return distMapFilter->GetOutput();
+}
+#else
+Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img)
+{
+    typedef itk::DanielssonDistanceMapImageFilter<Mask2dType,Mask2dFloatType> DistanceMapImageFilterType;
+
+    DistanceMapImageFilterType::Pointer distMapFilter = DistanceMapImageFilterType::New();
+    distMapFilter->SetInput(img);
+    distMapFilter->Update();
+
+    return distMapFilter->GetOutput();
+}
+
+#endif
+// Compute the interpolated slice between two distance maps
+void AlgorithmPaintToolbox::computeIntermediateSlice(Mask2dFloatType::Pointer distanceMapImg0,
+                                                              Mask2dFloatType::Pointer distanceMapImg1,
+                                                              int nbinterslice,
+                                                              int slice0,
+                                                              int slice1,
+                                                              int j,
+                                                              MaskFloatIterator ito,
+                                                              MaskIterator itmask)
+
+{
+    // iterators
+    Mask2dFloatIterator iti0(distanceMapImg0, distanceMapImg0->GetBufferedRegion()); // volume in 0
+    iti0.GoToBegin();
+
+    Mask2dFloatIterator iti1(distanceMapImg1, distanceMapImg1->GetBufferedRegion()); // volume in 1
+    iti1.GoToBegin();
+
+
+
+    // In order to copy the connected component map distance of this slice into the volume
+    MaskType::IndexType start;
+    MaskType::IndexType other;
+    start[0] = 0;
+    start[1] = 0;
+    start[2] = j;
+    ito.SetIndex(start);
+    itmask.SetIndex(start);
+
+    // For each pixel of the InterpolatedSlice image, compute the value
+    float interpolatVal;
+    while(!iti0.IsAtEnd())
+    {
+     /*   interpolatVal = (iti1.Get()-iti0.Get()) *
+            ((float)j/(float)nbinterslice)
+            + iti0.Get();*/
+        interpolatVal = ((slice1-j)*iti0.Get()+(j-slice0)*iti1.Get())/(float)(nbinterslice);
+        
+        ito.Set(interpolatVal);
+
+        if (ito.Get()<1)
+            itmask.Set(1);
+        
+        start = ito.GetIndex();
+        other = ito.GetIndex();
+        other[2] = slice0;
+
+        ito.SetIndex(other);
+        ito.Set(iti0.Get());
+        other[2] = slice1;
+        ito.SetIndex(other);
+        ito.Set(iti1.Get());
+
+        ito.SetIndex(start);
+
+        ++iti0;
+        ++iti1;
+        ++ito;
+        ++itmask;
+    }
+}
+
 } // namespace mseg
+
+
