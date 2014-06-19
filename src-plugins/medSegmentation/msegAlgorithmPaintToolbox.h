@@ -109,7 +109,7 @@ public:
 
     bool isData(Mask2dType::Pointer input,unsigned char label);
     Mask2dType::Pointer extract2DImageSlice(MaskType::Pointer input,int plane,int slice,MaskType::SizeType size,MaskType::IndexType start);
-    Mask2dFloatType::Pointer computeDistanceMap(Mask2dType::Pointer img);
+    Mask2dFloatType::Pointer computeDistanceMap(Mask2dType::Pointer img,bool insideOut);
     void computeIntermediateSlice(Mask2dFloatType::Pointer distanceMapImg0,Mask2dFloatType::Pointer distanceMapImg1,int nbinterslice,
                                                               int slice0,
                                                               int slice1,int j,MaskFloatIterator ito,MaskIterator itMask);

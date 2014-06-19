@@ -55,6 +55,8 @@
 #include <itkResampleImageFilter.h>
 #include <itkIdentityTransform.h>
 #include <medDataManager.h>
+#include <itkInvertIntensityImageFilter.h>
+#include <itkSubtractImageFilter.h>
 
 namespace mseg 
 {
@@ -1922,6 +1924,7 @@ void AlgorithmPaintToolbox::onInterpolate()
     Mask2dType::Pointer      img1              = Mask2dType::New();
     Mask2dFloatType::Pointer distanceMapImg0   = Mask2dFloatType::New();
     Mask2dFloatType::Pointer distanceMapImg1   = Mask2dFloatType::New();
+    bool insideOut = true;
 
     bool isD0,isD1;
     int sizeZ = size[2];
@@ -1945,8 +1948,8 @@ void AlgorithmPaintToolbox::onInterpolate()
 
             if (isD0 && isD1 && slice1-slice0>1)  // if both images not empty
             {
-                distanceMapImg0 = computeDistanceMap(img0);
-                distanceMapImg1 = computeDistanceMap(img1);
+                distanceMapImg0 = computeDistanceMap(img0,insideOut);
+                distanceMapImg1 = computeDistanceMap(img1,insideOut);
                 // Interpolate the "j" intermediate slice (float) // float->unsigned char 0/255 and copy into output volume
                 for (int j=slice0+1; j<slice1; ++j) // for each intermediate slice
                     computeIntermediateSlice(distanceMapImg0, distanceMapImg1,slice1-slice0 ,slice0,slice1, j,itVolumOut,itMask);
@@ -2099,7 +2102,7 @@ Mask2dType::Pointer AlgorithmPaintToolbox::extract2DImageSlice(MaskType::Pointer
     return filter->GetOutput();
 }
 #if 0
-Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img)
+Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img,bool insideOut)
 {
     LevelSetFilterType::Pointer levelSetFilter = LevelSetFilterType::New();
     levelSetFilter->SetInput(img);
@@ -2116,15 +2119,36 @@ Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::P
     return distMapFilter->GetOutput();
 }
 #else
-Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img)
+Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::Pointer img,bool insideOut)
 {
     typedef itk::DanielssonDistanceMapImageFilter<Mask2dType,Mask2dFloatType> DistanceMapImageFilterType;
 
-    DistanceMapImageFilterType::Pointer distMapFilter = DistanceMapImageFilterType::New();
-    distMapFilter->SetInput(img);
-    distMapFilter->Update();
+    DistanceMapImageFilterType::Pointer distMapFilter1 = DistanceMapImageFilterType::New();
+    DistanceMapImageFilterType::Pointer distMapFilter2 = DistanceMapImageFilterType::New();
+    typedef itk::SubtractImageFilter<Mask2dFloatType,Mask2dFloatType> SubstractImageFilterType;
+    SubstractImageFilterType::Pointer substractImageFilter = SubstractImageFilterType::New();
 
-    return distMapFilter->GetOutput();
+  /*  if (insideOut)
+    {*/
+        typedef itk::InvertIntensityImageFilter<Mask2dType,Mask2dType> invertFilterType;
+        invertFilterType::Pointer invertFilter = invertFilterType::New();
+
+        invertFilter->SetMaximum(1); // test with one should be the label value i guess
+        invertFilter->SetInput(img);
+        invertFilter->Update();
+
+        distMapFilter1->SetInput(invertFilter->GetOutput());
+        distMapFilter1->Update();
+        substractImageFilter->SetInput1(distMapFilter1->GetOutput());
+   //}
+    
+    distMapFilter2->SetInput(img);
+    distMapFilter2->Update();
+    //if (!insideOut)
+        //return distMapFilter->GetOutput();
+    substractImageFilter->SetInput2(distMapFilter2->GetOutput());
+    substractImageFilter->Update();
+    return substractImageFilter->GetOutput();
 }
 
 #endif
@@ -2168,7 +2192,7 @@ void AlgorithmPaintToolbox::computeIntermediateSlice(Mask2dFloatType::Pointer di
         
         ito.Set(interpolatVal);
 
-        if (ito.Get()<1)
+        if (ito.Get()>=0)
             itmask.Set(1);
         
         start = ito.GetIndex();
