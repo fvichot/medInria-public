@@ -111,11 +111,14 @@ void vtkMetaSurfaceMesh::ReadVtkFile (const char* filename)
             if(info != " ")
                 patientInfo.push_back(info);
         }
-        std::string patientName, patientID;
-        patientName = patientInfo[2] + " " + patientInfo[1];
-        patientID = patientInfo[3];
-        this->SetMetaData( "PatientName", patientName);
-        this->SetMetaData( "PatientID", patientID);
+        if (patientInfo.size()>3)
+        {
+            std::string patientName, patientID;
+            patientName = patientInfo[2] + " " + patientInfo[1];
+            patientID = patientInfo[3];
+            this->SetMetaData( "PatientName", patientName);
+            this->SetMetaData( "PatientID", patientID);
+        }
     }
 
 	  if(reader->GetOutput()->GetPointData()->GetScalars())
