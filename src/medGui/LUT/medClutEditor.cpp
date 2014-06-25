@@ -1563,6 +1563,8 @@ void medClutEditor::setData(dtkAbstractData *data)
 
 void medClutEditor::setView( medAbstractView *view, bool force )
 {
+    if (d->layerForced!=-1)
+        view->setCurrentLayer(d->layerForced);
     medAbstractDataImage * image =
         static_cast<medAbstractDataImage *>( view->dataInList(view->currentLayer()) );
     this->setData( image );
