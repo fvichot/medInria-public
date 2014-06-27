@@ -351,7 +351,7 @@ medClutEditorTable::medClutEditorTable(const QString & title,
 {
     d = new medClutEditorTablePrivate;
     d->title = title;
-    d->displayAlpha = 1.0;
+    d->displayAlpha = 0.25;
 
     //this->setFlag(QGraphicsItem::ItemIsMovable, true);
     this->setFlag(QGraphicsItem::ItemIsFocusable, true);
