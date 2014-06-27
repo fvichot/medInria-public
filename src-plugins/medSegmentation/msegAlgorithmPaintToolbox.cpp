@@ -1931,10 +1931,11 @@ void AlgorithmPaintToolbox::onInterpolate()
                 int C1center[2] = {center[0]- coord1[0],center[1]-coord1[1]};
                 Mask2dType::Pointer      img0tr             = Mask2dType::New();
                 Mask2dType::Pointer      img1tr             = Mask2dType::New();
-                img0 = translateImageByVec(img0,C0center);
-                img1 = translateImageByVec(img1,C1center);
-                distanceMapImg0 = computeDistanceMap(img0);
-                distanceMapImg1 = computeDistanceMap(img1);
+                img0tr = translateImageByVec(img0,C0center);
+                img1tr = translateImageByVec(img1,C1center);
+
+                distanceMapImg0 = computeDistanceMap(img0tr);
+                distanceMapImg1 = computeDistanceMap(img1tr);
                 // Interpolate the "j" intermediate slice (float) // float->unsigned char 0/255 and copy into output volume
                 for (int j=slice0+1; j<slice1; ++j) // for each intermediate slice
                 {
@@ -2062,20 +2063,41 @@ void AlgorithmPaintToolbox::computeCentroid(Mask2dIterator itmask,unsigned int *
 
 Mask2dType::Pointer AlgorithmPaintToolbox::translateImageByVec(Mask2dType::Pointer img,int *vec)
 {
-    typedef itk::TranslationTransform<double,2> TranslationTransformType;
-    TranslationTransformType::Pointer transform = TranslationTransformType::New();
-    TranslationTransformType::OutputVectorType translation;
-    translation[0] = -vec[0]; // TODO : verify if what itk doest the inverse
-    translation[1] = -vec[1];
-    transform->Translate(translation);
+    Mask2dType::RegionType inputRegion = img->GetLargestPossibleRegion();
+    Mask2dType::SizeType   size      = inputRegion.GetSize();
+    Mask2dType::IndexType  ind     = inputRegion.GetIndex();
 
-    typedef itk::ResampleImageFilter<Mask2dType, Mask2dType> ResampleImageFilterType;
-    ResampleImageFilterType::Pointer resampleFilter = ResampleImageFilterType::New();
-    resampleFilter->SetTransform(transform.GetPointer());
-    resampleFilter->SetInput(img);
-    resampleFilter->SetOutputParametersFromImage(img);
-    resampleFilter->Update();
-    return resampleFilter->GetOutput();
+    Mask2dType::Pointer imgOut = Mask2dType::New();
+    Mask2dType::RegionType region;
+    region.SetSize( size );
+    region.SetIndex( ind );
+    imgOut->SetRegions( region );
+    imgOut->Allocate();
+    
+    Mask2dIterator it1(img, img->GetBufferedRegion()); // volume in 0
+    it1.GoToBegin();
+    Mask2dIterator it2(imgOut, imgOut->GetBufferedRegion()); // volume in 0
+    it2.GoToBegin();
+    
+    while(!it2.IsAtEnd())
+    {
+        it2.Set(0);
+        ++it2;
+    }
+
+    while(!it1.IsAtEnd())
+    {
+        if (it1.Get()==1) // TODO : label once again
+        {
+            ind = it1.GetIndex();
+            ind[0]=ind[0]+floor(vec[0]+0.5);
+            ind[1]=ind[1]+floor(vec[1]+0.5);
+            it2.SetIndex(ind);
+            it2.Set(1);
+        }
+     ++it1;
+    }
+    return imgOut;
 }
 
 // Compute the interpolated slice between two distance maps
