@@ -22,7 +22,7 @@
 #include <medMessageController.h>
 #include <medJobManager.h>
 
-/* THESE CLASSES NEEDS TO BE THREAD-SAFE, don't forget to lock the mutex in the
+/* THESE CLASSES NEED TO BE THREAD-SAFE, don't forget to lock the mutex in the
  * methods below that access state.
  */
 
@@ -41,8 +41,6 @@ public:
             qCritical() << "One of the DB controllers could not be created !";
         }
     }
-    medDataManager * const q_ptr;
-    Q_DECLARE_PUBLIC(medDataManager)
 
     void cleanupTracker()
     {
@@ -61,6 +59,9 @@ public:
             return NULL;
     }
 
+    Q_DECLARE_PUBLIC(medDataManager)
+
+    medDataManager * const q_ptr;
     QMutex mutex;
     QHash<medDataIndex, dtkSmartPointer<medAbstractData> > loadedDataObjectTracker;
     medAbstractDbController * dbController;
@@ -68,7 +69,7 @@ public:
 };
 
 
-medDataManager *medDataManager::s_instance = NULL;
+medDataManager * medDataManager::s_instance = NULL;
 
 // Not thread-safe, but should only be called once, at application start-up
 void medDataManager::initialize()
@@ -286,7 +287,6 @@ QUuid medDataManager::importInNonPersistentDatabase(medAbstractData* data)
         qDebug() << data << "is already in Non persistent DB, skipping...";
         return;
     }
-
 
     QUuid uuid = QUuid::createUuid();
     npDb->import(data, uuid);

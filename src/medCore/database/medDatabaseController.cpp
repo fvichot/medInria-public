@@ -162,9 +162,9 @@ medDatabaseController* medDatabaseController::instance() {
 }
 
 
-QSqlDatabase *medDatabaseController::database(void)
+const QSqlDatabase& medDatabaseController::database(void)
 {
-    return &m_database;
+    return m_database;
 }
 
 bool medDatabaseController::createConnection(void)

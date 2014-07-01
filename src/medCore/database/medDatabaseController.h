@@ -34,7 +34,7 @@ public:
     static medDatabaseController* instance();
     ~medDatabaseController();
 
-    QSqlDatabase *database();
+    const QSqlDatabase& database();
 
     bool createConnection();
     bool  closeConnection();

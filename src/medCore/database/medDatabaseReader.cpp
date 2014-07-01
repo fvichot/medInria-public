@@ -49,7 +49,7 @@ medAbstractData* medDatabaseReader::run()
     QVariant  seriesDbId = d->index.seriesId();
     QVariant   imageDbId = d->index.imageId();
 
-    QSqlQuery query ( ( * ( medDatabaseController::instance()->database() ) ) );
+    QSqlQuery query(medDatabaseController::instance()->database());
 
     QString patientName, birthdate, age, gender, patientId;
     QString studyName, studyUid, studyId;
@@ -158,7 +158,7 @@ medAbstractData* medDatabaseReader::run()
     if (medData)
     {
 
-        QSqlQuery seriesQuery (*(medDatabaseController::instance()->database()));
+        QSqlQuery seriesQuery (medDatabaseController::instance()->database());
         QVariant seriesThumbnail;
 
         seriesQuery.prepare ( "SELECT thumbnail FROM series WHERE id = :id" );
@@ -229,7 +229,7 @@ QString medDatabaseReader::getFilePath()
     QVariant  seriesDbId = d->index.seriesId();
     QVariant   imageDbId = d->index.imageId();
 
-    QSqlQuery query ( ( * ( medDatabaseController::instance()->database() ) ) );
+    QSqlQuery query (medDatabaseController::instance()->database());
 
     QString filename;
 

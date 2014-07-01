@@ -89,16 +89,6 @@ protected:
     QString file ( void );
 
     /**
-    * Returns last successful reader description.
-    **/
-    QString lastSuccessfulReaderDescription ( void );
-
-    /**
-    * Returns last successful writer description.
-    **/
-    QString lastSuccessfulWriterDescription ( void );
-
-    /**
     * Returns if pocess has been cancelled.
     **/
     bool isCancelled ( void );

@@ -82,16 +82,6 @@ QString medAbstractDatabaseImporter::file ( void )
     return d->file;
 }
 
-QString medAbstractDatabaseImporter::lastSuccessfulReaderDescription ( void )
-{
-    return d->lastSuccessfulReaderDescription;
-}
-
-QString medAbstractDatabaseImporter::lastSuccessfulWriterDescription ( void )
-{
-    return d->lastSuccessfulWriterDescription;
-}
-
 bool medAbstractDatabaseImporter::isCancelled ( void )   
 {
     return d->isCancelled;
@@ -102,9 +92,9 @@ bool medAbstractDatabaseImporter::indexWithoutImporting ( void )
     return d->indexWithoutImporting;
 }
 
-QList<QStringList>* medAbstractDatabaseImporter::partialAttemptsInfo ( void ) 
+QList<QStringList>& medAbstractDatabaseImporter::partialAttemptsInfo ( void )
 {
-    return &(d->partialAttemptsInfo);
+    return d->partialAttemptsInfo;
 }
 
 QMap<int, QString> medAbstractDatabaseImporter::volumeIdToImageFile ( void )  

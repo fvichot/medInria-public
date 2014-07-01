@@ -55,8 +55,7 @@ QString medDatabaseImporter::getPatientID(QString patientName, QString birthDate
 {
     QString patientID = "";
     //Let's see if the patient is already in the db
-    QSqlDatabase db = * ( medDatabaseController::instance()->database() );
-    QSqlQuery query ( db );
+    QSqlQuery query ( medDatabaseController::instance()->database() );
 
     query.prepare ( "SELECT patientId FROM patient WHERE name = :name AND birthdate = :birthdate" );
     query.bindValue ( ":name", patientName );
@@ -87,8 +86,7 @@ bool medDatabaseImporter::isPartialImportAttempt ( medAbstractData* medData )
     if (containsBasicInfo.compare("true", Qt::CaseInsensitive) != 0)
         return false;
 
-    QSqlDatabase db = * ( medDatabaseController::instance()->database() );
-    QSqlQuery query ( db );
+    QSqlQuery query (medDatabaseController::instance()->database());
 
     QString patientName = medMetaDataKeys::PatientName.getFirstValue(medData).simplified();
 
@@ -147,7 +145,7 @@ bool medDatabaseImporter::isPartialImportAttempt ( medAbstractData* medData )
             if ( query.first() )
             {
                 QStringList filePaths = medData->metaDataValues ( medMetaDataKeys::FilePaths.key() );
-                *(partialAttemptsInfo()) << ( QStringList() << patientName << studyName << seriesName << filePaths[0] );
+                partialAttemptsInfo() << ( QStringList() << patientName << studyName << seriesName << filePaths[0] );
                 return true;
             }
         }
@@ -163,7 +161,7 @@ bool medDatabaseImporter::checkIfExists ( medAbstractData* medData, QString imag
 {
     bool imageExists = false;
 
-    QSqlQuery query ( * ( medDatabaseController::instance()->database() ) );
+    QSqlQuery query (medDatabaseController::instance()->database());
 
     // first we query patient table
     QString patientName = medMetaDataKeys::PatientName.getFirstValue(medData);
