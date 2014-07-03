@@ -136,6 +136,7 @@ public:
     void resetDisplayAlpha();
 
     void triggerVertexChanged();
+    void deleteAllVertices();
     // void keyPressEvent(QKeyEvent *event);
     // void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
 
@@ -148,8 +149,6 @@ signals:
 //     void onDeleteVertex(medClutEditorVertex * v);
 
 private:
-    void deleteAllVertices();
-
     medClutEditorTablePrivate *d;
 };
 
@@ -159,7 +158,7 @@ private:
 // /////////////////////////////////////////////////////////////////
 class medClutEditorHistogramPrivate;
 
-class medClutEditorHistogram : public QGraphicsItem
+class MEDGUI_EXPORT medClutEditorHistogram : public QGraphicsItem
 {
 public:
      medClutEditorHistogram(QGraphicsItem *parent = 0);
@@ -228,7 +227,7 @@ private:
 // medClutEditorView
 // /////////////////////////////////////////////////////////////////
 
-class medClutEditorView : public QGraphicsView
+class MEDGUI_EXPORT medClutEditorView : public QGraphicsView
 {
 public:
      medClutEditorView(QWidget *parent = 0);

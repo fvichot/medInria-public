@@ -97,6 +97,8 @@ meshModifyToolBox::meshModifyToolBox(QWidget * parent)
     connect(_cancelButton, SIGNAL(clicked()), this, SLOT(cancel()));
     connect(_exportButton, SIGNAL(clicked()), this, SLOT(exportTransform()));
     connect(_importButton, SIGNAL(clicked()), this, SLOT(importTransform()));
+
+    this->switchMinimize();
 }
 
 
