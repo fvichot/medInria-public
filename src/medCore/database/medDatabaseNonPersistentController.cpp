@@ -99,7 +99,7 @@ void medDatabaseNonPersistentController::insert(medDataIndex index, medDatabaseN
     d->items.insert(index, item);
 }
 
-void medDatabaseNonPersistentController::importPath(const QString& file,const QUuid & importUuid)
+void medDatabaseNonPersistentController::importPath(const QString& file,const QUuid & importUuid, bool /*indexWithoutCopying*/)
 {
     medDatabaseNonPersistentImporter *reader =
             new medDatabaseNonPersistentImporter(file,importUuid);
@@ -561,11 +561,3 @@ medAbstractData* medDatabaseNonPersistentController::retrieve(const medDataIndex
 
     return retreivedData;
 }
-
-
-void medDatabaseNonPersistentController::importPath(const QString& file,bool indexWithoutCopying)
-{
-    qWarning() << "no sense to indexWithoutCopying in NonPersisten database";
-    //TODO - medAbstractDbController::importconst QString& file,bool indexWithoutCopying) shouldn't exist - RDE
-}
-

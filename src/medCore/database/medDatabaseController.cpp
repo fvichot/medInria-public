@@ -162,7 +162,7 @@ medDatabaseController* medDatabaseController::instance() {
 }
 
 
-const QSqlDatabase& medDatabaseController::database(void)
+const QSqlDatabase& medDatabaseController::database(void) const
 {
     return m_database;
 }
@@ -396,7 +396,7 @@ medDataIndex medDatabaseController::indexForImage(const QString &patientName, co
 void medDatabaseController::importPath(const QString& file, const QUuid &importUuid, bool indexWithoutCopying)
 {
     QFileInfo info(file);
-    medDatabaseImporter *importer = new medDatabaseImporter(info.absoluteFilePath(),indexWithoutCopying);
+    medDatabaseImporter *importer = new medDatabaseImporter(info.absoluteFilePath(),importUuid, indexWithoutCopying);
     medMessageProgress *message = medMessageController::instance()->showProgress("Importing " + info.fileName());
  
     connect(importer, SIGNAL(progressed(int)),    message, SLOT(setProgress(int)));
@@ -445,7 +445,7 @@ void medDatabaseController::showOpeningError(QObject *sender)
 
 void medDatabaseController::createPatientTable(void)
 {
-    QSqlQuery query(*(this->database()));
+    QSqlQuery query(this->database());
     query.exec(
             "CREATE TABLE patient ("
             " id       INTEGER PRIMARY KEY,"
@@ -460,7 +460,7 @@ void medDatabaseController::createPatientTable(void)
 
 void medDatabaseController::createStudyTable(void)
 {
-    QSqlQuery query(*(this->database()));
+    QSqlQuery query(this->database());
 
     query.exec(
             "CREATE TABLE study ("
@@ -476,7 +476,7 @@ void medDatabaseController::createStudyTable(void)
 
 void medDatabaseController::createSeriesTable(void)
 {
-    QSqlQuery query(*(this->database()));
+    QSqlQuery query(this->database());
     query.exec(
             "CREATE TABLE series ("
             " id       INTEGER      PRIMARY KEY,"
@@ -515,7 +515,7 @@ void medDatabaseController::createImageTable(void)
     // it was removed because it was always filled with a
     // placeholder (number 64), and it was never read.
 
-    QSqlQuery query(*(this->database()));
+    QSqlQuery query(this->database());
     query.exec(
             "CREATE TABLE image ("
             " id         INTEGER      PRIMARY KEY,"
@@ -630,7 +630,7 @@ void medDatabaseController::remove( const medDataIndex& index )
 
 QList<medDataIndex> medDatabaseController::moveStudy( const medDataIndex& indexStudy, const medDataIndex& toPatient)
 {
-    QSqlDatabase & db (*(this->database()));
+    QSqlDatabase db(this->database());
     QSqlQuery query(db);
 
     bool result = false;
@@ -674,7 +674,7 @@ QList<medDataIndex> medDatabaseController::moveStudy( const medDataIndex& indexS
 
 medDataIndex medDatabaseController::moveSerie( const medDataIndex& indexSerie, const medDataIndex& toStudy)
 {
-    QSqlDatabase & db (*(this->database()));
+    QSqlDatabase db(this->database());
     QSqlQuery query(db);
 
     bool result = false;
@@ -706,7 +706,7 @@ QString medDatabaseController::metaData(const medDataIndex& index,const QString&
     typedef medDatabaseControllerPrivate::MetaDataMap MetaDataMap;
     typedef medDatabaseControllerPrivate::TableEntryList TableEntryList;
 
-    const QSqlDatabase & db (*((const_cast<medDatabaseController*>(this)->database())));
+    QSqlDatabase db(this->database());
     QSqlQuery query(db);
 
     // Attempt to translate the desired metadata into a table / column entry.
@@ -760,7 +760,7 @@ bool medDatabaseController::setMetaData( const medDataIndex& index, const QStrin
     typedef medDatabaseControllerPrivate::MetaDataMap MetaDataMap;
     typedef medDatabaseControllerPrivate::TableEntryList TableEntryList;
 
-    QSqlDatabase & db (*(this->database()));
+    QSqlDatabase db (this->database());
     QSqlQuery query(db);
 
     // Attempt to translate the desired metadata into a table / column entry.
@@ -808,7 +808,7 @@ int medDatabaseController::dataSourceId() const
 QList<medDataIndex> medDatabaseController::patients() const
 {
     QList<medDataIndex> ret;
-    QSqlQuery query(*(const_cast<medDatabaseController*>(this)->database()));
+    QSqlQuery query(this->database());
     query.prepare("SELECT id FROM patient");
     EXEC_QUERY(query);
 #if QT_VERSION > 0x0406FF
@@ -831,7 +831,7 @@ QList<medDataIndex> medDatabaseController::studies( const medDataIndex& index ) 
         return ret;
     }
 
-    QSqlQuery query(*(const_cast<medDatabaseController*>(this)->database()));
+    QSqlQuery query(this->database());
     query.prepare("SELECT id FROM study WHERE patient = :patientId");
     query.bindValue(":patientId", index.patientId());
     EXEC_QUERY(query);
@@ -854,7 +854,7 @@ QList<medDataIndex> medDatabaseController::series( const medDataIndex& index) co
         return ret;
     }
 
-    QSqlQuery query(*(const_cast<medDatabaseController*>(this)->database()));
+    QSqlQuery query(this->database());
     query.prepare("SELECT id FROM series WHERE study = :studyId");
     query.bindValue(":studyId", index.studyId());
     EXEC_QUERY(query);
@@ -877,7 +877,7 @@ QList<medDataIndex> medDatabaseController::images( const medDataIndex& index) co
         return ret;
     }
 
-    QSqlQuery query(*(const_cast<medDatabaseController*>(this)->database()));
+    QSqlQuery query(this->database());
     query.prepare("SELECT id FROM image WHERE series = :seriesId");
     query.bindValue(":seriesId", index.seriesId());
     EXEC_QUERY(query);
@@ -913,7 +913,7 @@ bool medDatabaseController::contains(const medDataIndex &index) const
         QVariant seriesId = index.seriesId();
         QVariant imageId = index.imageId();
 
-        QSqlQuery query(*(const_cast<medDatabaseController*>(this)->database()));
+        QSqlQuery query(this->database());
         QString fromRequest = "SELECT * FROM patient";
         QString whereRequest = " WHERE patient.id = :id";
 

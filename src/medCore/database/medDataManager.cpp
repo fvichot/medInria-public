@@ -36,8 +36,7 @@ public:
         dbController = medDatabaseController::instance();
         nonPersDbController = medDatabaseNonPersistentController::instance();
 
-        if( ! dbController || ! nonPersDbController)
-        {
+        if( ! dbController || ! nonPersDbController) {
             qCritical() << "One of the DB controllers could not be created !";
         }
     }
@@ -94,37 +93,30 @@ medAbstractData* medDataManager::retrieveData(const medDataIndex& index)
     // If nothing in the tracker, we'll get a null weak pointer, thus a null shared pointer
     medAbstractData *dataObjRef = d->loadedDataObjectTracker.value(index);
 
-    if(dataObjRef)
-    {
+    if(dataObjRef) {
         // we found an existing instance of that object
         qDebug()<<"medDataManager we found an existing instance of that object" <<dataObjRef->count();
         return dataObjRef;
     }
 
     QHashIterator <medDataIndex, dtkSmartPointer<medAbstractData> > it(d->loadedDataObjectTracker);
-    while(it.hasNext())
-    {
+    while(it.hasNext()) {
         medAbstractData *data = it.next().value();
         qDebug()<<"medDataManager deleting ?" <<data->count();
-        if(data->count() <= 1)
-        {
+        if(data->count() <= 1) {
             qDebug()<<"medDataManager deleting !" <<data->dataIndex();
             d->loadedDataObjectTracker.remove(data->dataIndex());
         }
     }
 
     // No existing ref, we need to load from the file DB, then the non-persistent DB
-    if (d->dbController->contains(index))
-    {
+    if (d->dbController->contains(index)) {
         dataObjRef = d->dbController->retrieve(index);
-    }
-    else if(d->nonPersDbController->contains(index))
-    {
+    } else if(d->nonPersDbController->contains(index)) {
         dataObjRef = d->nonPersDbController->retrieve(index);
     }
 
-    if (dataObjRef)
-    {
+    if (dataObjRef) {
         dataObjRef->setDataIndex(index);
 
         d->loadedDataObjectTracker.insert(index, dataObjRef);
@@ -134,26 +126,28 @@ medAbstractData* medDataManager::retrieveData(const medDataIndex& index)
 }
 
 
-QUuid medDataManager::importData(medAbstractData *data)
+QUuid medDataManager::importData(medAbstractData *data, bool nonPersistent)
 {
     if (!data)
         return QUuid();
 
     Q_D(medDataManager);
     QUuid uuid = QUuid::createUuid();
-    d->dbController->importData(data, uuid);
+    medAbstractDbController * controller = nonPersistent ? d->nonPersDbController : d->dbController;
+    controller->importData(data, uuid);
     return uuid;
 }
 
 
-QUuid medDataManager::importInDatabase(const QString& dataPath, bool indexWithoutCopying)
+QUuid medDataManager::importFile(const QString& dataPath, bool indexWithoutCopying, bool nonPersistent)
 {
-    if (!data)
+    if ( ! QFile::exists(dataPath))
         return QUuid();
 
     Q_D(medDataManager);
     QUuid uuid = QUuid::createUuid();
-    d->dbController->importPath(dataPath, uuid);
+    medAbstractDbController * controller = nonPersistent ? d->nonPersDbController : d->dbController;
+    controller->importPath(dataPath, uuid, indexWithoutCopying);
     return uuid;
 }
 
@@ -168,8 +162,7 @@ void medDataManager::exportData(medAbstractData* data)
     QList<QString> allWriters = medAbstractDataFactory::instance()->writers();
     QHash<QString, dtkAbstractDataWriter*> possibleWriters;
 
-    foreach(QString writerType, allWriters)
-    {
+    foreach(QString writerType, allWriters) {
         dtkAbstractDataWriter * writer = medAbstractDataFactory::instance()->writer(writerType);
         if (writer->handled().contains(data->identifier()))
             possibleWriters[writerType] = writer;
@@ -177,8 +170,7 @@ void medDataManager::exportData(medAbstractData* data)
             delete writer;
     }
 
-    if (possibleWriters.isEmpty())
-    {
+    if (possibleWriters.isEmpty()) {
         medMessageController::instance()->showError("Sorry, we have no exporter for this format.");
         return;
     }
@@ -190,8 +182,7 @@ void medDataManager::exportData(medAbstractData* data)
     QComboBox* typesHandled = new QComboBox(exportDialog);
     // we use allWriters as the list of keys to make sure we traverse possibleWriters
     // in the order specified by the writers priorities.
-    foreach(QString type, allWriters)
-    {
+    foreach(QString type, allWriters) {
         if (!possibleWriters.contains(type))
             continue;
 
@@ -212,8 +203,7 @@ void medDataManager::exportData(medAbstractData* data)
     QWidget * filtersList = gridbox->itemAtPosition(gridbox->rowCount()-1, 1)->widget();
     filtersLabel->hide(); filtersList->hide();
 
-    if (gridbox)
-    {
+    if (gridbox) {
         gridbox->addWidget(new QLabel("Export format:", exportDialog), gridbox->rowCount()-1, 0);
         gridbox->addWidget(typesHandled, gridbox->rowCount()-1, 1);
     }
@@ -222,15 +212,13 @@ void medDataManager::exportData(medAbstractData* data)
 
     // Set a default filename based on the series's description
     medAbstractDbController * dbController = d->controllerForDataSource(data->dataIndex().dataSourceId());
-    if (dbController)
-    {
+    if (dbController) {
         QString defaultName = dbController->metaData(data->dataIndex(), medMetaDataKeys::SeriesDescription);
         defaultName += typesHandled->itemData(typesHandled->currentIndex(), Qt::UserRole+1).toString();
         exportDialog->selectFile(defaultName);
     }
 
-    if ( exportDialog->exec() )
-    {
+    if ( exportDialog->exec() ) {
         QString chosenFormat = typesHandled->itemData(typesHandled->currentIndex()).toString();
         this->exportDataToFile(data, exportDialog->selectedFiles().first(), chosenFormat);
     }
@@ -254,6 +242,7 @@ void medDataManager::exportDataToFile(medAbstractData *data, const QString & fil
     QThreadPool::globalInstance()->start(exporter);
 }
 
+
 bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, const QString & value)
 {
     if ( ! index.isValid())
@@ -265,54 +254,23 @@ bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, 
 }
 
 
-medDataIndex medDataManager::importInDatabase(medAbstractData* data)
-{
-
-}
-
-medDataIndex medDataManager::importInDatabase(const QString& dataPath, bool indexWithoutCopying)
-{
-
-}
-
-QUuid medDataManager::importInNonPersistentDatabase(medAbstractData* data)
-{
-    if (!data)
-        return;
-    QMutexLocker locker(&(d->mutex));
-
-    medAbstractDbController* npDb = d->getNonPersDbController();
-    if(npDb->contains(data->dataIndex()))
-    {
-        qDebug() << data << "is already in Non persistent DB, skipping...";
-        return;
-    }
-
-    QUuid uuid = QUuid::createUuid();
-    npDb->import(data, uuid);
-
-    locker.unlock();
-}
-
-medDataIndex medDataManager::importInNonPersistentDatabase(const QString& dataPath)
-{
-
-}
-
 bool medDataManager::transferDataToPersistentDatabase(medAbstractData* data)
 {
 
 }
+
 
 bool medDataManager::updateData(const medDataIndex& index, medAbstractData* data)
 {
 
 }
 
+
 bool medDataManager::updateMetadata(const medDataIndex& index, const medMetaDataKeys::Key& md, const QString& value)
 {
 
 }
+
 
 void medDataManager::removeData(const medDataIndex& index)
 {
@@ -322,8 +280,10 @@ void medDataManager::removeData(const medDataIndex& index)
 
 medDataManager::medDataManager() : d_ptr(new medDataManagerPrivate(this))
 {
-
+    Q_D(medDataManager);
+    connect(d->dbController, SIGNAL(updated(medDataIndex)), this, SIGNAL(dataImported(medDataIndex)));
 }
+
 
 medDataManager::~medDataManager()
 {

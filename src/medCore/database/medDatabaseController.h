@@ -34,7 +34,7 @@ public:
     static medDatabaseController* instance();
     ~medDatabaseController();
 
-    const QSqlDatabase& database();
+    const QSqlDatabase& database() const;
 
     bool createConnection();
     bool  closeConnection();
@@ -110,7 +110,7 @@ public slots:
     * @params bool indexWithoutCopying true if the file must only be indexed by its current path,
     * false if the file will be imported (copied or converted to the internal storage format)
     */
-    void importPath(const QString& file, const QUuid& importUuid, bool indexWithoutCopying);
+    void importPath(const QString& file, const QUuid& importUuid, bool indexWithoutCopying = false);
 
     /**
     * Import data into the db read from memory

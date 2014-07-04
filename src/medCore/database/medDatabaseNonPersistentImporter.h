@@ -39,8 +39,8 @@ public:
     * @param file the file or directory to be read.
     * @param callerUuid The string representation of a unique identifier. The caller will react to link the final signal with this id to know whether it should react to it or not.
     */
-    medDatabaseNonPersistentImporter(const QString& file, const QString& callerUuid = QString());
-    medDatabaseNonPersistentImporter(medAbstractData* medData, const QString& callerUuid = QString());
+    medDatabaseNonPersistentImporter(const QString& file, const QUuid &uuid);
+    medDatabaseNonPersistentImporter(medAbstractData* medData, const QUuid& uuid);
     ~medDatabaseNonPersistentImporter();
 
 

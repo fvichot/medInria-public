@@ -32,15 +32,13 @@ public:
 
     medAbstractData* retrieveData(const medDataIndex& index);
 
-    QUuid importData(medAbstractData* data);
+    QUuid importData(medAbstractData* data, bool nonPersistent = true);
+    QUuid importFile(const QString& dataPath, bool indexWithoutCopying, bool nonPersistent = true);
+
+    // ------------------------- TODO --------
 
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
-
-    QUuid importInDatabase(medAbstractData* data);
-    QUuid importInDatabase(const QString& dataPath, bool indexWithoutCopying);
-    QUuid importInNonPersistentDatabase(medAbstractData* data);
-    QUuid importInNonPersistentDatabase(const QString& dataPath);
 
     bool transferDataToPersistentDatabase(medAbstractData* data);
 

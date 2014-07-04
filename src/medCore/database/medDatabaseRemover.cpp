@@ -43,7 +43,7 @@ class medDatabaseRemoverPrivate
 {
 public:
     medDataIndex index;
-    QSqlDatabase * db;
+    QSqlDatabase db;
     static const QString T_PATIENT;
     static const QString T_STUDY;
     static const QString T_SERIES;
@@ -74,7 +74,7 @@ medDatabaseRemover::~medDatabaseRemover()
 void medDatabaseRemover::run()
 {
 
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db( d->db );
     QSqlQuery ptQuery ( db );
 
     const medDataIndex index = d->index;
@@ -184,7 +184,7 @@ void medDatabaseRemover::run()
 
 void medDatabaseRemover::removeImage ( int patientDbId, int studyDbId, int seriesDbId, int imageId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT thumbnail FROM " + d->T_IMAGE + " WHERE id = :imageId " );
@@ -200,7 +200,7 @@ void medDatabaseRemover::removeImage ( int patientDbId, int studyDbId, int serie
 
 bool medDatabaseRemover::isSeriesEmpty ( int seriesDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT id FROM " + d->T_IMAGE + " WHERE series = :series " );
@@ -211,7 +211,7 @@ bool medDatabaseRemover::isSeriesEmpty ( int seriesDbId )
 
 void medDatabaseRemover::removeSeries ( int patientDbId, int studyDbId, int seriesDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT thumbnail, path, name  FROM " + d->T_SERIES + " WHERE id = :series " );
@@ -256,7 +256,7 @@ void medDatabaseRemover::removeSeries ( int patientDbId, int studyDbId, int seri
 
 bool medDatabaseRemover::isStudyEmpty ( int studyDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT id FROM " + d->T_SERIES + " WHERE study = :study " );
@@ -267,7 +267,7 @@ bool medDatabaseRemover::isStudyEmpty ( int studyDbId )
 
 void medDatabaseRemover::removeStudy ( int patientDbId, int studyDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT thumbnail, name, uid FROM " + d->T_STUDY + " WHERE id = :id " );
@@ -285,7 +285,7 @@ void medDatabaseRemover::removeStudy ( int patientDbId, int studyDbId )
 
 bool medDatabaseRemover::isPatientEmpty ( int patientDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     query.prepare ( "SELECT id FROM " + d->T_STUDY + " WHERE patient = :patient " );
@@ -296,7 +296,7 @@ bool medDatabaseRemover::isPatientEmpty ( int patientDbId )
 
 void medDatabaseRemover::removePatient ( int patientDbId )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
 
     QString patientName;
@@ -324,7 +324,7 @@ void medDatabaseRemover::removePatient ( int patientDbId )
 
 bool medDatabaseRemover::removeTableRow ( const QString &table, int id )
 {
-    QSqlDatabase & db ( *d->db );
+    QSqlDatabase db(d->db);
     QSqlQuery query ( db );
     query.prepare ( "DELETE FROM " + table + " WHERE id = :id" );
     query.bindValue ( ":id", id );

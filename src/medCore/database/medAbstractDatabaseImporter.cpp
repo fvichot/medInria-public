@@ -376,7 +376,7 @@ void medAbstractDatabaseImporter::importFile ( void )
         QString pathToStoreThumbnails = aggregatedFileNameFileInfo.dir().path() + "/" + aggregatedFileNameFileInfo.completeBaseName() + "/";
         index = this->populateDatabaseAndGenerateThumbnails ( imagemedData, pathToStoreThumbnails );
         
-        if(!d->uuid.isEmpty())
+        if(!d->uuid.isNull())
         {
             emit addedIndex ( index, d->uuid );
         }
@@ -689,20 +689,10 @@ dtkSmartPointer<dtkAbstractDataReader> medAbstractDatabaseImporter::getSuitableR
         return NULL;
     }
 
-    // cycle through readers to see if the last used reader can handle the file
     dtkSmartPointer<dtkAbstractDataReader> dataReader;
     for (int i=0; i<readers.size(); i++) {
         dataReader = medAbstractDataFactory::instance()->readerSmartPointer(readers[i]);
-        if (d->lastSuccessfulReaderDescription == dataReader->identifier() && dataReader->canRead(filename)) {
-            dataReader->enableDeferredDeletion(false);
-            return dataReader;
-        }
-    }
-
-    for (int i=0; i<readers.size(); i++) {
-        dataReader = medAbstractDataFactory::instance()->readerSmartPointer(readers[i]);
         if (dataReader->canRead(filename)) {
-            d->lastSuccessfulReaderDescription = dataReader->identifier();
             dataReader->enableDeferredDeletion(false);
             return dataReader;
         }
@@ -721,22 +711,6 @@ dtkSmartPointer<dtkAbstractDataWriter> medAbstractDatabaseImporter::getSuitableW
 
     QList<QString> writers = medAbstractDataFactory::instance()->writers();
     dtkSmartPointer<dtkAbstractDataWriter> dataWriter;
-    // first try with the last
-    for (int i=0; i<writers.size(); i++) {
-        dataWriter = medAbstractDataFactory::instance()->writerSmartPointer(writers[i]);
-        dataWriter->setData(medData);
-
-        if (d->lastSuccessfulWriterDescription==dataWriter->identifier()) {
-            if (dataWriter->handled().contains(medData->identifier()) && dataWriter->canWrite(filename)) {
-
-                d->lastSuccessfulWriterDescription = dataWriter->identifier();
-                dataWriter->enableDeferredDeletion(false);
-                return dataWriter;
-            }
-        }
-    }
-
-    // cycle all
     for ( int i=0; i<writers.size(); i++ )
     {
         dataWriter = medAbstractDataFactory::instance()->writerSmartPointer ( writers[i] );
@@ -744,8 +718,6 @@ dtkSmartPointer<dtkAbstractDataWriter> medAbstractDatabaseImporter::getSuitableW
 
         if (dataWriter->handled().contains(medData->identifier()) &&
              dataWriter->canWrite( filename ) ) {
-
-            d->lastSuccessfulWriterDescription = dataWriter->identifier();
             dataWriter->enableDeferredDeletion(false);
             return dataWriter;
         }

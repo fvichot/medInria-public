@@ -559,7 +559,7 @@ void medMainWindow::showShortcutAccess()
     menuPosition.setX(menuPosition.rx() + (this->rect().width() - d->shortcutAccessWidget->width()) / 2);
     menuPosition.setY(menuPosition.ry() + (this->rect().height() - d->shortcutAccessWidget->height()) / 2);
 
-    d->shortcutAccessWidget->setProperty("pos", menuPosition);
+    d->shortcutAccessWidget->move(menuPosition);
     d->shortcutAccessWidget->show();
     d->shortcutAccessWidget->setFocus();
     d->shortcutAccessWidget->setMouseTracking(true);

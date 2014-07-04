@@ -29,16 +29,16 @@
 
 
 
-medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter ( const QString& file, const QString& callerUuid )
-: medAbstractDatabaseImporter(file, true, callerUuid)
+medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter ( const QString& file, const QUuid& uuid )
+: medAbstractDatabaseImporter(file, uuid)
 {
     qDebug() << "medDatabaseNonPersistentImporter created with uuid:" << this->callerUuid();
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter ( medAbstractData* medData, const QString& callerUuid )
-: medAbstractDatabaseImporter(medData, true, callerUuid)
+medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter (medAbstractData* medData, const QUuid &uuid )
+: medAbstractDatabaseImporter(medData, uuid)
 {
     qDebug() << "medDatabaseNonPersistentImporter created with uuid:" << this->callerUuid();
 }
@@ -335,7 +335,7 @@ bool medDatabaseNonPersistentImporter::isPartialImportAttempt ( medAbstractData*
             QString studyName = medMetaDataKeys::StudyDescription.getFirstValue(item->data()).simplified();
             QString seriesName = medMetaDataKeys::SeriesDescription.getFirstValue(item->data()).simplified();
             QStringList filePaths = item->data()->metaDataValues ( medMetaDataKeys::FilePaths.key() );
-            (*partialAttemptsInfo()) << ( QStringList() << patientName << studyName << seriesName << filePaths[0] );
+            partialAttemptsInfo() << ( QStringList() << patientName << studyName << seriesName << filePaths[0] );
             break;
         }
     }

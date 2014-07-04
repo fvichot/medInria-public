@@ -269,7 +269,7 @@ medAbstractData *medDatabaseReader::readFile( QString filename )
 
 medAbstractData *medDatabaseReader::readFile( const QStringList filenames )
 {
-    medAbstractData *medData;
+    medAbstractData *medData = NULL;
 
     QList<QString> readers = medAbstractDataFactory::instance()->readers();
 

@@ -69,7 +69,6 @@ medApplication::medApplication(int & argc, char**argv) :
 
     d->fixSettingsPath(this->organizationName(),this->applicationName());
 
-    qDebug() <<  "default data location:" << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
     medStyleSheetParser parser(dtkReadFile(":/medInria.qss"));
     this->setStyleSheet(parser.result());
 
@@ -84,10 +83,6 @@ medApplication::medApplication(int & argc, char**argv) :
                      this,SLOT(redirectMessageToLog(QString)));
 
     this->initialize();
-
-    //  Setting up database connection
-    if ( !medDatabaseController::instance()->createConnection())
-        qDebug() << "Unable to create a connection to the database";
 }
 
 medApplication::~medApplication(void)
@@ -145,7 +140,12 @@ void medApplication::redirectMessageToSplash(const QString &message)
 
 void medApplication::initialize()
 {
+    //  Setting up database connection
+    if ( ! medDatabaseController::instance()->createConnection())
+        qDebug() << "Unable to create a connection to the database";
+
     medDataManager::initialize();
+
     // Registering different workspaces
     medWorkspaceFactory * viewerWSpaceFactory = medWorkspaceFactory::instance();
     viewerWSpaceFactory->registerWorkspace<medVisualizationWorkspace>();

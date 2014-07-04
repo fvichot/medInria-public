@@ -101,7 +101,7 @@ protected:
     /**
     * Returns information about partial import attempts .
     **/
-    QList<QStringList>* partialAttemptsInfo ( void );
+    QList<QStringList>& partialAttemptsInfo ( void );
 
     /**
     * Returns a QMap linking volume id to image file.

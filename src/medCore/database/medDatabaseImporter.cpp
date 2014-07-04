@@ -36,7 +36,7 @@ medDatabaseImporter::medDatabaseImporter ( const QString& file, const QUuid& uui
 
 //-----------------------------------------------------------------------------------------------------------
 
-medDatabaseImporter::medDatabaseImporter ( medAbstractData* medData, const QUuid& uuid ) : medAbstractDatabaseImporter(medData, uuid, false)
+medDatabaseImporter::medDatabaseImporter ( medAbstractData* medData, const QUuid& uuid ) : medAbstractDatabaseImporter(medData, uuid)
 {
 
 }
@@ -244,7 +244,7 @@ bool medDatabaseImporter::checkIfExists ( medAbstractData* medData, QString imag
 
 medDataIndex medDatabaseImporter::populateDatabaseAndGenerateThumbnails ( medAbstractData* medData, QString pathToStoreThumbnails )
 {
-    QSqlDatabase db = * ( medDatabaseController::instance()->database() );
+    QSqlDatabase db = medDatabaseController::instance()->database();
 
     QStringList thumbPaths = generateThumbnails ( medData, pathToStoreThumbnails );
 
@@ -556,7 +556,7 @@ void medDatabaseImporter::createMissingImages ( medAbstractData* medData, QSqlDa
 
 QString medDatabaseImporter::ensureUniqueSeriesName ( const QString seriesName )
 {
-    QSqlDatabase db = * ( medDatabaseController::instance()->database() );
+    QSqlDatabase db = medDatabaseController::instance()->database();
 
     QSqlQuery query ( db );
     query.prepare ( "SELECT name FROM series WHERE name LIKE '" + seriesName + "%'" );

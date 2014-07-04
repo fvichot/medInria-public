@@ -237,10 +237,8 @@ bool operator<(const medDataIndex& index1, const medDataIndex& index2)
         return false;
     else if (index1.imageId() < index2.imageId())
         return true;
-    else if (index2.imageId() < index1.imageId())
+    // if we reach here, either greater or equal, return false
         return false;
-    // Equality if we get here.
-    return false;
 }
 
 // /////////////////////////////////////////////////////////////////
