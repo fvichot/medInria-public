@@ -67,6 +67,7 @@ public:
     medAbstractDbController * nonPersDbController;
 };
 
+// ------------------------- medDataManager -----------------------------------
 
 medDataManager * medDataManager::s_instance = NULL;
 
@@ -254,13 +255,7 @@ bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, 
 }
 
 
-bool medDataManager::transferDataToPersistentDatabase(medAbstractData* data)
-{
-
-}
-
-
-bool medDataManager::updateData(const medDataIndex& index, medAbstractData* data)
+bool medDataManager::makePersistent(medAbstractData* data)
 {
 
 }

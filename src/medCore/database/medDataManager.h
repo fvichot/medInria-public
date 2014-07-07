@@ -14,9 +14,9 @@
 #pragma once
 
 #include <QObject>
+#include <QUuid>
 
 #include <medCoreExport.h>
-#include <medMetaDataKeys.h>
 
 class medDataManagerPrivate;
 class medAbstractData;
@@ -35,14 +35,13 @@ public:
     QUuid importData(medAbstractData* data, bool nonPersistent = true);
     QUuid importFile(const QString& dataPath, bool indexWithoutCopying, bool nonPersistent = true);
 
-    // ------------------------- TODO --------
-
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
-    bool transferDataToPersistentDatabase(medAbstractData* data);
+    // ------------------------- TODO --------
 
-    bool updateData(const medDataIndex& index, medAbstractData* data);
+    bool makePersistent(medAbstractData* data);
+
     bool setMetadata(const medDataIndex& index, const QString& key, const QString& value);
     void removeData(const medDataIndex& index);
 
