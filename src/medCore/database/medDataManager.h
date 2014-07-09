@@ -38,7 +38,7 @@ public:
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
-    // ------------------------- TODO --------
+    // ------------------------- TODO -----------------------------------------
 
     bool makePersistent(medAbstractData* data);
 
@@ -47,7 +47,7 @@ public:
 
 signals:
     void metadataModified(const medDataIndex& index, const QString& key, const QString& value);
-    void dataImported(const medDataIndex& index);
+    void dataImported(const medDataIndex& index, QUuid importId);
     void dataRemoved(const medDataIndex& index);
 
 private slots:
@@ -65,5 +65,3 @@ private:
 
     Q_DECLARE_PRIVATE(medDataManager)
 };
-
-

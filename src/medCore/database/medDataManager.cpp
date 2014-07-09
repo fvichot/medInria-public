@@ -277,6 +277,7 @@ medDataManager::medDataManager() : d_ptr(new medDataManagerPrivate(this))
 {
     Q_D(medDataManager);
     connect(d->dbController, SIGNAL(updated(medDataIndex)), this, SIGNAL(dataImported(medDataIndex)));
+    connect(d->nonPersDbController, SIGNAL(updated(medDataIndex)), this, SIGNAL(dataImported(medDataIndex)));
 }
 
 

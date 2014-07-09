@@ -161,5 +161,3 @@ private:
     medDatabaseControllerPrivate * d;
     static medDatabaseController * s_instance;
 };
-
-
