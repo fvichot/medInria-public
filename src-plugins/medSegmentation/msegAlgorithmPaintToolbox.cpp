@@ -1508,7 +1508,10 @@ void AlgorithmPaintToolbox::onViewClosed()
         m_strokeButton->setChecked(false);
 
     if (viewClosed==currentView)
+    {
         currentView = NULL;
+        m_itkMask = NULL;
+    }
 }
 
 void AlgorithmPaintToolbox::setCurrentView(medAbstractView * view)
@@ -1871,6 +1874,8 @@ void AlgorithmPaintToolbox::setCursorOn(bool value)
 
 void AlgorithmPaintToolbox::onInterpolate()
 {
+    if(!m_itkMask)
+        return;
 
     unsigned char label = 1; // need to be a parameter
 
