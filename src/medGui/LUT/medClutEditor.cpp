@@ -59,7 +59,6 @@ medClutEditorVertex::medClutEditorVertex(QPointF value, QPointF coord,
     this->setZValue(1);
     d->innerRadius =  5.0;
     d->outerRadius = 10.0;
-
     setAlpha();
     setColor( color );
 
@@ -339,9 +338,11 @@ void medClutEditorVertex::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 class medClutEditorTablePrivate
 {
 public:
-    QList<medClutEditorVertex *> vertices;
+    QList<medClutEditorVertex *> vertices, principalVertices;
+    QHash<medClutEditorVertex *, medClutEditorVertex *> verticesCouples;
     QString title;
     qreal displayAlpha;
+    bool stairCaseMode;
 };
 
 
@@ -352,6 +353,7 @@ medClutEditorTable::medClutEditorTable(const QString & title,
     d = new medClutEditorTablePrivate;
     d->title = title;
     d->displayAlpha = 0.25;
+    d->stairCaseMode = true;
 
     //this->setFlag(QGraphicsItem::ItemIsMovable, true);
     this->setFlag(QGraphicsItem::ItemIsFocusable, true);
@@ -364,6 +366,7 @@ medClutEditorTable::medClutEditorTable(const medClutEditorTable & table)
 {
     d = new medClutEditorTablePrivate;
     d->title = table.title();
+    d->stairCaseMode = true;
 
     foreach ( const medClutEditorVertex * vertex, table.vertices())
     d->vertices << new medClutEditorVertex( * vertex );
@@ -385,6 +388,30 @@ const QString & medClutEditorTable::title() const
 void medClutEditorTable::setTitle(const QString & title)
 {
     d->title = title;
+}
+
+void medClutEditorTable::setStairCaseMode(bool value)
+{
+    d->stairCaseMode = value;
+}
+
+QHash<medClutEditorVertex *, medClutEditorVertex *> *
+    medClutEditorTable::calculateCoupledVertices(QList<medClutEditorVertex *>list)
+{
+    QHash<medClutEditorVertex *, medClutEditorVertex *> *hash = new QHash<medClutEditorVertex *, medClutEditorVertex *>();
+    float epsilon = (float)0.0001;
+    for (int i=1; i<list.size();i++) //dont take first and last
+    {
+        QPointF value = QPointF(list.at(i)->value().x(), list.at(i-1)->value().y());
+        QPointF position = QPointF(list.at(i)->pos().x()-epsilon, list.at(i-1)->pos().y());
+        medClutEditorVertex * coupledVertex = new medClutEditorVertex(value, position, list.at(i-1)->color());
+
+        if(coupledVertex && !hash->contains(list.at(i)))
+            hash->insert(list.at(i), coupledVertex);
+        else
+            qDebug()<<"COUPLED VERTEX MARCHE PAS";
+    }
+    return hash;
 }
 
 QRectF medClutEditorTable::boundingRect(void) const
@@ -490,10 +517,30 @@ void medClutEditorTable::updateCoordinates()
 void medClutEditorTable::addVertex( medClutEditorVertex *vertex,
                                     bool interpolate )
 {
+    d->principalVertices<< vertex;
     d->vertices << vertex;
 
     if ( vertex->parentItem() != this )
         vertex->setParentItem( this );
+
+    qSort( d->vertices.begin(), d->vertices.end(),
+           medClutEditorVertex::LessThan );
+
+    if(d->stairCaseMode)
+    {
+        QHash<medClutEditorVertex *, medClutEditorVertex *> *hash = this->calculateCoupledVertices(d->vertices);
+        if(hash)
+        {
+            QHash<medClutEditorVertex *, medClutEditorVertex *>::const_iterator i = hash->constBegin();
+            while(i!=hash->constEnd())
+            {
+                qDebug() <<"PRINCIPAL VERTEX VAL: "<< i.key()->value()<<"     "<< i.value()->value();
+                qDebug() <<"PRINCIPAL VERTEX POS: "<< i.key()->pos()<<"     "<< i.value()->pos();
+                d->vertices << i.value();
+                i++;
+            }
+        }
+    }
 
     qSort( d->vertices.begin(), d->vertices.end(),
            medClutEditorVertex::LessThan );

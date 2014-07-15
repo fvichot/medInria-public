@@ -102,6 +102,8 @@ public:
     void setSize( const QSizeF & size );
     const QSizeF & size() const;
     // void setRange( qreal min, qreal max );
+    void setStairCaseMode(bool);
+    QHash<medClutEditorVertex *, medClutEditorVertex *> *calculateCoupledVertices(QList<medClutEditorVertex *>);
 
     void addVertex(medClutEditorVertex *vertex, bool interpolate = false);
     QList<medClutEditorVertex *> & vertices();
