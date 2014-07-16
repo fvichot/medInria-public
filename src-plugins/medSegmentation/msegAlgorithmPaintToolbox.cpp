@@ -1877,8 +1877,8 @@ void AlgorithmPaintToolbox::onInterpolate()
     if(!m_itkMask)
         return;
 
-    unsigned char label = 1; // need to be a parameter
-
+    unsigned char label = this->m_strokeLabel;
+        
     MaskType::RegionType inputRegion = m_itkMask->GetLargestPossibleRegion();
     MaskType::SizeType   size      = inputRegion.GetSize();
     MaskType::IndexType  start     = inputRegion.GetIndex();
@@ -2023,7 +2023,7 @@ Mask2dFloatType::Pointer AlgorithmPaintToolbox::computeDistanceMap(Mask2dType::P
     typedef itk::InvertIntensityImageFilter<Mask2dType,Mask2dType> invertFilterType;
     invertFilterType::Pointer invertFilter = invertFilterType::New();
 
-    invertFilter->SetMaximum(1); // test with one should be the label value i guess
+    invertFilter->SetMaximum(this->m_strokeLabel);
     invertFilter->SetInput(img);
     invertFilter->Update();
 
@@ -2051,7 +2051,7 @@ void AlgorithmPaintToolbox::computeCentroid(Mask2dIterator itmask,unsigned int *
 
     while(!itmask.IsAtEnd())
     {
-        if (itmask.Get()==1)
+        if (itmask.Get()==this->m_strokeLabel)
         {
             coord[0] += itmask.GetIndex()[0];
             coord[1] += itmask.GetIndex()[1];
@@ -2092,13 +2092,13 @@ Mask2dType::Pointer AlgorithmPaintToolbox::translateImageByVec(Mask2dType::Point
 
     while(!it1.IsAtEnd())
     {
-        if (it1.Get()==1) // TODO : label once again
+        if (it1.Get()==this->m_strokeLabel) 
         {
             ind = it1.GetIndex();
             ind[0]=ind[0]+floor(vec[0]+0.5);
             ind[1]=ind[1]+floor(vec[1]+0.5);
             it2.SetIndex(ind);
-            it2.Set(1);
+            it2.Set(this->m_strokeLabel);
         }
      ++it1;
     }
@@ -2149,7 +2149,7 @@ void AlgorithmPaintToolbox::computeIntermediateSlice(Mask2dFloatType::Pointer di
             other[1]=other[1]+floor(vec[1]+0.5);
             other[2]=j;
             itmask.SetIndex(other);
-            itmask.Set(1);
+            itmask.Set(this->m_strokeLabel);
             itmask.SetIndex(start);
         }
         
