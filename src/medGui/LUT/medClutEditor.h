@@ -102,8 +102,9 @@ public:
     void setSize( const QSizeF & size );
     const QSizeF & size() const;
     // void setRange( qreal min, qreal max );
-    void setStairCaseMode(bool);
+    void setDiscreteMode(bool);
     QHash<medClutEditorVertex *, medClutEditorVertex *> *calculateCoupledVertices(QList<medClutEditorVertex *>);
+    void updateVerticesToDiplay();
 
     void addVertex(medClutEditorVertex *vertex, bool interpolate = false);
     QList<medClutEditorVertex *> & vertices();
@@ -269,6 +270,9 @@ public:
     void forceLayer(int); // this method force the interaction to be done on a specific layer
     medClutEditorScene * getScene();
 
+public slots:
+        void setDiscreteMode(bool);
+
 protected:
     void initializeTable();
     void deleteTable();
@@ -285,6 +289,7 @@ protected slots:
     // void onDeleteAction();
     void onVertexMoved();
     void onToggleDirectUpdateAction();
+
 
 signals:
     void tableUpdated(QList<double>,QList<QColor>);

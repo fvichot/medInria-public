@@ -338,11 +338,11 @@ void medClutEditorVertex::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 class medClutEditorTablePrivate
 {
 public:
-    QList<medClutEditorVertex *> vertices, principalVertices;
-    QHash<medClutEditorVertex *, medClutEditorVertex *> verticesCouples;
+    QList<medClutEditorVertex *> verticesToDisplay, principalVertices;
+    //difference between these 2 lists occurs only in Discrete Mode
     QString title;
     qreal displayAlpha;
-    bool stairCaseMode;
+    bool discreteMode;
 };
 
 
@@ -353,7 +353,7 @@ medClutEditorTable::medClutEditorTable(const QString & title,
     d = new medClutEditorTablePrivate;
     d->title = title;
     d->displayAlpha = 0.25;
-    d->stairCaseMode = true;
+    d->discreteMode = false;
 
     //this->setFlag(QGraphicsItem::ItemIsMovable, true);
     this->setFlag(QGraphicsItem::ItemIsFocusable, true);
@@ -366,10 +366,10 @@ medClutEditorTable::medClutEditorTable(const medClutEditorTable & table)
 {
     d = new medClutEditorTablePrivate;
     d->title = table.title();
-    d->stairCaseMode = true;
+    d->discreteMode = false;
 
     foreach ( const medClutEditorVertex * vertex, table.vertices())
-    d->vertices << new medClutEditorVertex( * vertex );
+    d->principalVertices << new medClutEditorVertex( * vertex );
 
     this->setFlag(QGraphicsItem::ItemIsFocusable, true);
     this->setZValue(0);
@@ -390,9 +390,10 @@ void medClutEditorTable::setTitle(const QString & title)
     d->title = title;
 }
 
-void medClutEditorTable::setStairCaseMode(bool value)
+void medClutEditorTable::setDiscreteMode(bool value)
 {
-    d->stairCaseMode = value;
+    d->discreteMode = value;
+    updateVerticesToDiplay();
 }
 
 QHash<medClutEditorVertex *, medClutEditorVertex *> *
@@ -400,29 +401,57 @@ QHash<medClutEditorVertex *, medClutEditorVertex *> *
 {
     QHash<medClutEditorVertex *, medClutEditorVertex *> *hash = new QHash<medClutEditorVertex *, medClutEditorVertex *>();
     float epsilon = (float)0.0001;
-    for (int i=1; i<list.size();i++) //dont take first and last
+    for (int i=0; i<list.size();i++)
     {
-        QPointF value = QPointF(list.at(i)->value().x(), list.at(i-1)->value().y());
-        QPointF position = QPointF(list.at(i)->pos().x()-epsilon, list.at(i-1)->pos().y());
-        medClutEditorVertex * coupledVertex = new medClutEditorVertex(value, position, list.at(i-1)->color());
-
-        if(coupledVertex && !hash->contains(list.at(i)))
-            hash->insert(list.at(i), coupledVertex);
+        if(i==0)
+            hash->insert(list.at(i), NULL); //first one coupled with NULL ...
         else
-            qDebug()<<"COUPLED VERTEX MARCHE PAS";
+        {
+            QPointF value = QPointF(list.at(i)->value().x(), list.at(i-1)->value().y()); //same abscissa, ordinate of the previous vertex
+            QPointF position = QPointF(list.at(i)->pos().x()-epsilon, list.at(i-1)->pos().y());
+            medClutEditorVertex * coupledVertex = new medClutEditorVertex(value, position, list.at(i-1)->color()); //color of the previous
+            if(coupledVertex && !hash->contains(list.at(i)))
+                hash->insert(list.at(i), coupledVertex);
+        }
     }
     return hash;
 }
 
+void medClutEditorTable::updateVerticesToDiplay()
+{
+    if(d->discreteMode)
+    {
+        QHash<medClutEditorVertex *, medClutEditorVertex *> *hash = this->calculateCoupledVertices(d->principalVertices);
+        if(hash && hash->size()>2) //if less than 2 vertices, stay in continuous mode
+        {
+            d->verticesToDisplay.clear(); //reset list of vertices to display
+
+            QHash<medClutEditorVertex *, medClutEditorVertex *>::const_iterator i = hash->constBegin();
+            while(i!=hash->constEnd())
+            {
+                d->verticesToDisplay << i.key();
+                if(i.value())
+                    d->verticesToDisplay << i.value();
+                i++;
+            }
+        }
+    }
+    else
+        d->verticesToDisplay = d->principalVertices;
+
+    qSort( d->verticesToDisplay.begin(), d->verticesToDisplay.end(),
+           medClutEditorVertex::LessThan );
+}
+
 QRectF medClutEditorTable::boundingRect(void) const
 {
-    if ( d->vertices.count() == 0 )
+    if ( d->principalVertices.count() == 0 )
         return QRectF( 0.0, 0.0, 0.0, 0.0 );
 
-    QRectF box( this->mapRectFromItem( d->vertices.first(),
-                                       d->vertices.first()->boundingRect() ) );
+    QRectF box( this->mapRectFromItem( d->principalVertices.first(),
+                                       d->principalVertices.first()->boundingRect() ) );
 
-    foreach ( medClutEditorVertex * vertex, d->vertices ) {
+    foreach ( medClutEditorVertex * vertex, d->principalVertices ) {
         box = box.united( this->mapRectFromItem( vertex,
                                                  vertex->boundingRect() ) );
     }
@@ -433,18 +462,18 @@ QRectF medClutEditorTable::boundingRect(void) const
 
 void medClutEditorTable::range( qreal & min, qreal & max ) const
 {
-    if ( d->vertices.count() == 0 ) {
+    if ( d->principalVertices.count() == 0 ) {
         min = max = 0.0;
         return;
     }
 
-    min = d->vertices.first()->value().x();
-    max = d->vertices.last()->value().x();
+    min = d->principalVertices.first()->value().x();
+    max = d->principalVertices.last()->value().x();
 }
 
 void medClutEditorTable::initiateMoveSelection()
 {
-    foreach (medClutEditorVertex * vertex, d->vertices)
+    foreach (medClutEditorVertex * vertex, d->principalVertices)
         if ( vertex->isSelected() )
             vertex->initiateMove();
 }
@@ -456,7 +485,7 @@ void medClutEditorTable::constrainMoveSelection( medClutEditorVertex * driver,
         dynamic_cast< medClutEditorScene * >( this->scene() );
     QRectF box = scene->plotArea();
 
-    foreach (medClutEditorVertex * vertex, d->vertices) {
+    foreach (medClutEditorVertex * vertex, d->principalVertices) {
         QRectF limits = box;
         if ( vertex->isSelected() ) {
             if ( vertex != driver ) {
@@ -468,9 +497,9 @@ void medClutEditorTable::constrainMoveSelection( medClutEditorVertex * driver,
         }
     }
 
-    int n = d->vertices.count();
+    int n = d->principalVertices.count();
     for ( int i = 0 ; i < n; ++i ) {
-        medClutEditorVertex * vertex = d->vertices.at( i );
+        medClutEditorVertex * vertex = d->principalVertices.at( i );
 
         if ( vertex->isSelected() )
             continue;
@@ -479,14 +508,14 @@ void medClutEditorTable::constrainMoveSelection( medClutEditorVertex * driver,
         qreal right = vertex->x() + 1.0;
 
         for ( int j = i - 1; j >= 0; --j )
-            if ( d->vertices.at( j )->isSelected() ) {
-                left = d->vertices.at( j )->x() + static_cast<qreal>( i - j );
+            if ( d->principalVertices.at( j )->isSelected() ) {
+                left = d->principalVertices.at( j )->x() + static_cast<qreal>( i - j );
                 break;
             }
 
         for ( int j = i + 1; j < n; ++j )
-            if ( d->vertices.at( j )->isSelected() ) {
-                right = d->vertices.at( j )->x() + static_cast<qreal>( i - j );
+            if ( d->principalVertices.at( j )->isSelected() ) {
+                right = d->principalVertices.at( j )->x() + static_cast<qreal>( i - j );
                 break;
             }
 
@@ -501,7 +530,7 @@ void medClutEditorTable::constrainMoveSelection( medClutEditorVertex * driver,
 
 void medClutEditorTable::finalizeMoveSelection()
 {
-    foreach (medClutEditorVertex * vertex, d->vertices)
+    foreach (medClutEditorVertex * vertex, d->principalVertices)
         if ( vertex->isSelected() )
             vertex->finalizeMove();
             // emit vertexChanged();
@@ -510,7 +539,7 @@ void medClutEditorTable::finalizeMoveSelection()
 void medClutEditorTable::updateCoordinates()
 {
     this->prepareGeometryChange();
-    foreach (medClutEditorVertex * vertex, d->vertices)
+    foreach (medClutEditorVertex * vertex, d->principalVertices)
         vertex->updateCoordinates();
 }
 
@@ -518,102 +547,86 @@ void medClutEditorTable::addVertex( medClutEditorVertex *vertex,
                                     bool interpolate )
 {
     d->principalVertices<< vertex;
-    d->vertices << vertex;
+    d->verticesToDisplay << vertex;
 
     if ( vertex->parentItem() != this )
         vertex->setParentItem( this );
 
-    qSort( d->vertices.begin(), d->vertices.end(),
-           medClutEditorVertex::LessThan );
-
-    if(d->stairCaseMode)
-    {
-        QHash<medClutEditorVertex *, medClutEditorVertex *> *hash = this->calculateCoupledVertices(d->vertices);
-        if(hash)
-        {
-            QHash<medClutEditorVertex *, medClutEditorVertex *>::const_iterator i = hash->constBegin();
-            while(i!=hash->constEnd())
-            {
-                qDebug() <<"PRINCIPAL VERTEX VAL: "<< i.key()->value()<<"     "<< i.value()->value();
-                qDebug() <<"PRINCIPAL VERTEX POS: "<< i.key()->pos()<<"     "<< i.value()->pos();
-                d->vertices << i.value();
-                i++;
-            }
-        }
-    }
-
-    qSort( d->vertices.begin(), d->vertices.end(),
+    qSort( d->principalVertices.begin(), d->principalVertices.end(),
            medClutEditorVertex::LessThan );
 
     if (interpolate) {
-        int i    = d->vertices.indexOf( vertex );
-        int last = d->vertices.count() - 1;
-        medClutEditorVertex * prev = i > 0    ? d->vertices[i-1] : NULL;
-        medClutEditorVertex * next = i < last ? d->vertices[i+1] : NULL;
+        int i    = d->principalVertices.indexOf( vertex );qDebug()<<"i : "<<i;
+        int last = d->principalVertices.count() - 1;qDebug()<<"last : "<<last;
+        medClutEditorVertex * prev = i > 0    ? d->principalVertices[i-1] : NULL;
+        medClutEditorVertex * next = i < last ? d->principalVertices[i+1] : NULL;
         vertex->interpolate( prev, next );
     }
+
+    updateVerticesToDiplay();
 
     emit vertexAdded();
 }
 
 QList< medClutEditorVertex * > & medClutEditorTable::vertices()
 {
-    return d->vertices;
+    return d->principalVertices;
 }
 
 const QList< medClutEditorVertex * > & medClutEditorTable::vertices() const
 {
-    return d->vertices;
+    return d->principalVertices;
 }
 
 // QList< const medClutEditorVertex * > medClutEditorTable::vertices() const
 // {
 //     QList< const medClutEditorVertex * > const_vertices;
-//     foreach (medClutEditorVertex * vertex, d->vertices)
+//     foreach (medClutEditorVertex * vertex, d->verticesToDisplay)
 //      const_vertices << vertex;
 //     return const_vertices;
 // }
 
 void medClutEditorTable::setSelectedAllVertices( bool isSelected )
 {
-    foreach (medClutEditorVertex * vertex, d->vertices)
+    foreach (medClutEditorVertex * vertex, d->verticesToDisplay)
         vertex->setSelected( isSelected );
 }
 
 void medClutEditorTable::deleteSelection()
 {
     int nSelected = 0;
-    foreach( medClutEditorVertex * vertex, d->vertices )
+    foreach( medClutEditorVertex * vertex, d->principalVertices )
         if ( vertex->isSelected() )
             ++nSelected;
 
-    if ( d->vertices.count() - nSelected < 2 ) {
+    if ( d->principalVertices.count() - nSelected < 2 ) {
         qDebug() << "Need at least two nodes, but only "
-                 << ( d->vertices.count() - nSelected ) << " nodes"
+                 << ( d->principalVertices.count() - nSelected ) << " nodes"
                  << " would be left after deletion!  Not deleting any node.";
         return;
     }
 
     QList<medClutEditorVertex *> remaining;
-    while ( !d->vertices.isEmpty() ) {
-        medClutEditorVertex * vertex = d->vertices.takeFirst();
+    while ( !d->principalVertices.isEmpty() ) {
+        medClutEditorVertex * vertex = d->principalVertices.takeFirst();
         if ( vertex->isSelected() )
             delete vertex;
         else
             remaining.append( vertex );
     }
 
-    d->vertices = remaining;
-
+    d->principalVertices = remaining;
+    updateVerticesToDiplay();
     emit vertexRemoved();
 }
 
 void medClutEditorTable::deleteAllVertices()
 {
-    foreach( medClutEditorVertex * vertex, d->vertices )
+    foreach( medClutEditorVertex * vertex, d->verticesToDisplay )
         delete vertex;
 
-    d->vertices.clear();
+    d->verticesToDisplay.clear();
+    d->principalVertices.clear();
 }
 
 void medClutEditorTable::setColorOfSelection( const QColor & color )
@@ -621,9 +634,10 @@ void medClutEditorTable::setColorOfSelection( const QColor & color )
     QColor newColor = QColorDialog::getColor( color, 0 );
 
     if ( newColor.isValid() )
-        foreach( medClutEditorVertex * vertex, d->vertices )
+        foreach( medClutEditorVertex * vertex, d->principalVertices )
             if ( vertex->isSelected() ) {
                 vertex->setColor( newColor );
+                updateVerticesToDiplay();
                 emit vertexChanged();
             }
 }
@@ -631,7 +645,7 @@ void medClutEditorTable::setColorOfSelection( const QColor & color )
 void medClutEditorTable::setColorOfSelection()
 {
     QColor color;
-    foreach( medClutEditorVertex * vertex, d->vertices )
+    foreach( medClutEditorVertex * vertex, d->principalVertices )
         if ( vertex->isSelected() &&
              ( !color.isValid() || vertex->color().alpha() > color.alpha() ) )
             color = vertex->color();
@@ -642,14 +656,14 @@ void medClutEditorTable::setColorOfSelection()
 
 // void medClutEditorTable::onDeleteVertex(medClutEditorVertex *vertex)
 // {
-//     if ( d->vertices.count() > 2 ) {
-//         d->vertices.removeAll( vertex );
+//     if ( d->verticesToDisplay.count() > 2 ) {
+//         d->verticesToDisplay.removeAll( vertex );
 //         delete vertex;
 //         emit vertexRemoved();
 //     }
 //     else
 //         qDebug() << "Need at least two nodes, but only "
-//                  << ( d->vertices.count() - 1 ) << " nodes"
+//                  << ( d->verticesToDisplay.count() - 1 ) << " nodes"
 //                  << " would be left after deletion!  Not deleting any node.";
 // }
 
@@ -660,7 +674,7 @@ void medClutEditorTable::scaleWindowWidth( qreal factor )
     qreal center = 0.5 * ( min + max );
     // factor *= 1e-4 * ( max - min );
 
-    foreach (medClutEditorVertex * vertex, d->vertices) {
+    foreach (medClutEditorVertex * vertex, d->principalVertices) {
         qreal offset = vertex->value().x() - center;
         vertex->shiftValue( offset * ( factor - 1.0 ), false );
     }
@@ -674,7 +688,7 @@ void medClutEditorTable::shiftWindowCenter( qreal amount )
     this->range( min, max );
     qreal factor = 5e-4 * ( max - min );
 
-    foreach (medClutEditorVertex * vertex, d->vertices)
+    foreach (medClutEditorVertex * vertex, d->principalVertices)
         vertex->shiftValue( factor * amount, false );
 
     emit vertexChanged();
@@ -682,23 +696,23 @@ void medClutEditorTable::shiftWindowCenter( qreal amount )
 
 void medClutEditorTable::setup(float min, float max, int size, int *table)
 {
-    for (int i = 0 ; i < d->vertices.count()-1; i++) {
+    for (int i = 0 ; i < d->principalVertices.count()-1; i++) {
 
-        QPointF value1 = d->vertices.at(i+0)->value();
-        QPointF value2 = d->vertices.at(i+1)->value();
+        QPointF value1 = d->principalVertices.at(i+0)->value();
+        QPointF value2 = d->principalVertices.at(i+1)->value();
         qreal x1 = qMax(static_cast<qreal>(min), value1.x());
         qreal x2 = qMin(static_cast<qreal>(max), value2.x());
 
-        qreal r1 = d->vertices.at(i+0)->color().redF();
-        qreal r2 = d->vertices.at(i+1)->color().redF();
-        qreal g1 = d->vertices.at(i+0)->color().greenF();
-        qreal g2 = d->vertices.at(i+1)->color().greenF();
-        qreal b1 = d->vertices.at(i+0)->color().blueF();
-        qreal b2 = d->vertices.at(i+1)->color().blueF();
+        qreal r1 = d->principalVertices.at(i+0)->color().redF();
+        qreal r2 = d->principalVertices.at(i+1)->color().redF();
+        qreal g1 = d->principalVertices.at(i+0)->color().greenF();
+        qreal g2 = d->principalVertices.at(i+1)->color().greenF();
+        qreal b1 = d->principalVertices.at(i+0)->color().blueF();
+        qreal b2 = d->principalVertices.at(i+1)->color().blueF();
         qreal a1 = value1.y();
         qreal a2 = value2.y();
-        // qreal a1 = this->coordinateToValue(d->vertices.at(i+0)->pos()).y();
-        // qreal a2 = this->coordinateToValue(d->vertices.at(i+1)->pos()).y();
+        // qreal a1 = this->coordinateToValue(d->verticesToDisplay.at(i+0)->pos()).y();
+        // qreal a2 = this->coordinateToValue(d->verticesToDisplay.at(i+1)->pos()).y();
 
         for (int x = static_cast< int >( x1 );
              x < static_cast< int >( x2 ); ++x ) {
@@ -722,8 +736,8 @@ void medClutEditorTable::getTransferFunction( QList<double> &scalars,
 {
     scalars.clear();
     colors.clear();
-
-    foreach (medClutEditorVertex * vertex, d->vertices) {
+    foreach (medClutEditorVertex * vertex, d->principalVertices) {
+        if(!vertex) return;
         colors  << vertex->color();
         QPointF value = vertex->value();
         scalars << static_cast< double >( value.x() );
@@ -751,13 +765,10 @@ void medClutEditorTable::setTransferFunction( QList<double> &scalars,
     for ( int i = 0; i < size; i++ ) {
         QPointF value( scalars.at( i ), colors.at( i ).alphaF() );
         QPointF coord = scene->valueToCoordinate( value );
-
-        // qDebug() << "value: " << value << ", coord: " << coord;
-        d->vertices <<
-            new medClutEditorVertex( value, coord, colors.at( i ), this );
+        this->addVertex(new medClutEditorVertex( value, coord, colors.at( i ), this ));
     }
 
-    qSort( d->vertices.begin(), d->vertices.end(),
+    qSort( d->principalVertices.begin(), d->principalVertices.end(),
            medClutEditorVertex::LessThan );
 
     scene->adjustRange();
@@ -768,19 +779,19 @@ void medClutEditorTable::simplifyTransferFunction()
     qreal threshold = 1.0;
     bool foundThreshold = false;
 
-    d->vertices.first()->setSelected( false );
-    d->vertices.last()->setSelected( false );
+    d->principalVertices.first()->setSelected( false );
+    d->principalVertices.last()->setSelected( false );
 
-    for ( int i = 1, n = d->vertices.count() - 1; i < n; ++i ) {
-        medClutEditorVertex * vertex = d->vertices.at( i );
+    for ( int i = 1, n = d->verticesToDisplay.count() - 1; i < n; ++i ) {
+        medClutEditorVertex * vertex = d->verticesToDisplay.at( i );
         if ( vertex->isSelected() ) {
-            qreal xp = d->vertices.at( i - 1 )->x();
-            qreal xn = d->vertices.at( i + 1 )->x();
+            qreal xp = d->principalVertices.at( i - 1 )->x();
+            qreal xn = d->principalVertices.at( i + 1 )->x();
             qreal wn = ( vertex->x() - xp ) / ( xn - xp );
             qreal wp = 1.0 - wn;
 
-            QColor prev = d->vertices.at( i - 1 )->color();
-            QColor next = d->vertices.at( i + 1 )->color();
+            QColor prev = d->principalVertices.at( i - 1 )->color();
+            QColor next = d->principalVertices.at( i + 1 )->color();
 
             QColor linear;
             linear.setRgbF( ( wp * prev.redF()   + wn * next.redF() ),
@@ -806,7 +817,7 @@ void medClutEditorTable::simplifyTransferFunction()
         return;
     }
 
-    QList<medClutEditorVertex *> vertices( d->vertices );
+    QList<medClutEditorVertex *> vertices( d->principalVertices );
     bool modified = true;
     while ( modified ) {
         modified = false;
@@ -870,20 +881,20 @@ void medClutEditorTable::paint(QPainter *painter,
     // QPointF origin = scene->valueToCoordinate( QPointF( 0.0, 0.0 ) );
     QRectF area = scene->plotArea();
 
-    int n_points = d->vertices.size();
+    int n_points = d->verticesToDisplay.size();
     if(n_points == 0)
         return;
     QPointF *points = new QPointF[n_points + 2];
-    points[0]            = QPointF( d->vertices.first()->x(), area.bottom() );
-    points[n_points + 1] = QPointF( d->vertices.last()->x(),  area.bottom() );
+    points[0]            = QPointF( d->verticesToDisplay.first()->x(), area.bottom() );
+    points[n_points + 1] = QPointF( d->verticesToDisplay.last()->x(),  area.bottom() );
     for ( int i = 0 ; i < n_points; i++ )
-        points[i+1] = d->vertices.at(i)->pos();
+        points[i+1] = d->verticesToDisplay.at(i)->pos();
 
-    qreal xmin = d->vertices.first()->x();
-    qreal xmax = d->vertices.last()->x();
+    qreal xmin = d->verticesToDisplay.first()->x();
+    qreal xmax = d->verticesToDisplay.last()->x();
 
     QLinearGradient linearGradient(xmin, 0.0, xmax, 0.0);
-    foreach ( medClutEditorVertex * vertex, d->vertices ) {
+    foreach ( medClutEditorVertex * vertex, d->verticesToDisplay ) {
         qreal position;
         position = ( vertex->x() - xmin ) / ( xmax - xmin );
         position = qMax( 0.0, position );
@@ -900,7 +911,7 @@ void medClutEditorTable::paint(QPainter *painter,
     painter->drawPolygon(points, n_points + 2);
 
     painter->setPen( QPen( Qt::gray, 0 ) );
-    foreach ( medClutEditorVertex * vertex, d->vertices ) {
+    foreach ( medClutEditorVertex * vertex, d->verticesToDisplay ) {
         if ( vertex->isSelected() ) {
             const QPointF & p = vertex->pos();
             painter->drawLine( p, QPointF( p.x(), area.bottom() ) );
@@ -933,6 +944,7 @@ void medClutEditorTable::resetDisplayAlpha()
 
 void medClutEditorTable::triggerVertexChanged()
 {
+    updateVerticesToDiplay();
     emit vertexChanged();
 }
 
@@ -1107,7 +1119,7 @@ void medClutEditorHistogram::mouseDoubleClickEvent(
         const QPointF & p = event->pos();
         QPointF value = scene->coordinateToValue( p );
         medClutEditorVertex * vertex =
-            new medClutEditorVertex( value, p, Qt::yellow, table );
+            new medClutEditorVertex( value, p, Qt::blue, table );
         table->addVertex( vertex, true );
     }
 }
@@ -1485,6 +1497,7 @@ public:
     QAction *saveTableAction;
     // QAction *deleteTableAction;
     QAction *toggleDirectUpdateAction;
+    QAction *discreteModeAction;
     medClutEditorScene *scene;
     medClutEditorView  *view;
     medClutEditorHistogram *histogram;
@@ -1493,6 +1506,7 @@ public:
     medAbstractView *med_view;
     QList <medClutEditorTable *> * tables;
     unsigned int layerForced;
+    bool discreteMode;
 };
 
 medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
@@ -1511,11 +1525,14 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
     // d->deleteAction             = new QAction("Delete selection", this);
     d->applyAction              = new QAction("Apply", this);
     d->toggleDirectUpdateAction = new QAction("Direct update", this);
+    d->discreteModeAction = new QAction("Discrete Mode", this);
 
     d->loadTableAction->setEnabled( false );
     d->saveTableAction->setEnabled( false );
     d->toggleDirectUpdateAction->setCheckable( true );
     d->toggleDirectUpdateAction->setChecked( true );
+    d->discreteModeAction->setCheckable( true );
+    d->discreteModeAction->setChecked( false );
 
     connect(d->newAction,                SIGNAL(triggered()),
             this,                        SLOT(onNewTableAction()));
@@ -1533,6 +1550,8 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
             this,                        SLOT(onApplyTablesAction()));
     connect(d->toggleDirectUpdateAction, SIGNAL(triggered()),
             this,                        SLOT(onToggleDirectUpdateAction()));
+    connect(d->discreteModeAction, SIGNAL(toggled(bool)),
+            this,                        SLOT(setDiscreteMode(bool)));
 
 
     QHBoxLayout *layout = new QHBoxLayout;
@@ -1563,6 +1582,7 @@ medClutEditor::~medClutEditor(void)
     // delete d->deleteAction;
     delete d->applyAction;
     delete d->toggleDirectUpdateAction;
+    delete d->discreteModeAction;
 
     delete d->scene;
     delete d->view;
@@ -1643,28 +1663,11 @@ void medClutEditor::initializeTable(void)
     connect (lut, SIGNAL(vertexAdded()),   this, SLOT(onVertexMoved()));
     connect (lut, SIGNAL(vertexRemoved()), this, SLOT(onVertexMoved()));
 
-    QRectF  area = d->histogram->boundingRect();
-    int rangemin = d->histogram->getRangeMin();
-    int rangemax = d->histogram->getRangeMax();
-    medClutEditorVertex * v1 =
-        new medClutEditorVertex( QPointF( rangemin, 0.4 ),
-                                 QPointF( area.left(), 0.6 * area.height() ),
-                                 Qt::blue, lut );
-    medClutEditorVertex * v2 =
-        new medClutEditorVertex( QPointF( 0.5 * ( rangemin + rangemax ), 0.5 ),
-                                 QPointF( area.center().x(), area.center().y()),
-                                 Qt::red, lut );
-    medClutEditorVertex * v3 =
-        new medClutEditorVertex( QPointF( rangemax, 0.8 ),
-                                 QPointF( area.right(), 0.2 * area.height() ),
-                                 Qt::yellow, lut );
-
-    lut->blockSignals(true);
-    lut->addVertex(v1);
-    lut->addVertex(v2);
-    lut->addVertex(v3);
-    lut->updateCoordinates();
-    lut->blockSignals(false);
+    if(d->discreteMode)
+    {
+        lut->setDiscreteMode(true);
+        d->discreteModeAction->setChecked(true); //update GUI
+    }
 }
 
 void medClutEditor::deleteTable(void)
@@ -1707,6 +1710,7 @@ void medClutEditor::mousePressEvent(QMouseEvent *event)
         if  ( !d->toggleDirectUpdateAction->isChecked() )
             menu.addAction(d->applyAction);
         menu.addAction(d->toggleDirectUpdateAction);
+        menu.addAction(d->discreteModeAction);
         menu.addSeparator();
         menu.addAction(d->newAction);
         menu.addAction(d->loadTableAction);
@@ -1759,6 +1763,13 @@ void medClutEditor::onToggleDirectUpdateAction(void)
 {
     if  ( d->toggleDirectUpdateAction->isChecked() )
         this->applyTable();
+}
+
+void medClutEditor::setDiscreteMode(bool value)
+{
+    d->discreteMode = value;
+    if(this->getScene()->table())
+        this->getScene()->table()->setDiscreteMode(value);
 }
 
 void medClutEditor::onLoadTableAction(void)
