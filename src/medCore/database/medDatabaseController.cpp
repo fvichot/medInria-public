@@ -630,8 +630,7 @@ void medDatabaseController::remove( const medDataIndex& index )
 
 QList<medDataIndex> medDatabaseController::moveStudy( const medDataIndex& indexStudy, const medDataIndex& toPatient)
 {
-    QSqlDatabase db(this->database());
-    QSqlQuery query(db);
+    QSqlQuery query(this->database());
 
     bool result = false;
     QList<medDataIndex> newIndexList;
@@ -659,7 +658,6 @@ QList<medDataIndex> medDatabaseController::moveStudy( const medDataIndex& indexS
             {
                 newSerieIndex.setPatientId(toPatient.patientId());
                 newIndexList << newSerieIndex;
-                
             }
         }
     }
@@ -674,8 +672,7 @@ QList<medDataIndex> medDatabaseController::moveStudy( const medDataIndex& indexS
 
 medDataIndex medDatabaseController::moveSerie( const medDataIndex& indexSerie, const medDataIndex& toStudy)
 {
-    QSqlDatabase db(this->database());
-    QSqlQuery query(db);
+    QSqlQuery query(this->database());
 
     bool result = false;
     medDataIndex newIndex;
@@ -706,8 +703,7 @@ QString medDatabaseController::metaData(const medDataIndex& index,const QString&
     typedef medDatabaseControllerPrivate::MetaDataMap MetaDataMap;
     typedef medDatabaseControllerPrivate::TableEntryList TableEntryList;
 
-    QSqlDatabase db(this->database());
-    QSqlQuery query(db);
+    QSqlQuery query(this->database());
 
     // Attempt to translate the desired metadata into a table / column entry.
     MetaDataMap::const_iterator it(d->metaDataLookup.find(key));
@@ -760,8 +756,7 @@ bool medDatabaseController::setMetaData( const medDataIndex& index, const QStrin
     typedef medDatabaseControllerPrivate::MetaDataMap MetaDataMap;
     typedef medDatabaseControllerPrivate::TableEntryList TableEntryList;
 
-    QSqlDatabase db (this->database());
-    QSqlQuery query(db);
+    QSqlQuery query(this->database());
 
     // Attempt to translate the desired metadata into a table / column entry.
     MetaDataMap::const_iterator it(d->metaDataLookup.find(key));

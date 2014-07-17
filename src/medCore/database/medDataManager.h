@@ -20,6 +20,7 @@
 
 class medDataManagerPrivate;
 class medAbstractData;
+class medAbstractDbController;
 class medDataIndex;
 
 class MEDCORE_EXPORT medDataManager : public QObject
@@ -37,6 +38,11 @@ public:
 
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
+
+    // ------------------------- Move to controllers ? -----------------------
+
+    QList<medDataIndex> moveStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient);
+    medDataIndex moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy);
 
     // ------------------------- TODO -----------------------------------------
 

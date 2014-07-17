@@ -244,14 +244,73 @@ void medDataManager::exportDataToFile(medAbstractData *data, const QString & fil
 }
 
 
+QList<medDataIndex> medDataManager::changePatientForStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient)
+{
+    Q_D(medDataManager);
+    medAbstractDbController * dbcSource = d->controllerForDataSource(indexStudy.dataSourceId());
+    medAbstractDbController * dbcDest = d->controllerForDataSource(toPatient.dataSourceId());
+
+    QList<medDataIndex> newIndexList;
+
+    if(!dbcSource || !dbcDest) {
+        qWarning() << "Incorrect controllers";
+    } else if( dbcSource != dbcDest ) {
+        qWarning() << "Moving studies across different controllers is currently not supported";
+    } else if( !dbcSource->isPersistent() && dbcDest->isPersistent() ) {
+        qWarning() << "Move from non persistent to persistent controller not allowed. Please save data first.";
+    } else {
+        newIndexList = dbcSource->moveStudy(indexStudy,toPatient);
+
+        if(!dbcSource->isPersistent()) {
+            foreach(medDataIndex newIndex, newIndexList)
+                d->volatileDataCache[newIndex] = dbcSource->retrieve(newIndex);
+        }
+    }
+
+    return newIndexList;
+}
+
+
+medDataIndex medDataManager::moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy)
+{
+    medAbstractDbController *dbcSource = controllerForDataSource(indexSerie.dataSourceId());
+    medAbstractDbController *dbcDest = controllerForDataSource(toStudy.dataSourceId());
+
+    medDataIndex newIndex;
+
+    if(!dbcSource || !dbcDest)
+    {
+      qWarning() << "Incorrect controllers";
+    }
+    else if( dbcSource->isPersistent() && !dbcDest->isPersistent() )
+    {
+      qWarning() << "Move from persistent to non persistent controller not allowed";
+    }
+    else if( !dbcSource->isPersistent() && dbcDest->isPersistent() )
+    {
+      qWarning() << "Move from non persistent to persistent controller not allowed. Please save data first.";
+    }
+    else
+    {
+      newIndex =  dbcSource->moveSerie(indexSerie,toStudy);
+
+      if(!dbcSource->isPersistent())
+        d->volatileDataCache[newIndex] = dbcSource->retrieve(newIndex);
+    }
+
+    return newIndex;
+
+}
+
+
 bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, const QString & value)
 {
     if ( ! index.isValid())
         return false;
 
     Q_D(medDataManager);
-    medAbstractDbController * dbC = d->controllerForDataSource(index.dataSourceId());
-    return dbC->setMetaData(index, key, value);
+    medAbstractDbController * dbc = d->controllerForDataSource(index.dataSourceId());
+    return dbc->setMetaData(index, key, value);
 }
 
 
