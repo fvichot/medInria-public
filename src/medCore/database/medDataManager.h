@@ -33,23 +33,21 @@ public:
 
     medAbstractData* retrieveData(const medDataIndex& index);
 
-    QUuid importData(medAbstractData* data, bool nonPersistent = true);
-    QUuid importFile(const QString& dataPath, bool indexWithoutCopying, bool nonPersistent = true);
+    QUuid importData(medAbstractData* data, bool persistent = false);
+    QUuid importFile(const QString& dataPath, bool indexWithoutCopying, bool persistent = false);
 
     void exportData(medAbstractData* data);
     void exportDataToFile(medAbstractData* data, const QString& path, const QString& format = "");
 
-    // ------------------------- Move to controllers ? -----------------------
-
-    QList<medDataIndex> moveStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient);
-    medDataIndex moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy);
-
-    // ------------------------- TODO -----------------------------------------
-
-    bool makePersistent(medAbstractData* data);
+    QUuid makePersistent(medAbstractData* data);
 
     bool setMetadata(const medDataIndex& index, const QString& key, const QString& value);
     void removeData(const medDataIndex& index);
+
+    // ------------------------- To be moved elsewhere -----------------------
+
+    QList<medDataIndex> moveStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient);
+    medDataIndex moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy);
 
 signals:
     void metadataModified(const medDataIndex& index, const QString& key, const QString& value);

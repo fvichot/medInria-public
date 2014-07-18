@@ -127,27 +127,27 @@ medAbstractData* medDataManager::retrieveData(const medDataIndex& index)
 }
 
 
-QUuid medDataManager::importData(medAbstractData *data, bool nonPersistent)
+QUuid medDataManager::importData(medAbstractData *data, bool persistent)
 {
     if (!data)
         return QUuid();
 
     Q_D(medDataManager);
     QUuid uuid = QUuid::createUuid();
-    medAbstractDbController * controller = nonPersistent ? d->nonPersDbController : d->dbController;
+    medAbstractDbController * controller = persistent ?  d->dbController : d->nonPersDbController;
     controller->importData(data, uuid);
     return uuid;
 }
 
 
-QUuid medDataManager::importFile(const QString& dataPath, bool indexWithoutCopying, bool nonPersistent)
+QUuid medDataManager::importFile(const QString& dataPath, bool indexWithoutCopying, bool persistent)
 {
     if ( ! QFile::exists(dataPath))
         return QUuid();
 
     Q_D(medDataManager);
     QUuid uuid = QUuid::createUuid();
-    medAbstractDbController * controller = nonPersistent ? d->nonPersDbController : d->dbController;
+    medAbstractDbController * controller = persistent ?  d->dbController : d->nonPersDbController;
     controller->importPath(dataPath, uuid, indexWithoutCopying);
     return uuid;
 }
@@ -244,27 +244,20 @@ void medDataManager::exportDataToFile(medAbstractData *data, const QString & fil
 }
 
 
-QList<medDataIndex> medDataManager::changePatientForStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient)
+QList<medDataIndex> medDataManager::moveStudy(const medDataIndex& indexStudy, const medDataIndex& toPatient)
 {
     Q_D(medDataManager);
-    medAbstractDbController * dbcSource = d->controllerForDataSource(indexStudy.dataSourceId());
-    medAbstractDbController * dbcDest = d->controllerForDataSource(toPatient.dataSourceId());
+    medAbstractDbController * dbc = d->controllerForDataSource(indexStudy.dataSourceId());
+    if (!dbc) {
+        return medDataIndex();
+    }
 
     QList<medDataIndex> newIndexList;
 
-    if(!dbcSource || !dbcDest) {
-        qWarning() << "Incorrect controllers";
-    } else if( dbcSource != dbcDest ) {
-        qWarning() << "Moving studies across different controllers is currently not supported";
-    } else if( !dbcSource->isPersistent() && dbcDest->isPersistent() ) {
-        qWarning() << "Move from non persistent to persistent controller not allowed. Please save data first.";
+    if(dbc->dataSourceId() != toPatient.dataSourceId()) {
+        qWarning() << "medDataManager: Moving data accross controllers is not supported.";
     } else {
-        newIndexList = dbcSource->moveStudy(indexStudy,toPatient);
-
-        if(!dbcSource->isPersistent()) {
-            foreach(medDataIndex newIndex, newIndexList)
-                d->volatileDataCache[newIndex] = dbcSource->retrieve(newIndex);
-        }
+        newIndexList = dbc->moveStudy(indexStudy,toPatient);
     }
 
     return newIndexList;
@@ -273,33 +266,21 @@ QList<medDataIndex> medDataManager::changePatientForStudy(const medDataIndex& in
 
 medDataIndex medDataManager::moveSerie(const medDataIndex& indexSerie, const medDataIndex& toStudy)
 {
-    medAbstractDbController *dbcSource = controllerForDataSource(indexSerie.dataSourceId());
-    medAbstractDbController *dbcDest = controllerForDataSource(toStudy.dataSourceId());
-
-    medDataIndex newIndex;
-
-    if(!dbcSource || !dbcDest)
-    {
-      qWarning() << "Incorrect controllers";
-    }
-    else if( dbcSource->isPersistent() && !dbcDest->isPersistent() )
-    {
-      qWarning() << "Move from persistent to non persistent controller not allowed";
-    }
-    else if( !dbcSource->isPersistent() && dbcDest->isPersistent() )
-    {
-      qWarning() << "Move from non persistent to persistent controller not allowed. Please save data first.";
-    }
-    else
-    {
-      newIndex =  dbcSource->moveSerie(indexSerie,toStudy);
-
-      if(!dbcSource->isPersistent())
-        d->volatileDataCache[newIndex] = dbcSource->retrieve(newIndex);
+    Q_D(medDataManager);
+    medAbstractDbController * dbc = d->controllerForDataSource(indexStudy.dataSourceId());
+    if (!dbc) {
+        return medDataIndex();
     }
 
-    return newIndex;
+    QList<medDataIndex> newIndexList;
 
+    if(dbc->dataSourceId() != toPatient.dataSourceId()) {
+        qWarning() << "medDataManager: Moving data accross controllers is not supported.";
+    } else {
+        newIndexList = dbc->moveSerie(indexSerie,toStudy);
+    }
+
+    return newIndexList;
 }
 
 
@@ -310,25 +291,49 @@ bool medDataManager::setMetadata(const medDataIndex &index, const QString& key, 
 
     Q_D(medDataManager);
     medAbstractDbController * dbc = d->controllerForDataSource(index.dataSourceId());
-    return dbc->setMetaData(index, key, value);
+    if(dbc) {
+        return dbc->setMetaData(index, key, value);
+    }
+    return false;
 }
 
 
-bool medDataManager::makePersistent(medAbstractData* data)
+QUuid medDataManager::makePersistent(medAbstractData* data)
 {
+    if (!data)
+        return QUuid();
 
+    Q_D(medDataManager);
+
+    // If already persistent
+    if (data->dataIndex().dataSourceId() == d->dbController->dataSourceId())
+        return QUuid();
+
+    return this->importData(data, true);
 }
 
 
-bool medDataManager::updateMetadata(const medDataIndex& index, const medMetaDataKeys::Key& md, const QString& value)
+bool medDataManager::setMetadata(const medDataIndex& index, const QString& key, const QString& value)
 {
+    Q_D(medDataManager);
+    medAbstractDbController * dbc = d->controllerForDataSource( index.dataSourceId() );
 
+    if(dbc->setMetaData( index, key, value )) {
+        emit metadataModified(index, key, value);
+        return true;
+    }
+
+    return false;
 }
 
 
 void medDataManager::removeData(const medDataIndex& index)
 {
-
+    Q_D(medDataManager);
+    medAbstractDbController * dbc = d->controllerForDataSource(index.dataSourceId());
+    if (dbc) {
+        dbc->remove(index);
+    }
 }
 
 
