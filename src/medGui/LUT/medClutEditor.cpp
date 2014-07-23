@@ -44,6 +44,10 @@ public:
 
     bool isMoved;
     QPointF lastPos;
+
+    QWidgetAction *setValueAction;
+    QAction *setColorAction;
+    QDoubleSpinBox* setValueSpinBox;
 };
 
 medClutEditorVertex::medClutEditorVertex(QPointF value, QPointF coord,
@@ -66,6 +70,25 @@ medClutEditorVertex::medClutEditorVertex(QPointF value, QPointF coord,
 
     this->setFlag(QGraphicsItem::ItemIsMovable, true);
     this->setFlag(QGraphicsItem::ItemIsSelectable, true);
+
+    // Set Value Action
+    d->setValueAction = new QWidgetAction(this);
+    QLabel* setValueLabel = new QLabel("Set value : ");
+    d->setValueSpinBox = new QDoubleSpinBox;
+    d->setValueSpinBox->setMaximum(10000);
+    d->setValueSpinBox->setMinimum(-10000);
+    d->setValueSpinBox->setValue((double)this->value().x());
+    connect(d->setValueSpinBox, SIGNAL(editingFinished()), this, SLOT(setValue()));
+    QHBoxLayout* setValueLayout = new QHBoxLayout;
+    setValueLayout->addWidget(setValueLabel);
+    setValueLayout->addWidget(d->setValueSpinBox);
+    QWidget *setValueWidget = new QWidget;
+    setValueWidget->setLayout(setValueLayout);
+    d->setValueAction->setDefaultWidget(setValueWidget);
+
+    // Set Color Action
+    d->setColorAction = new QAction("Set color", this);
+    connect(d->setColorAction, SIGNAL(triggered()), this, SLOT(showColorSelection()));
 }
 
 medClutEditorVertex::medClutEditorVertex( const medClutEditorVertex & other,
@@ -124,6 +147,24 @@ void medClutEditorVertex::shiftValue( qreal amount, bool forceConstraints )
 
         this->updateValue();
     }
+}
+
+void medClutEditorVertex::setValue()
+{
+    //editingFinished is emitted when we press Enter AND when the spinBox loses focus
+    if (!d->setValueSpinBox->hasFocus()) //we ignore the latter
+        return;
+    d->setValueSpinBox->blockSignals(true);
+    double newValue = d->setValueSpinBox->value();
+    qDebug()<<" VALUE CHANGED : "<<newValue;
+    double value = this->value().x();
+    float amount = (float)newValue - (float)value;
+    this->shiftValue(amount);
+    if ( medClutEditorTable * table =
+             dynamic_cast< medClutEditorTable * >( this->parentItem() ) )
+        table->updateVerticesToDiplay();
+
+    d->setValueSpinBox->blockSignals(false);
 }
 
 void medClutEditorVertex::interpolate( medClutEditorVertex * prev,
@@ -189,6 +230,13 @@ void medClutEditorVertex::setColor( QColor color )
         d->fgColor.setAlphaF( 1.0 );
         this->update();
     }
+}
+
+void medClutEditorVertex::showColorSelection()
+{
+    if ( medClutEditorTable * table =
+        dynamic_cast< medClutEditorTable * >( this->parentItem() ) )
+        table->setColorOfSelection( d->color );
 }
 
 void medClutEditorVertex::setAlpha()
@@ -283,6 +331,7 @@ void medClutEditorVertex::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         table->constrainMoveSelection( this, withShift );
         table->triggerVertexChanged();
     }
+    d->setValueSpinBox->setValue((double)this->value().x());
     // this->updateValue();
     // qDebug() << "[" << (long int) this << "] value: " << d->value;
     // qDebug() << "[" << (long int) this << "] coord: " << this->pos();
@@ -292,33 +341,28 @@ void medClutEditorVertex::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event);
 
-    if ( medClutEditorTable * table =
-         dynamic_cast< medClutEditorTable * >( this->parentItem() ) )
-        table->setColorOfSelection( d->color );
+    showColorSelection();
 }
 
 void medClutEditorVertex::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (event->button() == Qt::RightButton)
-        event->ignore();
+     if (event->button() == Qt::RightButton) {
+              this->setSelected( true );
+              this->update();
+              event->accept();
+          QMenu menu("Edit Marker", 0) ;
+          menu.setWindowOpacity(0.8) ;
+          menu.addAction(d->setValueAction);
+          menu.addAction(d->setColorAction);
+          //menu.addAction(d->deleteAction) ;
+          menu.exec(event->screenPos());
+     }
     else {
         this->QGraphicsItem::mousePressEvent(event);
         if ( medClutEditorTable * table =
              dynamic_cast< medClutEditorTable * >( this->parentItem() ) )
             table->initiateMoveSelection();
     }
-
-
-    // if (event->button() == Qt::RightButton) {
-    //          this->setSelected( !this->isSelected() );
-    //          this->update();
-    //          event->accept();
-    //     // QMenu menu("Edit Marker", 0) ;
-    //     // menu.setWindowOpacity(0.8) ;
-    //     // menu.addAction(d->setColorAction);
-    //     // menu.addAction(d->deleteAction) ;
-    //     // menu.exec(event->screenPos());
-    // }
 
     // this->QGraphicsItem::mousePressEvent(event);
 }
@@ -1341,7 +1385,11 @@ void medClutEditorView::resizeEvent(QResizeEvent *event)
     medClutEditorScene * scene =
     dynamic_cast< medClutEditorScene * >( this->scene() );
     if ( scene != NULL )
+    {
         scene->setSize( this->size() );
+        if(scene->table())
+            scene->table()->updateVerticesToDiplay();
+    }
 }
 
 void medClutEditorView::wheelEvent( QWheelEvent * event )
@@ -1498,6 +1546,7 @@ public:
     // QAction *deleteTableAction;
     QAction *toggleDirectUpdateAction;
     QAction *discreteModeAction;
+    QAction *infoAction;
     medClutEditorScene *scene;
     medClutEditorView  *view;
     medClutEditorHistogram *histogram;
@@ -1526,6 +1575,7 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
     d->applyAction              = new QAction("Apply", this);
     d->toggleDirectUpdateAction = new QAction("Direct update", this);
     d->discreteModeAction = new QAction("Discrete Mode", this);
+    d->infoAction = new QAction(QPixmap(":icons/information.png"), tr("About"), this);
 
     d->loadTableAction->setEnabled( false );
     d->saveTableAction->setEnabled( false );
@@ -1550,8 +1600,10 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
             this,                        SLOT(onApplyTablesAction()));
     connect(d->toggleDirectUpdateAction, SIGNAL(triggered()),
             this,                        SLOT(onToggleDirectUpdateAction()));
-    connect(d->discreteModeAction, SIGNAL(toggled(bool)),
+    connect(d->discreteModeAction,       SIGNAL(toggled(bool)),
             this,                        SLOT(setDiscreteMode(bool)));
+    connect(d->infoAction,               SIGNAL(triggered()),
+            this,                        SLOT(showInfo()));
 
 
     QHBoxLayout *layout = new QHBoxLayout;
@@ -1583,6 +1635,7 @@ medClutEditor::~medClutEditor(void)
     delete d->applyAction;
     delete d->toggleDirectUpdateAction;
     delete d->discreteModeAction;
+    delete d->infoAction;
 
     delete d->scene;
     delete d->view;
@@ -1715,6 +1768,7 @@ void medClutEditor::mousePressEvent(QMouseEvent *event)
         menu.addAction(d->newAction);
         menu.addAction(d->loadTableAction);
         menu.addAction(d->saveTableAction);
+        menu.addAction(d->infoAction);
         // menu.addAction(d->deleteTableAction);
         // menu.addSeparator();
         // menu.addAction(d->colorAction);
@@ -1843,6 +1897,34 @@ void medClutEditor::forceLayer(int layer)
 {
     d->layerForced = layer;
 }
+
+void medClutEditor::showInfo()
+{
+    QDialog *messageBox = new QDialog(this);
+    messageBox->setWindowTitle(tr("CLUT Editor"));
+    QString description = "This histogram allows you to interactively apply a LUT to your image.<br>";
+    description += "This LUT can be either discrete or linear.";
+    QTextBrowser* descriptionWidget = new QTextBrowser;
+    descriptionWidget->setHtml(description);
+
+    QString shortcuts = 
+                "<b>Double click:</b> Add a new vertex.<br>";
+    shortcuts +="      <b>Delete:</b> Remove the selected vertex.<br>";
+    shortcuts +="           <b>a:</b> Select all vertices.<br>";
+    shortcuts +="           <b>c:</b> Modify color of the selected vertex.<br>";
+    shortcuts +="         <b>+/-:</b> Modify transparency of the LUT representation";
+    QTextBrowser* shortcutsWidget = new QTextBrowser;
+    shortcutsWidget->setHtml(shortcuts);
+
+    QFormLayout *layout = new QFormLayout(messageBox);
+    //layout->addWidget(new QLabel(shortcuts));
+    layout->addRow("Description", descriptionWidget);
+    layout->addRow("Shortcuts", shortcutsWidget);
+    messageBox->setLayout(layout);
+    //messageBox->exec();
+    messageBox->show();
+}
+
 // void medClutEditor::onDeleteTableAction(void)
 // {
 

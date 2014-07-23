@@ -42,6 +42,7 @@ public:
 
     const QPointF & value() const;
     void shiftValue( qreal amount, bool forceConstraints = true );
+    
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                QWidget *widget = 0);
@@ -64,6 +65,10 @@ public:
                          const medClutEditorVertex *v2) {
         return (v1->x() < v2->x());
     }
+
+public slots:
+    void setValue (void);
+    void showColorSelection();
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
@@ -271,7 +276,8 @@ public:
     medClutEditorScene * getScene();
 
 public slots:
-        void setDiscreteMode(bool);
+    void setDiscreteMode(bool);
+    void showInfo();
 
 protected:
     void initializeTable();
