@@ -362,6 +362,7 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     m_wandUpperThresholdSpinBox->setMaximum(1000000);
     m_wandUpperThresholdSpinBox->setDecimals(2);
     m_wandUpperThresholdSpinBox->hide();
+    m_wandUpperThresholdSpinBox->setPrefix("Max: ");
 
     m_wandLowerThresholdSpinBox = new QDoubleSpinBox(displayWidget);
     m_wandLowerThresholdSpinBox->setToolTip(tr("Lower Threshold"));
@@ -369,6 +370,7 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     m_wandLowerThresholdSpinBox->setMaximum(1000000);
     m_wandLowerThresholdSpinBox->setDecimals(2);
     m_wandLowerThresholdSpinBox->hide();
+    m_wandLowerThresholdSpinBox->setPrefix("Min: ");
 
     wandTimer = QTime();
 
@@ -378,8 +380,8 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     m_removeSeedButton->hide();
     seedPlanted = false;
     
-    connect(m_newSeedButton,SIGNAL(clicked()),this,SLOT(onNewSeed()));
-    connect(m_removeSeedButton,SIGNAL(clicked()),this,SLOT(onRemoveSeed()));
+    connect(m_newSeedButton,    SIGNAL(clicked()), this, SLOT(onNewSeed()));
+    connect(m_removeSeedButton, SIGNAL(clicked()), this, SLOT(onRemoveSeed()));
 
     connect(m_wandUpperThresholdSlider,SIGNAL(valueChanged(int)),this,SLOT(synchronizeWandSpinBoxesAndSliders()));
     connect(m_wandUpperThresholdSpinBox, SIGNAL(editingFinished()),this,SLOT(synchronizeWandSpinBoxesAndSliders()));
@@ -406,8 +408,8 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     magicWandLayout = new QFormLayout(this);
     magicWandLayout->addRow(m_wandInfo);
     magicWandLayout->addRow(m_wand3DCheckbox);
-    magicWandLayout->addRow(magicWandLayout1);
-    magicWandLayout->addRow(magicWandLayout2);
+    magicWandLayout->addRow(magicWandLayout2); // Min // Lower
+    magicWandLayout->addRow(magicWandLayout1); // Max // Upper
     magicWandLayout->addRow(magicWandLayout3);
     
     layout->addLayout(magicWandLayout);
@@ -897,7 +899,7 @@ void AlgorithmPaintToolbox::updateWandRegion(medAbstractView * view, QVector3D &
     bool isInside;
     MaskType::IndexType index;
     unsigned int planeIndex = computePlaneIndex(vec,index,isInside);
-    unsigned int currentSlice = index[planeIndex];
+    //unsigned int currentSlice = index[planeIndex];
     if (isInside)
     {
         RunConnectedFilter < itk::Image <char,3> > (index,planeIndex);
@@ -1605,8 +1607,8 @@ void AlgorithmPaintToolbox::copySliceMask()
     
     int slice = index3D[planeIndex];
 
-    typedef itk::ImageLinearIteratorWithIndex< Mask2dType > LinearIteratorType;
-    typedef itk::ImageSliceIteratorWithIndex< MaskType> SliceIteratorType;
+    //typedef itk::ImageLinearIteratorWithIndex< Mask2dType > LinearIteratorType;
+    //typedef itk::ImageSliceIteratorWithIndex< MaskType> SliceIteratorType;
 
     Mask2dType::RegionType region;
     Mask2dType::RegionType::SizeType size;
@@ -1618,7 +1620,7 @@ void AlgorithmPaintToolbox::copySliceMask()
     char direction[2];
     for (i = 0, j = 0; i < 3; ++i )
     {
-        if (i != planeIndex)
+        if (i != (unsigned int)planeIndex)
         {
             direction[j] = i;
             j++;
@@ -1676,7 +1678,7 @@ void AlgorithmPaintToolbox::pasteSliceMask()
     char direction[2];
     for (i = 0, j = 0; i < 3; ++i )
     {
-        if (i != planeIndex)
+        if (i != (unsigned int)planeIndex)
         {
             direction[j] = i;
             j++;
@@ -1906,7 +1908,8 @@ void AlgorithmPaintToolbox::onInterpolate()
     img1 = extract2DImageSlice(m_itkMask, 2, 0, size, start);
     isD1 = isData(img1,label);
     isD0 = false;
-    unsigned int slice0,slice1=0; 
+    unsigned int slice0=0;
+    unsigned int slice1=0;
         
         for (int i=0; i<(sizeZ-1); ++i)
         {
@@ -1930,10 +1933,10 @@ void AlgorithmPaintToolbox::onInterpolate()
                 unsigned int coord0[2],coord1[2];
                 computeCentroid(iterator0,coord0);
                 computeCentroid(iterator1,coord1);
-                unsigned int center[2]={size[0]/2,size[1]/2};
-                int C0C1[2] = {coord1[0]- coord0[0],coord1[1]-coord0[1]};
-                int C0center[2] = {center[0]- coord0[0],center[1]-coord0[1]};
-                int C1center[2] = {center[0]- coord1[0],center[1]-coord1[1]};
+                unsigned int center[2]={(unsigned int)(size[0]/2),(unsigned int)(size[1]/2)};
+                int C0C1[2]     = {(int)(coord1[0]- coord0[0]),(int)(coord1[1]-coord0[1])};
+                int C0center[2] = {(int)(center[0]- coord0[0]),(int)(center[1]-coord0[1])};
+                int C1center[2] = {(int)(center[0]- coord1[0]),(int)(center[1]-coord1[1])};
                 Mask2dType::Pointer      img0tr             = Mask2dType::New();
                 Mask2dType::Pointer      img1tr             = Mask2dType::New();
                 img0tr = translateImageByVec(img0,C0center);
@@ -1942,7 +1945,7 @@ void AlgorithmPaintToolbox::onInterpolate()
                 distanceMapImg0 = computeDistanceMap(img0tr);
                 distanceMapImg1 = computeDistanceMap(img1tr);
                 // Interpolate the "j" intermediate slice (float) // float->unsigned char 0/255 and copy into output volume
-                for (int j=slice0+1; j<slice1; ++j) // for each intermediate slice
+                for (unsigned int j=slice0+1; j<slice1; ++j) // for each intermediate slice
                 {
                     double vec[2];
                     vec[0]= (((j-slice0)*(C0C1[0]/(float)(slice1-slice0))+coord0[0])-center[0]);

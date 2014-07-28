@@ -348,21 +348,70 @@ void medQuickAccessMenu::createVerticalQuickAccessMenu()
     //Dynamically setup workspaces access button
     foreach ( QString id, workspaceDetails.keys() )
     {
-        medHomepagePushButton * button = new medHomepagePushButton ( this );
         medWorkspaceDetails* detail = workspaceDetails.value(id);
-        button->setText ( detail->name );
-        button->setFocusPolicy ( Qt::NoFocus );
-        button->setCursor(Qt::PointingHandCursor);
-        button->setStyleSheet("border: 0px;");
-        button->setFixedHeight ( 40 );
-        button->setMaximumWidth ( 250 );
-        button->setMinimumWidth ( 250 );
-        button->setToolTip( detail->description);
-        button->setIdentifier(id);
-        workspaceButtonsLayout->addWidget ( button );
-        QObject::connect ( button, SIGNAL ( clicked ( QString ) ),this, SIGNAL ( workspaceSelected ( QString ) ) );
-        buttonsList.push_back(button);
+
+        if ((detail->name.compare("Fibrosis") != 0) &&
+            (detail->name.compare("AF - Cardio Insight") != 0) &&
+            (detail->name.compare("ARVD") != 0))    // If not pipelines
+        {
+            medHomepagePushButton * button = new medHomepagePushButton ( this );
+            button->setText ( detail->name );
+            button->setFocusPolicy ( Qt::NoFocus );
+            button->setCursor(Qt::PointingHandCursor);
+            button->setStyleSheet("border: 0px;");
+            button->setFixedHeight ( 40 );
+            button->setMaximumWidth ( 250 );
+            button->setMinimumWidth ( 250 );
+            button->setToolTip( detail->description);
+            button->setIdentifier(id);
+            workspaceButtonsLayout->addWidget ( button );
+            QObject::connect ( button, SIGNAL ( clicked ( QString ) ),this, SIGNAL ( workspaceSelected ( QString ) ) );
+            buttonsList.push_back(button);
+        }
     }
+
+
+    // Pipeline Label
+    QLabel * pipelineLabel = new QLabel ( tr("<b>Switch to pipelines</b>") );
+    pipelineLabel->setMaximumWidth(300);
+    pipelineLabel->setFixedHeight(25);
+    pipelineLabel->setAlignment(Qt::AlignHCenter);
+    pipelineLabel->setTextFormat(Qt::RichText);
+    //It's easier to set the stylesheet here than in the qss file
+    pipelineLabel->setStyleSheet("border-image: url(:/pixmaps/toolbox-header.png) 16 16 0 16 repeat-x;\
+                                  border-left-width: 0px;\
+                                  border-right-width: 0px;\
+                                  border-top-width: 8px;\
+                                  border-bottom-width: 0px;");
+    workspaceButtonsLayout->addWidget ( pipelineLabel );
+
+    //Dynamically setup pipelines access button
+    foreach ( QString id, workspaceDetails.keys() )
+    {
+        medWorkspaceDetails* detail = workspaceDetails.value(id);
+
+        if (!detail->name.compare("Fibrosis") ||
+            !detail->name.compare("AF - Cardio Insight") ||
+            !detail->name.compare("ARVD"))    // If pipelines
+        {
+            medHomepagePushButton * button = new medHomepagePushButton ( this );
+            button->setText ( detail->name );
+            button->setFocusPolicy ( Qt::NoFocus );
+            button->setCursor(Qt::PointingHandCursor);
+            button->setStyleSheet("border: 0px;");
+            button->setFixedHeight ( 40 );
+            button->setMaximumWidth ( 250 );
+            button->setMinimumWidth ( 250 );
+            button->setToolTip( detail->description);
+            button->setIdentifier(id);
+            workspaceButtonsLayout->addWidget ( button );
+            QObject::connect ( button, SIGNAL ( clicked ( QString ) ),this, SIGNAL ( workspaceSelected ( QString ) ) );
+            buttonsList.push_back(button);
+        }
+    }
+
+
+
     workspaceButtonsLayout->addStretch();
     this->setMinimumHeight ( 20 + 40 * ( 2 + workspaceDetails.size() ) );
     this->setLayout(workspaceButtonsLayout);
@@ -425,7 +474,7 @@ void medQuickAccessMenu::createHorizontalQuickAccessMenu()
         QObject::connect ( button, SIGNAL ( clicked ( QString ) ),this, SIGNAL ( workspaceSelected ( QString ) ) );
         buttonsList.push_back(button);
     }
-    
+
     backgroundFrame->setLayout(shortcutAccessLayout);
     backgroundFrame->setFixedWidth ( 40 + 180 * ( 2 + workspaceDetails.size() ) );
     backgroundFrame->setFixedHeight ( 240 );
