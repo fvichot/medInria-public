@@ -106,11 +106,47 @@ void vtkMetaSurfaceMesh::ReadVtkFile (const char* filename)
         std::string info;
         std::vector<std::string> patientInfo;
 
-        while ( std::getline( header, info, '"' ) )
+        if (headerStr.find_first_not_of('"')) //Absence of "
         {
-            if(info != " ")
+            while ( std::getline( header, info, ' ' ) )
                 patientInfo.push_back(info);
         }
+        else
+        {
+            std::string temp = "";
+
+            while ( std::getline( header, info, ' ' ) )
+            {
+                if (info.at(0) == '"')
+                {
+                    info.erase(0,1);
+                    if(info.at(info.size()-1) == '"')   // "Word"
+                    {
+                        info.erase(info.size()-1, 1);
+                        patientInfo.push_back(info);
+                    }
+                    else                                // "Word
+                        temp += ' ' + info;
+                }
+                else if (info.at(info.size()-1) == '"') // Word"
+                {
+                    info.erase(info.size()-1, 1);
+                    patientInfo.push_back(temp+ ' ' +info);
+                    temp = "";
+                }
+                else
+                {
+                    if (temp.empty())                   // "X" Word "Y" 
+                    {
+                        patientInfo.push_back(info);
+                    }
+                    else                                // "X Word Y"
+                        temp += ' ' +info;
+                }
+            }
+        }
+        
+
         if (patientInfo.size()>3)
         {
             std::string patientName, patientID;
