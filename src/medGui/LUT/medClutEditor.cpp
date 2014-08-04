@@ -1622,6 +1622,7 @@ medClutEditor::medClutEditor(QWidget *parent) : QWidget(parent)
         file.close();
     }
     d->layerForced = -1;
+    setDiscreteMode(false);
 }
 
 medClutEditor::~medClutEditor(void)

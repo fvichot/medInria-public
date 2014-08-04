@@ -415,6 +415,8 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     layout->addLayout(magicWandLayout);
     this->generateLabelColorMap(24);
 
+    m_ROIVolumeLabel = new QLabel();
+
     QHBoxLayout * labelSelectionLayout = new QHBoxLayout();
 
     m_strokeLabelSpinBox = new QSpinBox(displayWidget);
@@ -436,6 +438,7 @@ AlgorithmPaintToolbox::AlgorithmPaintToolbox(QWidget *parent ) :
     m_colorLabel = new QLabel(tr("Label:"), displayWidget);
     m_colorLabel->hide();
 
+    labelSelectionLayout->addWidget(m_ROIVolumeLabel);
     labelSelectionLayout->addStretch();
     labelSelectionLayout->addWidget(m_colorLabel );
     labelSelectionLayout->addWidget( m_labelColorWidget );
@@ -659,6 +662,7 @@ void AlgorithmPaintToolbox::onClearMaskClicked()
         m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
 
         m_maskAnnotationData->invokeModified();
+        calculateROIStatistics();
     }
 }
 
@@ -1035,6 +1039,7 @@ AlgorithmPaintToolbox::RunConnectedFilter (MaskType::IndexType &index, unsigned 
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
 
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
 }
 
 template <typename IMAGE>
@@ -1178,6 +1183,7 @@ void AlgorithmPaintToolbox::updateStroke( ClickAndMoveEventFilter * filter, medA
     m_itkMask->GetPixelContainer()->Modified();
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
 }
 
 void AlgorithmPaintToolbox::updateFromGuiItems()
@@ -1327,6 +1333,7 @@ void AlgorithmPaintToolbox::onUndo()
     m_itkMask->GetPixelContainer()->Modified();
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
 
     //saveCurrentStateForCursor(currentView,currentPlaneIndex,currentIdSlice);
 }
@@ -1395,6 +1402,7 @@ void AlgorithmPaintToolbox::onRedo()
     m_itkMask->GetPixelContainer()->Modified();
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
     
     //saveCurrentStateForCursor(currentView,currentPlaneIndex,currentIdSlice);
 }
@@ -1700,6 +1708,7 @@ void AlgorithmPaintToolbox::pasteSliceMask()
     m_itkMask->GetPixelContainer()->Modified();
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
 }
 
 char AlgorithmPaintToolbox::computePlaneIndex(const QVector3D & vec,MaskType::IndexType & index,bool & isInside)
@@ -1836,6 +1845,7 @@ void AlgorithmPaintToolbox::removeCursorDisplay()
     m_itkMask->GetPixelContainer()->Modified();
     m_itkMask->SetPipelineMTime(m_itkMask->GetMTime());
     m_maskAnnotationData->invokeModified();
+    calculateROIStatistics();
 }
 
 void AlgorithmPaintToolbox::onAddBrushSize()
@@ -1955,6 +1965,7 @@ void AlgorithmPaintToolbox::onInterpolate()
                 isD0=false;
             }
         } // end for each slice
+        calculateROIStatistics();
 }
 
 // Is there data to observe in the image ?
@@ -2162,7 +2173,34 @@ void AlgorithmPaintToolbox::computeIntermediateSlice(Mask2dFloatType::Pointer di
         ++itmask;
     }
 }
-
+void AlgorithmPaintToolbox::calculateROIStatistics()
+{
+    if(!m_itkMask)
+        return;
+    MaskType::SizeType size = m_itkMask->GetLargestPossibleRegion().GetSize();
+    MaskType::IndexType px;
+    int nbPixInMask = 0;
+    for (int sl=0 ; sl<(int)size[2] ; sl++)
+    {
+        for (int y=0 ; y<(int)size[1] ; y++)
+        {
+            for (int x=0 ; x<(int)size[0] ; x++)
+            {
+                px[0] = x;
+                px[1] = y;
+                px[2] = sl;
+                if (m_itkMask->GetPixel(px)>0)
+                {
+                    nbPixInMask++;
+                }
+            }
+        }
+    }
+    MaskType::SpacingType spacing = m_itkMask->GetSpacing();
+    double volumeOfOneVox = spacing[0]*spacing[1]*spacing[2]; //in mm3
+    double maskVolume = nbPixInMask * volumeOfOneVox / 1000;
+    m_ROIVolumeLabel->setText("<b>ROI Volume: </b>" + QString::number(maskVolume) + " cm<sup>3</sup> (" + QString::number(nbPixInMask) + " voxels)");
+}
 } // namespace mseg
 
 

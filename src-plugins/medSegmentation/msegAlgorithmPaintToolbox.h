@@ -114,6 +114,8 @@ public:
                                                               int slice1,int j,MaskFloatIterator ito,MaskIterator itMask,double *vec);
     void computeCentroid(Mask2dIterator itmask,unsigned int *coord);
     Mask2dType::Pointer translateImageByVec(Mask2dType::Pointer img,int *vec);
+
+    void calculateROIStatistics();
                                                 
 
 public slots:
@@ -190,6 +192,7 @@ private:
     
     QLabel *m_colorLabel;
     QLabel * m_wandInfo;
+    QLabel *m_ROIVolumeLabel;
 
     QSlider *m_brushSizeSlider;
     QSpinBox *m_brushSizeSpinBox;
