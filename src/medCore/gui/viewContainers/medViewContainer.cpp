@@ -92,7 +92,7 @@ medViewContainer::medViewContainer(medViewContainerSplitter *parent): QFrame(par
 
     d->defaultWidget = new QWidget;
     d->defaultWidget->setObjectName("defaultWidget");
-    QIcon dropIcon(":/medGui/pixmaps/drop_arrow.svg");
+    QIcon dropIcon(":/pixmaps/drop_arrow.svg");
     QLabel* dropIconLabel = new QLabel();
     dropIconLabel->setAlignment(Qt::AlignCenter);
     dropIconLabel->setPixmap(dropIcon.pixmap(64, 64));
@@ -111,12 +111,12 @@ medViewContainer::medViewContainer(medViewContainerSplitter *parent): QFrame(par
     d->closeContainerButton->setFocusPolicy(Qt::NoFocus);
 
     d->vSplitButton = new QPushButton(this);
-    d->vSplitButton->setIcon(QIcon(":/medGui/pixmaps/window_split_vertical.svg"));
+    d->vSplitButton->setIcon(QIcon(":/pixmaps/window_split_vertical.svg"));
     d->vSplitButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->vSplitButton->setFocusPolicy(Qt::NoFocus);
     connect(d->vSplitButton, SIGNAL(clicked()), this, SIGNAL(vSplitRequest()));
     d->hSplitButton = new QPushButton(this);
-    d->hSplitButton->setIcon(QIcon(":/medGui/pixmaps/window_split_horizontal.svg"));
+    d->hSplitButton->setIcon(QIcon(":/pixmaps/window_split_horizontal.svg"));
     d->hSplitButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->hSplitButton->setFocusPolicy(Qt::NoFocus);
     connect(d->hSplitButton, SIGNAL(clicked()), this, SIGNAL(hSplitRequest()));
