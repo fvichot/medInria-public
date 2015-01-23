@@ -16,7 +16,14 @@
 medAbstractDiffusionProcess::medAbstractDiffusionProcess(medAbstractProcess *parent):
     medAbstractProcess(parent)
 {
+    medProcessDataInput<medAbstractData> *input = new medProcessDataInput<medAbstractData>("Input", false, NULL);
+    medProcessOutput<medAbstractData> *output = new medProcessOutput<medAbstractData>("Output", NULL);
+    //output->output= NULL;
 
+    //TODO: Should this be done here or by implementation
+    // (would allow to precise types)
+    this->appendDataInput(input);
+    this->appendDataOutput(output);
 }
 
 medAbstractDiffusionProcess::~medAbstractDiffusionProcess()

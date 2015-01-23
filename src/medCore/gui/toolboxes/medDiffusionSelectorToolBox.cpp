@@ -10,7 +10,7 @@
   PURPOSE.
 
 =========================================================================*/
-
+#if 0
 #include <medAbstractDataFactory.h>
 #include <medAbstractDiffusionProcess.h>
 #include <dtkCore/dtkAbstractProcessFactory.h>
@@ -122,7 +122,7 @@ medDiffusionSelectorToolBox::medDiffusionSelectorToolBox(QWidget *parent, Select
     
     d->chooseInput = new QComboBox(mainPage);
     d->chooseInput->addItem(tr("Please drop an image"));
-	d->chooseInput->setToolTip(tr("Browse available images for processing"));
+    d->chooseInput->setToolTip(tr("Browse available images for processing"));
     d->chooseInput->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
     inputLayout->addWidget(d->chooseInput);
     d->mainLayout->addLayout(inputLayout);
@@ -265,7 +265,7 @@ void medDiffusionSelectorToolBox::clearInputs()
 {
     d->chooseInput->clear();
     d->chooseInput->addItem(tr("Please drop an image"));
-	d->chooseInput->setToolTip(tr("Browse available images for processing"));
+    d->chooseInput->setToolTip(tr("Browse available images for processing"));
     
     d->inputsMap.clear();
 
@@ -479,3 +479,4 @@ void medDiffusionSelectorToolBox::clear(void)
     if (d->selectorType != ScalarMaps)
         d->runButton->setEnabled(false);
 }
+#endif

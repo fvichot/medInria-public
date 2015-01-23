@@ -27,6 +27,4 @@ public:
     medAbstractDiffusionProcess(medAbstractProcess *parent = NULL);
     virtual ~medAbstractDiffusionProcess();
 
-    virtual void setInputImage(medAbstractData *data) = 0;
-
 };

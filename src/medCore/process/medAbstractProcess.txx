@@ -33,10 +33,14 @@ T* medAbstractProcess::input(unsigned int port)
     if(port >= (unsigned int)this->inputs().size())
         return NULL;
 
-    medProcessInput<T>* inputPort = reinterpret_cast< medProcessInput<T> *>(this->inputs().at(port));
+    medProcessInput<T>* inputPort = dynamic_cast< medProcessInput<T> *>(this->inputs().at(port));
     if(inputPort)
         return inputPort->input();
-    else return NULL;
+    else
+    {
+        qDebug() << "WTF";
+        return NULL;
+    }
 }
 
 template <class T>

@@ -30,24 +30,17 @@ class medDiffusionWorkspace : public medAbstractWorkspace
 
 public:
      medDiffusionWorkspace(QWidget *parent = 0);
-    ~medDiffusionWorkspace();
+    virtual ~medDiffusionWorkspace();
 
     static bool isUsable();
-    void setupTabbedViewContainer();
-    
-public slots:
 
-    void runProcess(QString processName, QString category);
-    void getOutput();
-    void cancelProcess();
-    void resetRunningFlags();
+    void setupTabbedViewContainer() { return; } // TODO UNFUCK
     
-    //Handle new data in central view, connect them to toolboxes
-    void resetToolBoxesInputs();
-    void updateToolBoxesInputs();
-    void addToolBoxInput(medAbstractData *data);
+protected slots:
+    void setupProcess(QString);
+    void startProcess();
+    void enableSelectorToolBox();
 
-    void changeCurrentContainer();
 
 private:
     medDiffusionWorkspacePrivate *d;
