@@ -18,7 +18,6 @@
 #include <medProcessPort.h>
 #include <medProcessInput.h>
 #include <medProcessOutput.h>
-#include <medProcessDataInput.h>
 
 #include <medAbstractData.h>
 #include <medAbstractImageData.h>
@@ -42,13 +41,6 @@ class MEDCORE_EXPORT medAbstractProcess : public dtkAbstractProcess
     Q_OBJECT
 
 public:
-//    typedef medProcessOutput<medAbstractData> medOutputDataPort;
-//    typedef medProcessInput<medAbstractData> medInputDataPort;
-
-//    typedef medProcessOutput<medAbstractImageData> medOutputImageDataPort;
-//    typedef medProcessInput<medAbstractImageData> medInputImageDataPort;
-
-public:
     medAbstractProcess( medAbstractProcess * parent = NULL );
     virtual ~medAbstractProcess();
 
@@ -62,17 +54,11 @@ public:
     virtual QList<medAbstractParameter*> parameters() = 0;
     medAbstractParameter* parameter(QString parameterName);
 
-    template <class T>
-    void setInput(T* data, unsigned int port);
+    void setInput(const QVariant&  data, unsigned int port);
+    const QVariant& input(unsigned int port);
 
-    template <class T>
-    T* input(unsigned int port);
-
-    template <class T>
-    void setOutput(T* data, unsigned int port);
-
-    template <class T>
-    T* output(unsigned int port);
+    void setOutput(const QVariant& data, unsigned int port);
+    const QVariant& output(unsigned int port);
 
     virtual medToolBox* toolbox();
     virtual QWidget* parameterWidget();

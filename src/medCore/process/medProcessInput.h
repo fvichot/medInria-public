@@ -15,39 +15,18 @@
 
 #include <medProcessPort.h>
 
-#ifdef DTK_BUILD_COMPOSER
-#include <dtkComposer/dtkComposerTransmitter.h>
-#include <dtkComposer/dtkComposerTransmitterReceiver.h>
-#endif
-
-
-template <typename T>
 class medProcessInput : public medProcessPort
 {
 public:
-    medProcessInput(QString name, bool isOptional, T* input = NULL);
+    medProcessInput(QString name, bool isOptional, const QVariant& input = QVariant());
     virtual ~medProcessInput();
 
 public:
     bool isOptional() const;
 
-    T* input() const;
-    void setInput(T* input);
-
-    QObject* content() const;
-    bool setContent(QObject*);
-
-    virtual void retrieveContentFromPort(medProcessPort *otherport);
-
-//#ifdef DTK_BUILD_COMPOSER
-#ifdef IN_PROGRESS
-    virtual dtkComposerTransmitter* toTransmitter();
-    virtual void updateFromTransmitter(dtkComposerTransmitter* transmitter);
-#endif
+    const QVariant& input() const;
+    void setInput(const QVariant& input);
 
 private:
     bool m_isOptional;
-    T* m_input;
 };
-
-#include <medProcessInput.txx>

@@ -13,8 +13,8 @@
 
 #pragma once
 
-#include <QString>
 #include <QObject>
+#include <QVariant>
 
 #ifdef DTK_BUILD_COMPOSER
 #include <dtkComposer/dtkComposerTransmitter.h>
@@ -23,18 +23,18 @@
 
 class medProcessPort: public QObject
 {
+    Q_OBJECT
+public:
+    medProcessPort(QString name);
+    virtual ~medProcessPort();
 
 public:
-    medProcessPort(QString name) {m_name = name;}
-    virtual ~medProcessPort(){}
+    QString name() const;
 
-public:
-    QString name() const {return m_name;}
+    virtual void retrieveContentFromPort(medProcessPort * port);
 
-    virtual void retrieveContentFromPort(medProcessPort *port) {}
-
-    virtual QObject* content() const = 0;
-    virtual bool setContent(QObject*) = 0;
+    virtual QVariant content() const;
+    virtual bool setContent(const QVariant& value);
 
     /////////////////////////////////////////////////////
     //
@@ -56,4 +56,5 @@ public:
 
 private:
     QString m_name;
+    QVariant m_content;
 };

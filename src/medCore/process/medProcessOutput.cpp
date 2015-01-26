@@ -11,18 +11,26 @@
 
 =========================================================================*/
 
-#pragma once
+#include "medProcessOutput.h"
 
-#include <medProcessPort.h>
 
-class medProcessOutput : public medProcessPort
+medProcessOutput::medProcessOutput(QString name, const QVariant& output) : medProcessPort(name)
+{
+    m_output = output;
+}
+
+medProcessOutput::~medProcessOutput()
 {
 
-public:
-    medProcessOutput(QString name, const QVariant& output = QVariant());
-    virtual ~medProcessOutput();
+}
 
-public:
-    QVariant output() const;
-    void setOutput(QVariant output);
-};
+const QVariant& medProcessOutput::output() const
+{
+    return content();
+}
+
+
+void medProcessOutput::setOutput(const QVariant& output)
+{
+    setContent(output);
+}

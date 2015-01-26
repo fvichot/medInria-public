@@ -25,8 +25,6 @@
 #include <medAbstractLayeredView.h>
 #include <medDataManager.h>
 
-#include <typeinfo>
-
 medRunnableProcess::medRunnableProcess(medAbstractProcess* process, QString name): medAbstractJob(name)
 {
     m_process = process;
