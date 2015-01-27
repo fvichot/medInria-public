@@ -20,14 +20,14 @@
 
 medAbstractFilteringProcess::medAbstractFilteringProcess(medAbstractProcess *parent)
 {
-    medProcessDataInput<medAbstractData> *input = new medProcessDataInput<medAbstractData>("Input", false, NULL);
-    medProcessOutput<medAbstractData> *output = new medProcessOutput<medAbstractData>("Output", NULL);
+    medProcessInput *input = new medProcessInput("Input", false);
+    medProcessOutput*output = new medProcessOutput("Output");
     //output->output= NULL;
 
     //TODO: Should this be done here or by implementation
     // (would allow to precise types)
-    this->appendDataInput(input);
-    this->appendDataOutput(output);
+    this->appendInput(input);
+    this->appendOutput(output);
 }
 
 bool medAbstractFilteringProcess::isInteractive() const

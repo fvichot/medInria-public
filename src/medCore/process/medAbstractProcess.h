@@ -47,18 +47,18 @@ public:
     QList<medProcessPort*> inputs() const;
     QList<medProcessPort*> outputs() const;
 
-    medProcessPort* input(QString name) const;
+    medProcessPort* inputPort(QString name) const;
+    medProcessPort* outputPort(QString name) const;
 
     void retrieveInputs(const medAbstractProcess *);
 
+    void setInputValue(const QVariant&  data, unsigned int portNumber);
+    const QVariant& inputValue(unsigned int portNumber);
+
+    const QVariant& outputValue(unsigned int portNumber);
+
     virtual QList<medAbstractParameter*> parameters() = 0;
     medAbstractParameter* parameter(QString parameterName);
-
-    void setInput(const QVariant&  data, unsigned int port);
-    const QVariant& input(unsigned int port);
-
-    void setOutput(const QVariant& data, unsigned int port);
-    const QVariant& output(unsigned int port);
 
     virtual medToolBox* toolbox();
     virtual QWidget* parameterWidget();
@@ -77,11 +77,6 @@ protected:
     void appendInput(medProcessPort*);
     void appendOutput(medProcessPort*);
 
-    template <class T>
-    void appendDataInput(medProcessDataInput<T> *);
-
-    void appendDataOutput(medProcessPort*);
-
 protected slots:
     virtual void handleInput();
     virtual void handleOutputs();
@@ -90,7 +85,6 @@ private:
     virtual int update () = 0;
 
     virtual void updateContainer(medProcessPort *);
-    void appendDataInputToList(medProcessPort* );
 
 private:
     using dtkAbstractProcess::onCanceled;
@@ -123,4 +117,3 @@ public:
     virtual void cancel();
 };
 
-#include <medAbstractProcess.txx>

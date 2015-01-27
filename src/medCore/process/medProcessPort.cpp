@@ -22,7 +22,7 @@ void medProcessPort::retrieveContentFromPort(medProcessPort * port)
     m_content = port->m_content;
 }
 
-QVariant medProcessPort::content() const
+const QVariant& medProcessPort::content() const
 {
     return m_content;
 }

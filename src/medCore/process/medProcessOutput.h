@@ -23,6 +23,6 @@ public:
     virtual ~medProcessOutput();
 
 public:
-    QVariant output() const;
-    void setOutput(QVariant output);
+    const QVariant& output() const;
+    void setOutput(const QVariant& output);
 };

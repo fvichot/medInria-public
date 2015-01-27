@@ -17,10 +17,10 @@
 
 medAbstractSegmentationProcess::medAbstractSegmentationProcess(medAbstractProcess *parent): medAbstractProcess(parent)
 {
-    medProcessDataInput<medAbstractImageData> *input = new medProcessDataInput<medAbstractImageData>("Image", false, NULL);
-    this->appendDataInput( input );
+    medProcessInput *input = new medProcessInput("Image", false);
+    this->appendInput( input );
 
-    this->appendDataOutput( new medProcessOutput<medAbstractImageData>("Output", NULL));
+    this->appendOutput( new medProcessOutput("Output"));
 }
 
 bool medAbstractSegmentationProcess::isInteractive() const

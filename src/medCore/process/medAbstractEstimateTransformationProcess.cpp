@@ -19,13 +19,13 @@
 medAbstractEstimateTransformationProcess::medAbstractEstimateTransformationProcess(medAbstractProcess *parent):
     medAbstractProcess(parent)
 {
-    medProcessDataInput<medAbstractImageData> *fixed = new medProcessDataInput<medAbstractImageData>("Fixed Image", false);
-    this->appendDataInput( fixed );
+    medProcessInput *fixed = new medProcessInput("Fixed Image", false);
+    this->appendInput( fixed );
 
-    medProcessDataInput<medAbstractImageData> *moving = new medProcessDataInput<medAbstractImageData>("Moving Image", false);
-    this->appendDataInput( moving );
+    medProcessInput *moving = new medProcessInput("Moving Image", false);
+    this->appendInput( moving );
 
-    this->appendOutput( new medProcessOutput<medAbstractTransformation>("Output"));
+    this->appendOutput( new medProcessOutput("Output"));
 
 }
 

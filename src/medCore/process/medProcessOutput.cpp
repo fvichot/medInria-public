@@ -16,7 +16,7 @@
 
 medProcessOutput::medProcessOutput(QString name, const QVariant& output) : medProcessPort(name)
 {
-    m_output = output;
+    setContent(output);
 }
 
 medProcessOutput::~medProcessOutput()

@@ -52,8 +52,6 @@ class medAbstractProcessPrivate
   public:
     QList<medProcessPort*> inputs;
     QList<medProcessPort*> outputs;
-    QList<medProcessPort*> dataInputs;
-    QList<medProcessPort*> dataOutputs;
     QPointer<medToolBox> toolbox;
     QPointer<QWidget> parameterWidget;
     medTriggerParameter* runParameter;
@@ -89,7 +87,7 @@ QList<medProcessPort*> medAbstractProcess::outputs() const
     return d->outputs;
 }
 
-medProcessPort* medAbstractProcess::input(QString name) const
+medProcessPort* medAbstractProcess::inputPort(QString name) const
 {
     medProcessPort* res = NULL;
     foreach(medProcessPort* port, this->inputs())
@@ -108,24 +106,38 @@ void medAbstractProcess::appendInput(medProcessPort *input)
     d->inputs.append(input);
 }
 
-void medAbstractProcess::appendDataInputToList(medProcessPort* input)
-{
-    d->inputs.append(input);
-    d->dataInputs.append(input);
-    d->containerForInputPort.insert(input, NULL);
-}
-
 void medAbstractProcess::appendOutput(medProcessPort *output)
 {
     d->outputs.append(output);
 }
 
-void medAbstractProcess::appendDataOutput(medProcessPort *output)
+void medAbstractProcess::setInputValue(const QVariant& data, unsigned int portNumber)
 {
-    d->outputs.append(output);
-    d->dataOutputs.append(output);
-    d->containerForOutputPort.insert(output, NULL);
+    if(portNumber >= (unsigned int)this->inputs().size())
+        return;
+
+    medProcessPort* port = this->inputs().at(portNumber);
+    port->setContent(data);
+    updateContainer(port);
 }
+
+const QVariant& medAbstractProcess::inputValue(unsigned int portNumber)
+{
+    if(portNumber >= (unsigned int)this->inputs().size())
+        return QVariant();
+
+    return this->inputs().at(portNumber)->content();
+}
+
+
+const QVariant& medAbstractProcess::outputValue(unsigned int portNumber)
+{
+    if(portNumber >= (unsigned int)this->outputs().size())
+        return QVariant();
+
+    return this->outputs().at(portNumber)->content();
+}
+
 
 medAbstractParameter* medAbstractProcess::parameter(QString parameterName)
 {
@@ -167,79 +179,68 @@ medTriggerParameter* medAbstractProcess::runParameter() const
     return d->runParameter;
 }
 
+void setupNewPortContainer(medViewContainer * container, QString name)
+{
+    container->setClosingMode(medViewContainer::CLOSE_VIEW_ONLY);
+    container->setDefaultWidget(new QLabel(name));
+    container->setUserSplittable(false);
+    container->setMultiLayered(false);
+}
+
+
 medViewContainerSplitter* medAbstractProcess::viewContainerSplitter()
 {
-    if(d->viewContainerSplitter.isNull())
-    {
-        d->viewContainerSplitter = new medViewContainerSplitter;
-        QList<medProcessPort*> inputDataPortList = d->containerForInputPort.keys();
-        QList<medProcessPort*> outputDataPortList = d->containerForOutputPort.keys();
+    if( ! d->viewContainerSplitter.isNull())
+        return d->viewContainerSplitter;
 
-        medViewContainer* inputContainer;
-        medViewContainer* outputContainer;
+    d->viewContainerSplitter = new medViewContainerSplitter;
 
-        if(!inputDataPortList.isEmpty())
-        {
-            inputContainer = new medViewContainer;
-            medProcessPort* i = inputDataPortList.takeFirst();
-            medAbstractData* data = dynamic_cast<medAbstractData*>(i->content());
-            inputContainer->addData(data);
+    // Create input containers
+    medViewContainer* inputContainer = NULL;
+    medViewContainer* outputContainer = NULL;
+    for(int i = 0 ; i <  d->inputs.size(); ++i) {
+        medProcessPort * port = d->inputs.at(i);
+        if (i == 0) {
+            inputContainer = new medViewContainer();
             d->viewContainerSplitter->addViewContainer(inputContainer);
-            d->containerForInputPort[i] = inputContainer;
-            inputContainer->setClosingMode(medViewContainer::CLOSE_VIEW_ONLY);
-            inputContainer->setDefaultWidget(new QLabel(i->name()));
-            inputContainer->setUserSplittable(false);
-            inputContainer->setMultiLayered(false);
-
-            connect(inputContainer, SIGNAL(viewContentChanged()), this, SLOT(handleInput()));
-            connect(inputContainer, SIGNAL(viewRemoved()), this, SLOT(handleInput()));
-
-            foreach(medProcessPort* i, inputDataPortList)
-            {
-                medViewContainer *container = inputContainer->splitHorizontally();
-                medAbstractData* data = dynamic_cast<medAbstractData*>(i->content());
-                inputContainer->addData(data);
-                d->containerForInputPort[i] = container;
-                container->setClosingMode(medViewContainer::CLOSE_VIEW_ONLY);
-                container->setDefaultWidget(new QLabel(i->name()));
-                container->setUserSplittable(false);
-                container->setMultiLayered(false);
-
-                connect(container, SIGNAL(viewContentChanged()), this, SLOT(handleInput()));
-                connect(container, SIGNAL(viewRemoved()), this, SLOT(handleInput()));
+            if ( ! d->outputs.isEmpty()) {
+                outputContainer = inputContainer->splitHorizontally();
             }
+        } else {
+            inputContainer = inputContainer->splitVertically();
+        }
+        medAbstractData* data = dynamic_cast<medAbstractData*>(port->content().value<QObject*>());
+        if (data) {
+            inputContainer->addData(data);
         }
 
-        if(!outputDataPortList.isEmpty())
-        {
-            outputContainer = new medViewContainer;
-            medProcessPort* o = outputDataPortList.takeFirst();
-            medAbstractData* data = dynamic_cast<medAbstractData*>(o->content());
-            outputContainer->addData(data);
-            d->viewContainerSplitter->addViewContainer(outputContainer);
-            d->containerForOutputPort[o] = outputContainer;
-            outputContainer->setClosingMode(medViewContainer::CLOSE_VIEW_ONLY);
-            outputContainer->setDefaultWidget(new QLabel(o->name()));
-            outputContainer->setUserOpenable(false);
-            outputContainer->setUserSplittable(false);
-            outputContainer->setMultiLayered(false);
+        setupNewPortContainer(inputContainer, port->name());
+        d->containerForInputPort[port] = inputContainer;
 
-            foreach(medProcessPort* o, outputDataPortList)
-            {
-                medViewContainer *container = outputContainer->splitHorizontally();
-                medAbstractData* data = dynamic_cast<medAbstractData*>(o->content());
-                outputContainer->addData(data);
-                d->containerForOutputPort[o] = container;
-                container->setClosingMode(medViewContainer::CLOSE_VIEW_ONLY);
-                container->setDefaultWidget(new QLabel(o->name()));
-                container->setUserOpenable(false);
-                container->setUserSplittable(false);
-                container->setMultiLayered(false);
-            }
-        }
-
-        d->viewContainerSplitter->adjustContainersSize();
+        connect(inputContainer, SIGNAL(viewContentChanged()), this, SLOT(handleInput()));
+        connect(inputContainer, SIGNAL(viewRemoved()), this, SLOT(handleInput()));
     }
+
+    // Create output containers
+    for(int i = 0 ; i <  d->outputs.size(); ++i) {
+        medProcessPort * port = d->outputs.at(i);
+        if (i > 0) {
+            outputContainer = outputContainer->splitVertically();
+        }
+        medAbstractData* data = dynamic_cast<medAbstractData*>(port->content().value<QObject*>());
+        if (data) {
+            outputContainer->addData(data);
+        }
+
+        setupNewPortContainer(outputContainer, port->name());
+        d->containerForOutputPort[port] = outputContainer;
+
+        connect(outputContainer, SIGNAL(viewContentChanged()), this, SLOT(handleOutputs()));
+        connect(outputContainer, SIGNAL(viewRemoved()), this, SLOT(handleOutputs()));
+    }
+
+    d->viewContainerSplitter->adjustContainersSize();
+
     return d->viewContainerSplitter;
 }
 
@@ -272,7 +273,7 @@ void medAbstractProcess::handleInput()
     else
         inputData = view->layerData(view->currentLayer());
 
-    d->containerForInputPort.key(container)->setContent(inputData);
+    d->containerForInputPort.key(container)->setContent(QVariant::fromValue(inputData));
 
 
 }
@@ -281,11 +282,11 @@ void medAbstractProcess::handleOutputs()
 {
     foreach(medProcessPort* port, d->containerForOutputPort.keys())
     {
-        medAbstractData* ouputData = dynamic_cast<medAbstractData*>(port->content());
+        medAbstractData* ouputData = dynamic_cast<medAbstractData*>(port->content().value<QObject*>());
         if(!ouputData)
             return;
 
-        medAbstractData* inputData = dynamic_cast<medAbstractData*>(d->containerForInputPort.keys()[0]->content());
+        medAbstractData* inputData = dynamic_cast<medAbstractData*>(d->containerForInputPort.keys()[0]->content().value<QObject*>());
         if(!inputData)
             return;
 
@@ -318,7 +319,7 @@ void medAbstractProcess::updateContainer(medProcessPort *inputDataPort)
 
     if(d->containerForInputPort.value(inputDataPort))
     {
-        medAbstractData* data = dynamic_cast<medAbstractData*>(inputDataPort->content());
+        medAbstractData* data = dynamic_cast<medAbstractData*>(inputDataPort->content().value<QObject*>());
         d->containerForInputPort.value(inputDataPort)->addData(data);
     }
 }
@@ -327,12 +328,12 @@ void medAbstractProcess::retrieveInputs(const medAbstractProcess *other)
 {
     foreach(medProcessPort *otherProcessPort, other->inputs())
     {
-        medProcessPort *port = this->input(otherProcessPort->name());
+        medProcessPort *port = this->inputPort(otherProcessPort->name());
         if(port)
         {
             port->retrieveContentFromPort(otherProcessPort);
 
-            if(d->dataInputs.contains(port))
+            if(d->inputs.contains(port))
             {
                 updateContainer(port);
             }

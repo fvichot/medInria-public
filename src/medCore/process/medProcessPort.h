@@ -33,7 +33,7 @@ public:
 
     virtual void retrieveContentFromPort(medProcessPort * port);
 
-    virtual QVariant content() const;
+    virtual const QVariant &content() const;
     virtual bool setContent(const QVariant& value);
 
     /////////////////////////////////////////////////////
