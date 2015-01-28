@@ -69,8 +69,6 @@ public:
     vtkImageView3D *view3d;
     medAbstractData *data;
 
-    vtkRenderWindow *render;
-
     vtkMetaDataSet* metaDataSet;
     ActorSmartPointer actor2d;
     ActorSmartPointer actor3d;
@@ -99,7 +97,6 @@ vtkDataMeshInteractor::vtkDataMeshInteractor(medAbstractView *parent):
     medVtkViewBackend* backend = static_cast<medVtkViewBackend*>(parent->backend());
     d->view2d = backend->view2D;
     d->view3d = backend->view3D;
-    d->render = backend->renWin;
 
     for (int i=0; i<6; i++)
         d->imageBounds[i] = 0;
@@ -256,7 +253,7 @@ void vtkDataMeshInteractor::setOpacity(double value)
 {
     d->actorProperty->SetOpacity(value);
 
-    d->render->Render();
+    d->view->render();
 }
 
 void vtkDataMeshInteractor::setVisibility(bool visible)
@@ -265,7 +262,7 @@ void vtkDataMeshInteractor::setVisibility(bool visible)
     d->actor2d->SetVisibility(v);
     d->actor3d->SetVisibility(v);
 
-    d->render->Render();
+    d->view->render();
 }
 
 void vtkDataMeshInteractor::setEdgeVisibility(bool visible)
@@ -273,7 +270,7 @@ void vtkDataMeshInteractor::setEdgeVisibility(bool visible)
     int v = (visible) ? 1 : 0;
     d->actorProperty->SetEdgeVisibility(v);
 
-    d->render->Render();
+    d->view->render();
 }
 
 
@@ -292,7 +289,7 @@ void vtkDataMeshInteractor::setColor(QColor color)
     color.getRgbF(&r, &g, &b);
     d->actorProperty->SetColor(r, g, b);
 
-    d->render->Render();
+    d->view->render();
 }
 
 void vtkDataMeshInteractor::setColor(const QString &color)
@@ -318,7 +315,7 @@ void vtkDataMeshInteractor::setRenderingType(const QString & type)
     else if (value == "points")
         d->actorProperty->SetRepresentationToPoints ();
 
-    d->render->Render();
+    d->view->render();
 }
 
 
@@ -390,7 +387,7 @@ void vtkDataMeshInteractor::setAttribute(const QString & attributeName)
         mapper2d->SetScalarVisibility(0);
         mapper3d->SetScalarVisibility(0);
     }
-    d->render->Render();
+    d->view->render();
 }
 
 
@@ -402,7 +399,10 @@ QString vtkDataMeshInteractor::attribute() const
 
 void vtkDataMeshInteractor::setLut(const QString & lutName)
 {
-    vtkLookupTable * lut = vtkLookupTableManager::GetLookupTable(lutName.toStdString());
+    vtkLookupTable * lut = NULL;
+
+    if (lutName != "Default")
+        lut = vtkLookupTableManager::GetLookupTable(lutName.toStdString());
 
     if ( ! d->attribute)
      return;
@@ -410,7 +410,7 @@ void vtkDataMeshInteractor::setLut(const QString & lutName)
     d->lut = LutPair(lut, lutName);
     this->setLut(lut);
 
-    d->render->Render();
+    d->view->render();
 }
 
 
@@ -433,7 +433,7 @@ void vtkDataMeshInteractor::updatePipeline ()
             d->actor2d->SetProperty( d->actorProperty );
             d->actor3d->SetProperty( d->actorProperty );
 
-            d->view2d->UpdateBounds(pointSet->GetBounds(), 0, d->view->layer(this->inputData()));
+            d->view2d->UpdateBounds(pointSet->GetBounds(), d->view->layer(this->inputData()));
         }
     }
     d->view3d->ResetCamera();
@@ -449,22 +449,22 @@ void vtkDataMeshInteractor::setLut(vtkLookupTable * lut)
     {
         lut = d->attribute->GetLookupTable();
         d->lut = LutPair(lut, "Default");
-        // no ? then bail, nothing to do here.
-        if ( ! lut )
-            return;
     }
 
     // remove the alpha channel from the LUT, it messes up the mesh
-    double values[4];
-    for(int i = 0; i < lut->GetNumberOfTableValues(); i++)
+    if (lut)
     {
-      lut->GetTableValue(i, values);
-      values[3] = 1.0;
-      lut->SetTableValue(i, values);
-    }
+        double values[4];
+        for(int i = 0; i < lut->GetNumberOfTableValues(); i++)
+        {
+            lut->GetTableValue(i, values);
+            values[3] = 1.0;
+            lut->SetTableValue(i, values);
+        }
 
-    double * range = d->metaDataSet->GetCurrentScalarRange();
-    lut->SetRange(range);
+        double * range = d->metaDataSet->GetCurrentScalarRange();
+        lut->SetRange(range);
+    }
 
     vtkMapper * mapper2d = d->actor2d->GetMapper();
     vtkMapper * mapper3d = d->actor3d->GetMapper();
@@ -484,7 +484,7 @@ void vtkDataMeshInteractor::removeData()
         {
             d->view2d->RemoveDataSet(pointSet);
             d->view3d->RemoveDataSet(pointSet);
-            d->render->Render();
+            d->view->render();
         }
     }
 }

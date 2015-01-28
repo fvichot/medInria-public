@@ -34,7 +34,6 @@ public:
      medDatabaseRemover(const medDataIndex &index);
     ~medDatabaseRemover();
 
-    void run();
 
 signals:
 
@@ -48,6 +47,8 @@ public slots:
     void onCancel(QObject*);
 
 protected:
+    virtual void internalRun();
+
     void removeImage( int patientId, int studyId, int seriesId, int imageId);
 
 
@@ -58,9 +59,8 @@ protected:
     bool isPatientEmpty( int patientId );
     void removePatient( int patientId );
 
-    //! Remove a single file
     void removeFile( const QString & filename );
-    //! Remove a data image file. Includes special cases for some file types.
+
     void removeDataFile( const medDataIndex &index, const QString & filename );
     bool removeTableRow( const QString &table, int id );
 

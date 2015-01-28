@@ -13,9 +13,16 @@
 
 #pragma once
 
-class medDatabaseThumbnailHelper
-{
-  public:
-    static const unsigned int width = 320;
-    static const unsigned int height = 320;
+//! Register all algorithms with factory.
+class medAlgorithmInitializer {
+public:
+    medAlgorithmInitializer();
+    virtual ~medAlgorithmInitializer();
+
+    static bool initialize();
+    static bool initializeProcesses();
+    static bool initializeWidgets();
 };
+
+
+

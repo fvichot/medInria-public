@@ -22,6 +22,7 @@
 #include <vtkVectorManager.h>
 #include <vtkImageView2D.h>
 #include <vtkImageView3D.h>
+#include <vtkProperty.h>
 
 #include <itkVector.h>
 #include <itkImage.h>
@@ -64,6 +65,9 @@ public:
     vtkVectorManager                 *manager;
 
     medIntParameter *slicingParameter;
+
+    typedef vtkSmartPointer <vtkProperty>  PropertySmartPointer;
+    PropertySmartPointer actorProperty;
 
     double imageBounds[6];
 };
@@ -141,7 +145,7 @@ void medVtkViewItkVectorFieldInteractor::setInputData(medAbstractData *data)
     d->data = data;
 
     vtkMatrix4x4 *mat = vtkMatrix4x4::New(); //start with identity matrix
-
+    double v_spacing[3], v_origin[4];
     if( identifier.compare("itkDataImageVectorFloat3") == 0 )
     {
         typedef    itk::Vector< float, 3 >    InputPixelType;
@@ -156,13 +160,16 @@ void medVtkViewItkVectorFieldInteractor::setInputData(medAbstractData *data)
             for (int k=0; k<3; k++)
                 mat->SetElement(i,k, direction(i,k));
 
-        double v_origin[4], v_origin2[4];
+        double v_origin2[4];
         for (int i=0; i<3; i++)
           v_origin[i] = i_origin[i];
         v_origin[3] = 1.0;
         mat->MultiplyPoint (v_origin, v_origin2);
         for (int i=0; i<3; i++)
           mat->SetElement (i, 3, v_origin[i]-v_origin2[i]);
+
+        for (int i=0; i<3; i++)
+            v_spacing[i] = d->floatData->GetSpacing()[i];
 
         d->floatFilter = FloatFilterType::New();
         d->floatFilter->SetInput( d->floatData );
@@ -188,13 +195,17 @@ void medVtkViewItkVectorFieldInteractor::setInputData(medAbstractData *data)
             for (int k=0; k<3; k++)
                 mat->SetElement(i,k, direction(i,k));
 
-        double v_origin[4], v_origin2[4];
+        double v_origin2[4];
         for (int i=0; i<3; i++)
           v_origin[i] = i_origin[i];
         v_origin[3] = 1.0;
         mat->MultiplyPoint (v_origin, v_origin2);
         for (int i=0; i<3; i++)
           mat->SetElement (i, 3, v_origin[i]-v_origin2[i]);
+
+
+        for (int i=0; i<3; i++)
+            v_spacing[i] = d->doubleData->GetSpacing()[i];
 
         d->doubleFilter = DoubleFilterType::New();
         d->doubleFilter->SetInput( d->doubleData );
@@ -212,9 +223,14 @@ void medVtkViewItkVectorFieldInteractor::setInputData(medAbstractData *data)
     int *dim;
     dim = d->manager->GetInput()->GetDimensions();
 
-    d->view2d->SetInput(d->manager->GetVectorVisuManagerAxial()->GetActor(), d->view->layer(data), dim);
-    d->view2d->SetInput(d->manager->GetVectorVisuManagerSagittal()->GetActor(), d->view->layer(data), dim);
-    d->view2d->SetInput(d->manager->GetVectorVisuManagerCoronal()->GetActor(), d->view->layer(data), dim);
+    d->view2d->SetInput(d->manager->GetVectorVisuManagerAxial()->GetActor(), d->view->layer(data), mat, dim, v_spacing, v_origin);
+    d->view2d->SetInput(d->manager->GetVectorVisuManagerSagittal()->GetActor(), d->view->layer(data), mat, dim, v_spacing, v_origin);
+    d->view2d->SetInput(d->manager->GetVectorVisuManagerCoronal()->GetActor(), d->view->layer(data), mat, dim, v_spacing, v_origin);
+
+    d->actorProperty = medVtkViewItkVectorFieldInteractorPrivate::PropertySmartPointer::New();
+    d->manager->GetVectorVisuManagerAxial()->GetActor()->SetProperty( d->actorProperty );
+    d->manager->GetVectorVisuManagerSagittal()->GetActor()->SetProperty( d->actorProperty );
+    d->manager->GetVectorVisuManagerCoronal()->GetActor()->SetProperty( d->actorProperty );
 
     setupParameters();
     update();
@@ -239,6 +255,11 @@ void medVtkViewItkVectorFieldInteractor::setupParameters()
     medStringListParameter *colorMode = new medStringListParameter("Color mode", this);
     colorMode->addItem("Vector Magnitude");
     colorMode->addItem("Vector Direction");
+    colorMode->addItem("Red", medStringListParameter::createIconFromColor("red"));
+    colorMode->addItem("Green", medStringListParameter::createIconFromColor("green"));
+    colorMode->addItem("Blue", medStringListParameter::createIconFromColor("blue"));
+    colorMode->addItem("Yellow", medStringListParameter::createIconFromColor("yellow"));
+    colorMode->addItem("White", medStringListParameter::createIconFromColor("white"));
     colorMode->setValue("Vector Magnitude");
 
     medBoolParameter *projection = new medBoolParameter("Projection", this);
@@ -286,7 +307,9 @@ void medVtkViewItkVectorFieldInteractor::setWindowLevel(QHash<QString,QVariant>)
 
 void medVtkViewItkVectorFieldInteractor::setOpacity(double opacity)
 {
-    //TODO
+    d->actorProperty->SetOpacity(opacity);
+
+    d->view->render();
 }
 
 void medVtkViewItkVectorFieldInteractor::setVisibility(bool visibility)
@@ -315,10 +338,16 @@ void medVtkViewItkVectorFieldInteractor::setSampleRate(int sampleRate)
 
 void medVtkViewItkVectorFieldInteractor::setColorMode(QString mode)
 {
-    if(mode == "Vector Magnitude")
-        d->manager->SetColorMode(0);
-    else if(mode == "Vector Direction")
-        d->manager->SetColorMode(1);
+    if(mode == "Vector Magnitude") {
+        d->manager->SetColorMode(vtkVectorVisuManager::ColorByVectorMagnitude);
+    } else if(mode == "Vector Direction") {
+        d->manager->SetColorMode(vtkVectorVisuManager::ColorByVectorDirection);
+    } else {
+        QColor color(mode.toLower()); // not great...
+        double colorF[3]; color.getRgbF(&(colorF[0]), &(colorF[1]), &(colorF[2]));
+        d->manager->SetUserColor(colorF);
+        d->manager->SetColorMode(vtkVectorVisuManager::ColorByUserColor);
+    }
     this->update();
 }
 
@@ -392,7 +421,8 @@ void medVtkViewItkVectorFieldInteractor::moveToSlice(int slice)
 
 QWidget* medVtkViewItkVectorFieldInteractor::buildLayerWidget()
 {
-    return new QWidget;
+    this->opacityParameter()->getSlider()->setOrientation(Qt::Horizontal);
+    return this->opacityParameter()->getSlider();
 }
 
 QWidget* medVtkViewItkVectorFieldInteractor::buildToolBoxWidget()
@@ -414,7 +444,7 @@ QWidget* medVtkViewItkVectorFieldInteractor::buildToolBarWidget()
 QList<medAbstractParameter*> medVtkViewItkVectorFieldInteractor::linkableParameters()
 {
     QList <medAbstractParameter*> linkableParams = d->parameters;
-    linkableParams << this->visibilityParameter();
+    linkableParams << this->visibilityParameter() << this->opacityParameter();
     return linkableParams;
 }
 
@@ -426,7 +456,7 @@ QList<medBoolParameter*> medVtkViewItkVectorFieldInteractor::mouseInteractionPar
 
 void medVtkViewItkVectorFieldInteractor::update()
 {
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkViewItkVectorFieldInteractor::updateWidgets()

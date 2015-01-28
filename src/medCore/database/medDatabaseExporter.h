@@ -29,13 +29,8 @@ public:
      medDatabaseExporter(medAbstractData * data, const QString & filename, const QString & writer);
     ~medDatabaseExporter();
 
-    /**
-     * @brief Starts the job and writes to the file system.
-     *
-     * @param void
-     * @todo enrich the signals in the exporter (the writer progress signal is not forwarded to the explorer)
-    */
-    void run();
+protected:
+    void internalRun();
 
 private:
     medDatabaseExporterPrivate *d;

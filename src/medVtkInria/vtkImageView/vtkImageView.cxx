@@ -4,7 +4,7 @@
 
  Copyright (c) INRIA 2013 - 2014. All rights reserved.
  See LICENSE.txt for details.
- 
+
   This software is distributed WITHOUT ANY WARRANTY; without even
   the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
   PURPOSE.
@@ -308,12 +308,6 @@ void vtkImageView::Render()
 {
   if (this->RenderWindow)
   {
-      /*
-    if ( this->GetColorWindow () == VTK_DOUBLE_MAX ) {
-
-      this->ResetWindowLevel();
-    }*/
-
     if (!this->RenderWindow->GetNeverRendered())
     {
       if( this->GetMTime() > this->InternalMTime )
@@ -984,10 +978,6 @@ void vtkImageView::SetColorWindow(double s)
 //----------------------------------------------------------------------------
 void vtkImageView::SetColorWindow(double s,int layer)
 {
-  //layer is not used here yet.
-  if (s < 0)
-    s = 0;
-
   if (s == this->GetColorWindow(layer))
     return;
 
@@ -1112,9 +1102,10 @@ double vtkImageView::GetValueAtPosition(double worldcoordinates[3],
   if (!input)
     return 0.0;
 
-  int indices[3];
+  int indices[3] = {0,0,0};
   this->GetImageCoordinatesFromWorldCoordinates (worldcoordinates, indices);
   int* w_extent = input->GetWholeExtent();
+
   if ( (indices[0] < w_extent[0]) ||
       (indices[0] > w_extent[1]) ||
       (indices[1] < w_extent[2]) ||

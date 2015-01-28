@@ -177,10 +177,17 @@ void medRegistrationWorkspace::updateFromMovingContainer()
         d->viewGroup->addImpactedView(fuseView);
         d->viewGroup->removeParameter("DataList");
 
-        d->movingLayerGroup->addImpactedlayer(movingView, 0);
-        d->movingLayerGroup->addImpactedlayer(fuseView, fuseView->layer(movingData));
+        d->movingLayerGroup->addImpactedlayer(movingView, movingData);
+        d->movingLayerGroup->addImpactedlayer(fuseView, movingData);
     }
-    d->registrationToolBox->setMovingData(movingData);
+    if (!d->registrationToolBox->setMovingData(movingData))
+    {
+        // delete the view because something failed at some point
+        d->viewGroup->removeImpactedView(movingView);
+        d->movingLayerGroup->removeImpactedlayer(movingView, movingData);
+        d->movingLayerGroup->removeImpactedlayer(fuseView, movingData);
+        movingView->deleteLater();
+    }
 }
 
 void medRegistrationWorkspace::updateFromFixedContainer()
@@ -228,11 +235,18 @@ void medRegistrationWorkspace::updateFromFixedContainer()
         d->viewGroup->addImpactedView(fuseView);
         d->viewGroup->removeParameter("DataList");
 
-        d->fixedLayerGroup->addImpactedlayer(fixedView, 0);
-        d->fixedLayerGroup->addImpactedlayer(fuseView, fuseView->layer(fixedData));
+        d->fixedLayerGroup->addImpactedlayer(fixedView, fixedData);
+        d->fixedLayerGroup->addImpactedlayer(fuseView, fixedData);
     }
 
-    d->registrationToolBox->setFixedData(fixedData);
+    if (!d->registrationToolBox->setFixedData(fixedData))
+    {
+        // delete the view because something failed at some point
+        d->viewGroup->removeImpactedView(fixedView);
+        d->fixedLayerGroup->removeImpactedlayer(fixedView, fixedData);
+        d->fixedLayerGroup->removeImpactedlayer(fuseView, fixedData);
+        fixedView->deleteLater();
+    }
 }
 
 
@@ -281,8 +295,8 @@ void medRegistrationWorkspace::updateFromRegistrationSuccess(medAbstractData *ou
     d->viewGroup->addImpactedView(fuseView);
     d->viewGroup->removeParameter("DataList");
 
-    d->movingLayerGroup->addImpactedlayer(movingView, 0);
-    d->movingLayerGroup->addImpactedlayer(fuseView, fuseView->layer(output));
+    d->movingLayerGroup->addImpactedlayer(movingView, output);
+    d->movingLayerGroup->addImpactedlayer(fuseView, output);
 
     connect(d->movingContainer,SIGNAL(viewContentChanged()),
             this, SLOT(updateFromMovingContainer()));

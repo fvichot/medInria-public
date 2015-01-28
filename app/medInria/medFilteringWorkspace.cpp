@@ -60,6 +60,9 @@ medFilteringWorkspace::~medFilteringWorkspace()
     d = NULL;
 }
 
+/**
+ * @brief sets up all the signal/slot connections when Viewer is switched to this workspace
+ */
 void medFilteringWorkspace::setupViewContainerStack()
 {
     if ( !this->stackedViewContainers()->count() )
@@ -80,7 +83,7 @@ void medFilteringWorkspace::setupViewContainerStack()
         d->outputContainer->setClosingMode(medViewContainer::CLOSE_VIEW);
         d->outputContainer->setUserSplittable(false);
         d->outputContainer->setMultiLayered(false);
-        d->outputContainer->setAcceptDrops(false);
+        d->outputContainer->setUserOpenable(false);
 
         connect(d->inputContainer, SIGNAL(viewContentChanged()), this, SLOT(changeToolBoxInput()));
         connect(d->inputContainer, SIGNAL(viewRemoved()), this, SLOT(changeToolBoxInput()));
@@ -113,6 +116,9 @@ void medFilteringWorkspace::changeToolBoxInput()
     d->filteringToolBox->onInputSelected(layeredView->layerData(layeredView->currentLayer()));
 }
 
+/**
+ * @brief adds metadata to the output and emits a signal outputDataChanged(medAbstractData *)
+ */
 void medFilteringWorkspace::onProcessSuccess()
 {
     if(d->filteringToolBox.isNull())
@@ -143,7 +149,7 @@ void medFilteringWorkspace::onProcessSuccess()
     QString generatedID = QUuid::createUuid().toString().replace("{","").replace("}","");
     d->filterOutput->setMetaData ( medMetaDataKeys::SeriesID.key(), generatedID );
 
-    medDataManager::instance()->importData(d->filterOutput, true);
+    medDataManager::instance()->importData(d->filterOutput);
 
     d->outputContainer->addData(d->filterOutput);
 }

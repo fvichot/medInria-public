@@ -22,12 +22,14 @@
 #include <vtkImageView2D.h>
 #include <vtkImageView3D.h>
 #include <vtkRenderer.h>
+#include <vtkProperty.h>
 
 #include <medAbstractData.h>
 #include <medAbstractParameter.h>
 #include <medStringListParameter.h>
 #include <medIntParameter.h>
 #include <medBoolParameter.h>
+#include <medDoubleParameter.h>
 #include <medAbstractImageView.h>
 #include <medViewFactory.h>
 #include <medVtkViewBackend.h>
@@ -45,8 +47,7 @@ public:
     vtkImageView2D *view2d;
     vtkImageView3D *view3d;
     vtkRenderWindow *render;
-    vtkRenderer *renderer2d;
-    vtkRenderer *renderer3d;
+    vtkMatrix4x4 *orientationMatrix;
 
     QList <medAbstractParameter*> parameters;
     vtkSphericalHarmonicManager* manager;
@@ -56,6 +57,9 @@ public:
     int majorScalingExponent;
 
     medIntParameter *slicingParameter;
+
+    typedef vtkSmartPointer <vtkProperty>  PropertySmartPointer;
+    PropertySmartPointer actorProperty;
 
     //  The filters will convert from itk SH image format to vtkStructuredPoint (format handled by the SH manager)
 
@@ -79,19 +83,48 @@ public:
 
         filter->Update();
 
+        itk::ImageBase<3>::DirectionType directions = dataset->GetDirection();
+        itk::ImageBase<3>::PointType origin = dataset->GetOrigin();
+        orientationMatrix = vtkMatrix4x4::New();
+        orientationMatrix->Identity();
+        for (int i=0; i<3; i++)
+            for (int j=0; j<3; j++)
+                orientationMatrix->SetElement (i, j, directions (i,j));
+        double v_origin[4], v_origin2[4];
+        for (int i=0; i<3; i++)
+            v_origin[i] = origin[i];
+        v_origin[3] = 1.0;
+        orientationMatrix->MultiplyPoint (v_origin, v_origin2);
+        for (int i=0; i<3; i++)
+            orientationMatrix->SetElement (i, 3, v_origin[i]-v_origin2[i]);
+
+        double v_spacing[3];
+        for (int i=0; i<3; i++)
+            v_spacing[i] = dataset->GetSpacing()[i];
+
         //  We need to call this function because GetOutput() just returns the input
 
         manager->SetInput(filter->GetVTKSphericalHarmonic());
-        manager->SetMatrixT(filter->GetDirectionMatrix());
+        manager->SetDirectionMatrix(filter->GetDirectionMatrix());
 
-        //TODO:JGG This has to be changed the order has to be a property saved inside the image
+        manager->ResetPosition();
 
         const int number = dataset->GetNumberOfComponentsPerPixel();
         const int Order  = -1.5+std::sqrt((float)(0.25+2*number));
         manager->SetOrder(Order);
 
         manager->Update();
+
         data = d;
+
+        if (view)
+        {
+            int dim[3];
+            manager->GetSphericalHarmonicDimensions(dim);
+            view2d->SetInput(manager->GetSHVisuManagerAxial()->GetActor(), view->layer(data), orientationMatrix, dim, v_spacing, v_origin);
+            view2d->SetInput(manager->GetSHVisuManagerSagittal()->GetActor(), view->layer(data), orientationMatrix, dim, v_spacing, v_origin);
+            view2d->SetInput(manager->GetSHVisuManagerCoronal()->GetActor(), view->layer(data), orientationMatrix, dim, v_spacing, v_origin);
+        }
     }
 };
 
@@ -107,6 +140,7 @@ itkDataSHImageVtkViewInteractor::itkDataSHImageVtkViewInteractor(medAbstractView
     d->view2d = backend->view2D;
     d->view3d = backend->view3D;
     d->render = backend->renWin;
+    d->orientationMatrix = 0;
 
     d->manager = vtkSphericalHarmonicManager::New();
 
@@ -124,18 +158,16 @@ itkDataSHImageVtkViewInteractor::itkDataSHImageVtkViewInteractor(medAbstractView
     for (int i=0; i<6; i++)
         d->imageBounds[i] = 0;
 
-    d->manager->SetRenderWindowInteractor(d->render->GetInteractor(),d->renderer3d);
+    d->manager->SetRenderWindowInteractor(d->render->GetInteractor(), d->view3d->GetRenderer());
 
     connect(d->view->positionBeingViewedParameter(), SIGNAL(valueChanged(QVector3D)),
             this,    SLOT(setPosition(QVector3D)));
 
     d->slicingParameter = new medIntParameter("Slicing", this);
-
 }
 
 itkDataSHImageVtkViewInteractor::~itkDataSHImageVtkViewInteractor() {
 
-    d->manager->Delete();
     delete d;
     d = 0;
 }
@@ -188,17 +220,17 @@ void itkDataSHImageVtkViewInteractor::setInputData(medAbstractData *data)
         return;
     }
 
-    int dim[3];
-    d->manager->GetSphericalHarmonicDimensions(dim);
-    d->view2d->SetInput(d->manager->GetSHVisuManagerAxial()->GetActor(), d->view->layer(d->data), dim);
-    d->view2d->SetInput(d->manager->GetSHVisuManagerSagittal()->GetActor(), d->view->layer(d->data), dim);
-    d->view2d->SetInput(d->manager->GetSHVisuManagerCoronal()->GetActor(), d->view->layer(d->data), dim);
+    d->actorProperty = itkDataSHImageVtkViewInteractorPrivate::PropertySmartPointer::New();
+    d->manager->GetSHVisuManagerAxial()->GetActor()->SetProperty( d->actorProperty );
+    d->manager->GetSHVisuManagerSagittal()->GetActor()->SetProperty( d->actorProperty );
+    d->manager->GetSHVisuManagerCoronal()->GetActor()->SetProperty( d->actorProperty );
 
     setupParameters();
 }
 
 void itkDataSHImageVtkViewInteractor::removeData()
 {
+    d->view2d->RemoveLayer(d->view->layer(this->inputData()));
     d->manager->Delete();
 }
 
@@ -265,8 +297,6 @@ void itkDataSHImageVtkViewInteractor::setupParameters()
     d->parameters.append(glyphResolutionParam);
     d->parameters.append(minorScalingParam);
     d->parameters.append(majorScalingParam);
-    d->parameters.append(visibilityParameter());
-
 
     connect(tesselationTypeParam, SIGNAL(valueChanged(QString)), this, SLOT(setTesselationType(QString)));
     connect(tesselationBasisParam, SIGNAL(valueChanged(QString)), this, SLOT(setTesselationBasis(QString)));
@@ -308,7 +338,9 @@ void itkDataSHImageVtkViewInteractor::setWindowLevel(QHash<QString,QVariant>)
 
 void itkDataSHImageVtkViewInteractor::setOpacity(double opacity)
 {
-    //TODO
+    d->actorProperty->SetOpacity(opacity);
+
+    d->view->render();
 }
 
 void itkDataSHImageVtkViewInteractor::setVisibility(bool visibility)
@@ -478,7 +510,9 @@ void itkDataSHImageVtkViewInteractor::moveToSlice(int slice)
 
 QWidget* itkDataSHImageVtkViewInteractor::buildLayerWidget()
 {
-    return new QWidget;
+    QSlider *slider = opacityParameter()->getSlider();
+    slider->setOrientation(Qt::Horizontal);
+    return slider;
 }
 
 QWidget* itkDataSHImageVtkViewInteractor::buildToolBoxWidget()
@@ -499,7 +533,9 @@ QWidget* itkDataSHImageVtkViewInteractor::buildToolBarWidget()
 
 QList<medAbstractParameter*> itkDataSHImageVtkViewInteractor::linkableParameters()
 {
-    return d->parameters;
+    QList <medAbstractParameter*> linkableParams = d->parameters;
+    linkableParams << this->visibilityParameter() << this->opacityParameter();
+    return linkableParams;
 }
 
 QList<medBoolParameter*> itkDataSHImageVtkViewInteractor::mouseInteractionParameters()
@@ -510,7 +546,7 @@ QList<medBoolParameter*> itkDataSHImageVtkViewInteractor::mouseInteractionParame
 
 void itkDataSHImageVtkViewInteractor::update()
 {
-    d->render->Render();
+    d->view->render();
 }
 
 void itkDataSHImageVtkViewInteractor::updateWidgets()

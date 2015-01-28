@@ -102,6 +102,17 @@ medAbstractImageView::~medAbstractImageView()
     delete d;
 }
 
+void medAbstractImageView::removeData(medAbstractData *data)
+{
+    medAbstractLayeredView::removeData(data);
+
+    if( this->layersCount() == 0 && d->fourViewsParameter)
+    {
+        delete d->fourViewsParameter;
+        d->fourViewsParameter = 0;
+    }
+}
+
 medAbstractImageViewInteractor* medAbstractImageView::primaryInteractor(medAbstractData* data)
 {
     if(d->primaryInteractorsHash.isEmpty())
@@ -284,11 +295,18 @@ void medAbstractImageView::switchToFourViews()
         QString linkLayerName = linkGroupBaseName + QString::number(linkGroupNumber) + " Layer " + QString::number(i+1);
         medLayerParameterGroup* layerGroup = new medLayerParameterGroup(linkLayerName, this);
         layerGroup->setLinkAllParameters(true);
-        layerGroup->addImpactedlayer(this, i);
-        layerGroup->addImpactedlayer(topRightContainerView, i);
-        layerGroup->addImpactedlayer(bottomLeftContainerView, i);
-        layerGroup->addImpactedlayer(bottomRightContainerView, i);
+        layerGroup->addImpactedlayer(this, this->layerData(i));
+        layerGroup->addImpactedlayer(topRightContainerView, topRightContainerView->layerData(i));
+        layerGroup->addImpactedlayer(bottomLeftContainerView, bottomLeftContainerView->layerData(i));
+        layerGroup->addImpactedlayer(bottomRightContainerView, bottomRightContainerView->layerData(i));
     }
+
+    foreach(medAbstractParameter* param, this->linkableParameters())
+        param->trigger();
+
+    for (unsigned int i = 0;i < this->layersCount();++i)
+        foreach(medAbstractParameter* param, this->linkableParameters(i))
+            param->trigger();
 
     topLeftContainer->setSelected(true);
 }

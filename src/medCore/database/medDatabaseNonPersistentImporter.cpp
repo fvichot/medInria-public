@@ -4,7 +4,7 @@
 
  Copyright (c) INRIA 2013 - 2014. All rights reserved.
  See LICENSE.txt for details.
- 
+
   This software is distributed WITHOUT ANY WARRANTY; without even
   the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
   PURPOSE.
@@ -29,8 +29,8 @@
 
 
 
-medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter ( const QString& file, const QUuid& uuid )
-: medAbstractDatabaseImporter(file, uuid)
+medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter (const QString& file, const QUuid& uuid )
+: medAbstractDatabaseImporter(file, uuid, true)
 {
     qDebug() << "medDatabaseNonPersistentImporter created with uuid:" << this->callerUuid();
 }
@@ -47,21 +47,24 @@ medDatabaseNonPersistentImporter::medDatabaseNonPersistentImporter (medAbstractD
 
 medDatabaseNonPersistentImporter::~medDatabaseNonPersistentImporter ()
 {
-    
+
 }
 
 //-----------------------------------------------------------------------------------------------------------
-
+/**
+* Retrieves patientID. Checks if patient is already in the database
+* if so, reurns is Id, otherwise creates a new guid
+*/
 QString medDatabaseNonPersistentImporter::getPatientID(QString patientName, QString birthDate)
 {
     QPointer<medDatabaseNonPersistentController> npdc =
             medDatabaseNonPersistentController::instance();
-            
+
     QList<medDatabaseNonPersistentItem*> items = npdc->items();
-    
+
     bool patientExists = false;
     QString patientID;
-    
+
     foreach(medDatabaseNonPersistentItem* item, items)
     {
         if(item->name() == patientName && item->birthdate() == birthDate)
@@ -71,22 +74,27 @@ QString medDatabaseNonPersistentImporter::getPatientID(QString patientName, QStr
             break;
         }
     }
-    
+
     if(!patientExists)
     {
-        patientID = QUuid::createUuid().toString().replace("{","").replace("}",""); 
+        patientID = QUuid::createUuid().toString().replace("{","").replace("}","");
     }
-    
+
     return patientID;
 }
 
 //-----------------------------------------------------------------------------------------------------------
-
+/**
+* Populates database tables and generates thumbnails.
+* @param medData - a @medAbstractData object created from the original image
+* @param pathToStoreThumbnails - path where the thumbnails will be stored
+* @return medDataIndex the new medDataIndex associated with this imported series.
+**/
 medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbnails ( medAbstractData* data, QString pathToStoreThumbnails )
 {
     QPointer<medDatabaseNonPersistentController> npdc =
             medDatabaseNonPersistentController::instance();
-            
+
     QList<medDatabaseNonPersistentItem*> items = npdc->items();
 
     int     patientDbId   = -1;
@@ -97,7 +105,7 @@ medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbn
     // check if patient is already in the persistent database
     medDataIndex databaseIndex = medDatabaseController::instance()->indexForPatient ( patientName );
     medDatabaseNonPersistentItem *patientItem = NULL;
-    
+
     if ( databaseIndex.isValid() )
     {
         qDebug() << "Patient exists in the database, I reuse his Id";
@@ -122,7 +130,7 @@ medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbn
     }
 
     medDataIndex index;
-    
+
     if ( patientItem == NULL )
     {
         // create an item for patient
@@ -141,15 +149,15 @@ medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbn
 
         npdc->insert ( index, patientItem );
     }
-    
-    
+
+
     int     studyDbId   = -1;
     QString studyName = medMetaDataKeys::StudyDescription.getFirstValue(data);
     QString studyId = medMetaDataKeys::StudyID.getFirstValue(data);
     QString studyUid = medMetaDataKeys::StudyDicomID.getFirstValue(data);
-    
+
     QString seriesName = medMetaDataKeys::SeriesDescription.getFirstValue(data);
-    
+
 
     if( studyName!="EmptyStudy" || seriesName!="EmptySerie" )
     {
@@ -203,8 +211,8 @@ medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbn
             npdc->insert ( index, studyItem );
         }
     }
-        
-        
+
+
     if(seriesName != "EmptySerie")
     {
         index = medDataIndex ( npdc->dataSourceId(), patientDbId, studyDbId, npdc->seriesId ( true ), -1 );
@@ -246,34 +254,46 @@ medDataIndex medDatabaseNonPersistentImporter::populateDatabaseAndGenerateThumbn
 
         npdc->insert ( index, item );
     }
-    
+
     return index;
 }
 
 
 //-----------------------------------------------------------------------------------------------------------
-
+/**
+* Checks if the image which was used to create the medData object
+* passed as parameter already exists in the database
+* @param medData - a @medAbstractData object created from the original image
+* @param imageName - the name of the image we are looking for
+* @return true if already exists, false otherwise
+**/
 bool medDatabaseNonPersistentImporter::checkIfExists ( medAbstractData* medData, QString imageName )
 {
     bool imageExists = false;
 
     QPointer<medDatabaseNonPersistentController> npdc =
             medDatabaseNonPersistentController::instance();
-            
+
     QList<medDatabaseNonPersistentItem*> items = npdc->items();
-    
+
     foreach(medDatabaseNonPersistentItem* item, items)
     {
         imageExists = item->file() == imageName;
         if (imageExists)
             break;
     }
-    
+
     return imageExists;
 }
 
 //-----------------------------------------------------------------------------------------------------------
-
+/**
+* Finds if parameter @seriesName is already being used in the database
+* if is not, it returns @seriesName unchanged
+* otherwise, it returns an unused new series name (created by adding a suffix)
+* @param seriesName - the series name
+* @return newSeriesName - a new, unused, series name
+**/
 QString medDatabaseNonPersistentImporter::ensureUniqueSeriesName ( const QString seriesName )
 {
     QPointer<medDatabaseNonPersistentController> npdc =

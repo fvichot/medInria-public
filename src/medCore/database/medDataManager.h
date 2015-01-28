@@ -13,16 +13,17 @@
 
 #pragma once
 
+
 #include <QObject>
 #include <QPixmap>
 #include <QUuid>
 
 #include <medCoreExport.h>
+#include <medDataIndex.h>
 
 class medDataManagerPrivate;
 class medAbstractData;
 class medAbstractDbController;
-class medDataIndex;
 
 class MEDCORE_EXPORT medDataManager : public QObject
 {
@@ -57,7 +58,7 @@ public:
     medAbstractDbController* controllerForDataSource(int dataSourceId);
 
 signals:
-    void metadataModified(const medDataIndex& index, const QString& key, const QString& value);
+    void metadataModified(const medDataIndex& index, const QString& key = "", const QString& value = "");
     void dataImported(const medDataIndex& index, QUuid importId);
     void dataRemoved(const medDataIndex& index);
 
@@ -68,6 +69,8 @@ signals:
 private slots:
     void exportDialog_updateSuffix(int index);
     void garbageCollect();
+    void removeFromNonPersistent(medDataIndex,QUuid);
+    void setWriterPriorities();
 
 protected:
     medDataManagerPrivate * const d_ptr;

@@ -37,14 +37,15 @@ public:
     virtual QList<medDataIndex> series(const medDataIndex& index) const = 0;
     virtual QList<medDataIndex> images(const medDataIndex& index) const = 0;
 
+    virtual QPixmap thumbnail(const medDataIndex& index) const = 0;
+
     virtual QString metaData(const medDataIndex& index,const QString& key) const = 0;
     QString metaData(const medDataIndex& index,const medMetaDataKeys::Key& md) const { return metaData(index,md.key()); }
     virtual bool setMetaData(const medDataIndex& index, const QString& key, const QString& value) = 0;
     virtual bool isPersistent() const = 0;
 
 signals:
-    void metadataModified(const medDataIndex& index, const QString& key, const QString& value);
-    void metadataModified(const medDataIndex& index);
+    void metadataModified(const medDataIndex& index, const QString& key = "", const QString& value = "");
     void dataImported(const medDataIndex& index, QUuid importId);
     void dataRemoved(const medDataIndex& index);
 

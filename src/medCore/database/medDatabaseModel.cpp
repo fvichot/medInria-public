@@ -146,6 +146,7 @@ medDatabaseModel::medDatabaseModel(QObject *parent, bool justBringStudies) : QAb
 
     connect(medDataManager::instance(), SIGNAL(dataImported(medDataIndex,QUuid)), this, SLOT(update(medDataIndex)), Qt::QueuedConnection);
     connect(medDataManager::instance(), SIGNAL(dataRemoved(medDataIndex)), this, SLOT(update(medDataIndex)), Qt::QueuedConnection);
+    connect(medDataManager::instance(), SIGNAL(metadataModified(medDataIndex,QString,QString)), this, SLOT(update(medDataIndex)), Qt::QueuedConnection);
 }
 
 medDatabaseModel::~medDatabaseModel(void)
@@ -932,7 +933,9 @@ void medDatabaseModel::updatePatient(const medDataIndex& dataIndex, bool updateC
     }
 }
 
-
+/**
+ * return a list of strings that represents the currently shown columns
+ */
 QStringList medDatabaseModel::columnNames() const
 {
     if ( d->columnNames.isEmpty() )

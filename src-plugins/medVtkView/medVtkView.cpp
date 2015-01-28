@@ -47,6 +47,11 @@
 #include <medParameterPoolManager.h>
 #include <medSettingsManager.h>
 
+// declare x11-specific function to prevent the window manager breaking thumbnail generation
+#ifdef Q_WS_X11
+void qt_x11_wait_for_window_manager(QWidget*);
+#endif
+
 class medVtkViewPrivate
 {
 public:
@@ -83,13 +88,11 @@ medVtkView::medVtkView(QObject* parent): medAbstractImageView(parent),
     d->renWin = vtkRenderWindow::New();
     d->renWin->StereoCapableWindowOn();
     d->renWin->SetStereoTypeToCrystalEyes();
+    d->renWin->SetAlphaBitPlanes(1);
+    d->renWin->SetMultiSamples(0);
             // needed for imersive room
     if (qApp->arguments().contains("--stereo"))
         d->renWin->SetStereoRender(1);
-            // Necessary options for depth-peeling
-    d->renWin->SetAlphaBitPlanes(1);
-    d->renWin->SetMultiSamples(0);
-
 
     // construct views
         // view2d
@@ -103,7 +106,6 @@ medVtkView::medVtkView(QObject* parent): medAbstractImageView(parent),
     d->view2d->ShowImageAxisOff();
     d->view2d->ShowScalarBarOff();
     d->view2d->ShowRulerWidgetOn();
-    d->view2d->SetRenderWindow (d->renWin); // set the interactor as well
     d->interactorStyle2D = d->view2d->GetInteractorStyle(); // save interactorStyle
         // view3d.
     d->view3d = vtkImageView3D::New();
@@ -141,9 +143,6 @@ medVtkView::medVtkView(QObject* parent): medAbstractImageView(parent),
     d->view2d->AddObserver(vtkImageView2DCommand::CameraZoomEvent,d->observer,0);
     d->view3d->GetInteractorStyle()->AddObserver(vtkCommand::InteractionEvent, d->observer, 0);
 
-    d->view2d->GetRenderWindow()->GetInteractor()->AddObserver(vtkCommand::KeyPressEvent,d->observer,0);
-    d->view2d->GetRenderWindow()->GetInteractor()->AddObserver(vtkCommand::KeyReleaseEvent,d->observer,0);
-
     d->rubberBandZoomParameter = new medBoolParameter("RubberBandZoom", this);
     connect(d->rubberBandZoomParameter, SIGNAL(valueChanged(bool)), this, SLOT(enableRubberBandZoom(bool)));
 
@@ -151,12 +150,19 @@ medVtkView::medVtkView(QObject* parent): medAbstractImageView(parent),
     QMainWindow * mainWindowApp = dynamic_cast<QMainWindow *>
             (qApp->property( "MainWindow" ).value<QObject *>());
 
-    connect(mainWindowApp, SIGNAL(mainWindowDeactivated()), this, SLOT(resetKeyboardInteractionModifier()));
+    if(mainWindowApp)
+      connect(mainWindowApp, SIGNAL(mainWindowDeactivated()), this, SLOT(resetKeyboardInteractionModifier()));
 
     this->initialiseNavigators();
 
     connect(this, SIGNAL(currentLayerChanged()), this, SLOT(changeCurrentLayer()));
     connect(this, SIGNAL(layerAdded(uint)), this, SLOT(buildMouseInteractionParamPool(uint)));
+
+    // do this last, that way all previous calls to render will fail (which they should)
+    d->view2d->SetRenderWindow (d->renWin);
+
+    d->view2d->GetRenderWindow()->GetInteractor()->AddObserver(vtkCommand::KeyPressEvent,d->observer,0);
+    d->view2d->GetRenderWindow()->GetInteractor()->AddObserver(vtkCommand::KeyReleaseEvent,d->observer,0);
 }
 
 medVtkView::~medVtkView()
@@ -171,6 +177,8 @@ medVtkView::~medVtkView()
     d->view2d->Delete();
     d->view3d->Delete();
     d->observer->Delete();
+    if (d->renWin->GetOffScreenRendering() == 1)
+        d->renWin->SetOffScreenRendering(0);
     d->renWin->Delete();
     delete d->viewWidget;
 
@@ -421,31 +429,22 @@ QImage medVtkView::buildThumbnail(const QSize &size)
 {
     this->blockSignals(true);//we dont want to send things that would ending up on updating some gui things or whatever. - RDE
     int w(size.width()), h(size.height());
-    vtkRenderWindow *renWin = vtkRenderWindow::New();
 
-    // Works only if SetOffScreenRendering is call before SetRenderWindow (sic) - RDE
-    renWin->SetOffScreenRendering(1);
-
-    if(this->orientation() == medImageView::VIEW_ORIENTATION_3D)
-    {
-        renWin->AddRenderer(d->view3d->GetRenderer());
-        d->view3d->SetRenderWindow(renWin);
-    }
-    else
-    {
-        renWin->AddRenderer(d->view2d->GetRenderer());
-        d->view2d->SetRenderWindow(renWin);
-    }
-
-    d->viewWidget->SetRenderWindow(renWin);
+    // will cause crashes if any calls to renWin->Render() happened before this line
     d->viewWidget->resize(w,h);
-    renWin->SetSize(w,h);
-    renWin->Render();
+    d->renWin->SetSize(w,h);
+    render();
+
+#ifdef Q_WS_X11
+    // X11 likes to animate window creation, which means by the time we grab the
+    // widget, it might not be fully ready yet, in which case we get artefacts.
+    // Only necessary if rendering to an actual screen window.
+    if(d->renWin->GetOffScreenRendering() == 0) {
+        qt_x11_wait_for_window_manager(d->viewWidget);
+    }
+#endif
 
     QImage thumbnail = QPixmap::grabWidget(d->viewWidget).toImage();
-
-    renWin->SetOffScreenRendering(0);
-    renWin->Delete();
 
     this->blockSignals(false);
     return thumbnail;
@@ -521,6 +520,10 @@ medBoolParameter* medVtkView::rubberBandZoomParameter() const
     return d->rubberBandZoomParameter;
 }
 
+void medVtkView::setOffscreenRendering(bool isOffscreen)
+{
+    d->renWin->SetOffScreenRendering(isOffscreen ? 1 : 0);
+}
 
 void medVtkView::resetKeyboardInteractionModifier()
 {

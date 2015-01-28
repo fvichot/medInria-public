@@ -100,6 +100,7 @@ public:
     medDropSite *dropOrOpenRoi;
     QComboBox    *roiComboBox;
     QMap <int,int> roiLabels;
+    QUuid roiImportUuid;
 
     medBoolParameter *andParameter;
     medBoolParameter *notParameter;
@@ -215,7 +216,7 @@ void medVtkFibersDataInteractorPrivate::setROI (medAbstractData *data)
     matrix->Delete();
     matrix2->Delete();
 
-    render->Render();
+    view->render();
 }
 
 medVtkFibersDataInteractor::medVtkFibersDataInteractor(medAbstractView *parent): medAbstractImageViewInteractor(parent),
@@ -517,7 +518,7 @@ void medVtkFibersDataInteractor::changeBundleName(QString oldName, QString newNa
 void medVtkFibersDataInteractor::setVisibility(bool visible)
 {
     d->manager->SetVisibility(visible);
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::setBoxVisibility(bool visible)
@@ -569,7 +570,7 @@ void medVtkFibersDataInteractor::setRenderingMode(RenderingMode mode)
         default:
             qDebug() << "medVtkFibersDataInteractor: unknown rendering mode";
     }
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::activateGPU(bool activate)
@@ -608,7 +609,7 @@ void medVtkFibersDataInteractor::setFiberColorMode(QString mode)
         }
     }
 
-    d->render->Render();
+    d->view->render();
  }
 
 void medVtkFibersDataInteractor::setBoxBooleanOperation(bool value)
@@ -636,20 +637,20 @@ void medVtkFibersDataInteractor::setBoxBooleanOperation(BooleanOperation op)
     }
 
     d->manager->GetVOILimiter()->Modified();
-    d->render->Render();
+    d->view->render();
 
 }
 
 void medVtkFibersDataInteractor::tagSelection()
 {
     d->manager->SwapInputOutput();
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::resetSelection()
 {
     d->manager->Reset();
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::validateSelection(const QString &name, const QColor &color)
@@ -670,7 +671,7 @@ void medVtkFibersDataInteractor::validateSelection(const QString &name, const QC
     // reset to initial navigation state
     d->manager->Reset();
 
-    d->render->Render();
+    d->view->render();
 
 }
 
@@ -682,11 +683,11 @@ void medVtkFibersDataInteractor::saveBundlesInDataBase()
     vtkFiberDataSet::vtkFiberBundleListType bundles = d->dataset->GetBundleList();
     vtkFiberDataSet::vtkFiberBundleListType::iterator it = bundles.begin();
 
-    dtkSmartPointer <medAbstractData> tmpBundle;
+    medAbstractData *tmpBundle;
 
     while (it!=bundles.end())
     {
-        tmpBundle = medAbstractDataFactory::instance()->createSmartPointer("medVtkFibersData");
+        tmpBundle = medAbstractDataFactory::instance()->create("medVtkFibersData");
         if (!tmpBundle)
             return;
 
@@ -961,13 +962,13 @@ void medVtkFibersDataInteractor::setProjection(const QString& value)
 void medVtkFibersDataInteractor::setRadius (int value)
 {
     d->manager->SetRadius (value);
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::setRoiBoolean(int roi, int meaning)
 {
     d->manager->GetROILimiter()->SetBooleanOperation (roi, meaning);
-    d->render->Render();
+    d->view->render();
 }
 
 int medVtkFibersDataInteractor::roiBoolean(int roi)
@@ -978,7 +979,7 @@ int medVtkFibersDataInteractor::roiBoolean(int roi)
 void medVtkFibersDataInteractor::setBundleVisibility(const QString &name, bool visibility)
 {
     d->manager->SetBundleVisibility(name.toAscii().constData(), (int)visibility);
-    d->render->Render();
+    d->view->render();
 
 }
 
@@ -1001,7 +1002,7 @@ void medVtkFibersDataInteractor::setAllBundlesVisibility(bool visibility)
         for(int i = 0; i < d->bundlingModel->rowCount(); ++i)
             d->bundlingModel->item(i)->setCheckState(Qt::Unchecked);
     }
-    d->render->Render();
+    d->view->render();
 }
 
 
@@ -1109,6 +1110,28 @@ void medVtkFibersDataInteractor::setRoiNullOperation(bool value)
         this->setRoiBoolean(roi, 0);
 }
 
+void medVtkFibersDataInteractor::loadRoiFromFile()
+{
+    if (!d->view)
+        return;
+
+    QString roiFileName = QFileDialog::getOpenFileName(0, tr("Open ROI"), "", tr("Image file (*.*)"));
+
+    if (roiFileName.isEmpty())
+        return;
+
+    d->roiImportUuid = medDataManager::instance()->importPath(roiFileName,false);
+    connect(medDataManager::instance(), SIGNAL(dataImported(medDataIndex,QUuid)),
+            this, SLOT(importROI(medDataIndex,QUuid)), Qt::UniqueConnection);
+}
+
+void medVtkFibersDataInteractor::importROI(const medDataIndex& index, QUuid uuid)
+{
+    if (uuid != d->roiImportUuid)
+        return;
+
+    this->importROI(index);
+}
 
 void medVtkFibersDataInteractor::importROI(const medDataIndex& index)
 {
@@ -1130,7 +1153,7 @@ void medVtkFibersDataInteractor::importROI(const medDataIndex& index)
         return;
     }
 
-    d->dropOrOpenRoi->setPixmap(medDataManager::instance()->thumbnail(index));
+    d->dropOrOpenRoi->setPixmap(medDataManager::instance()->thumbnail(index).scaled(d->dropOrOpenRoi->sizeHint()));
 
     d->setROI<unsigned char>(data);
     d->setROI<char>(data);
@@ -1159,7 +1182,7 @@ void medVtkFibersDataInteractor::clearRoi(void)
 
     d->roiLabels.clear();
 
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::selectRoi(int value)
@@ -1195,7 +1218,7 @@ void medVtkFibersDataInteractor::setOpacity(double opacity)
 {
     d->opacityProperty->SetOpacity(opacity);
 
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::setVisible(bool visible)
@@ -1203,7 +1226,7 @@ void medVtkFibersDataInteractor::setVisible(bool visible)
     int v = (visible) ? 1 : 0;
     d->actor->SetVisibility(v);
 
-    d->render->Render();
+    d->view->render();
 }
 
 void medVtkFibersDataInteractor::setWindowLevel (QHash<QString,QVariant>)
@@ -1276,8 +1299,7 @@ QWidget* medVtkFibersDataInteractor::buildToolBoxWidget()
     bundleToolboxLayout->addWidget(clearRoiButton, 0, Qt::AlignCenter);
 
     connect (d->dropOrOpenRoi, SIGNAL(objectDropped(const medDataIndex&)), this, SLOT(importROI(const medDataIndex&)));
-    //TO DO: re-add load ROI from file system when data manager will be refactored
-    //connect (d->dropOrOpenRoi, SIGNAL(clicked()), this, SLOT(onDropSiteClicked()));
+    connect (d->dropOrOpenRoi, SIGNAL(clicked()), this, SLOT(loadRoiFromFile()));
     connect (clearRoiButton,   SIGNAL(clicked()), this, SLOT(clearRoi()));
     connect (d->roiComboBox,   SIGNAL(currentIndexChanged(int)), this, SLOT(selectRoi(int)));
 
@@ -1350,7 +1372,7 @@ void medVtkFibersDataInteractor::saveCurrentBundle()
         it++;
     }
 
-    dtkSmartPointer <medAbstractData> savedBundle = medAbstractDataFactory::instance()->createSmartPointer("medVtkFibersData");
+    medAbstractData *savedBundle = medAbstractDataFactory::instance()->create("medVtkFibersData");
     if (!savedBundle)
         return;
     
@@ -1398,7 +1420,7 @@ void medVtkFibersDataInteractor::removeCurrentBundle()
     
     // reset to initial navigation state
     d->manager->Reset();
-    d->render->Render();
+    d->view->render();
 
     d->bundlingModel->removeRow(index.row());
 }

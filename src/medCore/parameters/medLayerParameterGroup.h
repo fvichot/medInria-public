@@ -14,10 +14,12 @@
 #pragma once
 
 #include <medAbstractParameterGroup.h>
+#include <medAbstractData.h>
+#include <medCoreExport.h>
 
 class medLayerParameterGroupPrivate;
 
-class medLayerParameterGroup : public medAbstractParameterGroup
+class MEDCORE_EXPORT medLayerParameterGroup : public medAbstractParameterGroup
 {
     Q_OBJECT
 
@@ -25,18 +27,18 @@ public:
     medLayerParameterGroup(QString name = "", QObject *parent = 0, QString workspace = "");
     virtual ~medLayerParameterGroup();
 
-    void addImpactedlayer(medAbstractLayeredView *view, unsigned int layer);
-    void removeImpactedlayer(medAbstractLayeredView *view, unsigned int layer);
-    QMultiHash<medAbstractLayeredView*, unsigned int> impactedLayers();
+    void addImpactedlayer(medAbstractLayeredView *view, medAbstractData* layerData);
+    void removeImpactedlayer(medAbstractLayeredView *view, medAbstractData* layerData);
+    QMultiHash<medAbstractLayeredView*, medAbstractData*> impactedLayers();
 
     void setLinkAllParameters(bool linkAll);
 
 protected:
     virtual void updatePool();
-    void updateParameterToLinkList(medAbstractLayeredView *view, unsigned int layer);
+    void updateParameterToLinkList(medAbstractLayeredView *view, medAbstractData* layerData);
 
 private slots:
-    void removeImpactedlayer(uint);
+    void removeImpactedlayer(medAbstractData*);
 
 private:
     medLayerParameterGroupPrivate *d;

@@ -21,6 +21,8 @@
 #include <medDatabaseExporter.h>
 #include <medMessageController.h>
 #include <medJobManager.h>
+#include <medPluginManager.h>
+#include <medGlobalDefs.h>
 
 /* THESE CLASSES NEED TO BE THREAD-SAFE, don't forget to lock the mutex in the
  * methods below that access state.
@@ -66,6 +68,7 @@ public:
     medAbstractDbController * dbController;
     medAbstractDbController * nonPersDbController;
     QTimer timer;
+    QHash<QUuid, medDataIndex> makePersistentJobs;
 };
 
 // ------------------------- medDataManager -----------------------------------
@@ -287,11 +290,7 @@ void medDataManager::exportDialog_updateSuffix(int index)
     QFileDialog * exportDialog = qobject_cast<QFileDialog*>(typesHandled->itemData(index, Qt::UserRole+2).value<QObject*>());
     QString extension = typesHandled->itemData(index, Qt::UserRole+1).toString();
 
-    QString currentFilename = exportDialog->selectedFiles().first();
-    int lastDot = currentFilename.lastIndexOf('.');
-    if (lastDot != -1) {
-        currentFilename = currentFilename.mid(0, lastDot);
-    }
+    QString currentFilename = med::smartBaseName(exportDialog->selectedFiles().first());
     currentFilename += extension;
     exportDialog->selectFile(currentFilename);
 }
@@ -306,9 +305,8 @@ void medDataManager::garbageCollect()
     while(it.hasNext()) {
         it.next();
         medAbstractData *data = it.value();
-        qDebug()<<"medDataManager garbage collect ?" << data->dataIndex() << data->count();
         if(data->count() <= 1) {
-            qDebug()<<"medDataManager garbage collect !" << data->dataIndex();
+            qDebug()<<"medDataManager garbage collected " << data->dataIndex();
             it.remove();
         }
     }
@@ -326,7 +324,26 @@ QUuid medDataManager::makePersistent(medAbstractData* data)
     if (data->dataIndex().dataSourceId() == d->dbController->dataSourceId())
         return QUuid();
 
-    return this->importData(data, true);
+    QUuid jobUuid;
+
+    if(data->dataIndex().isValidForSeries())
+    {
+        jobUuid = this->importData(data, true);
+        d->makePersistentJobs.insert(jobUuid, data->dataIndex());
+    }
+    else if( data->dataIndex().isValidForStudy() )
+    {
+        foreach(medDataIndex index, d->nonPersDbController->series(data->dataIndex()))
+            jobUuid = makePersistent(this->retrieveData(index));
+
+    }
+    else if( data->dataIndex().isValidForPatient())
+    {
+        foreach(medDataIndex index, d->nonPersDbController->studies(data->dataIndex()))
+            jobUuid = makePersistent(this->retrieveData(index));
+    }
+
+    return jobUuid;
 }
 
 
@@ -353,20 +370,51 @@ void medDataManager::removeData(const medDataIndex& index)
     }
 }
 
+void medDataManager::removeFromNonPersistent(medDataIndex indexImported, QUuid uuid)
+{
+    Q_D(medDataManager);
+    if(!d->makePersistentJobs.contains(uuid))
+        return;
+
+    this->removeData(d->makePersistentJobs.value(uuid));
+    d->makePersistentJobs.remove(uuid);
+}
+
 QPixmap medDataManager::thumbnail(const medDataIndex & index)
 {
     Q_D(medDataManager);
     medAbstractDbController* dbc = d->controllerForDataSource(index.dataSourceId());
-    QString thumbpath = dbc->metaData(index, medMetaDataKeys::ThumbnailPath);
 
-    QFileInfo fileInfo(thumbpath);
-    if ( fileInfo.exists() ) {
-        return QPixmap(thumbpath);
+    QPixmap pix;
+    // dbc is NULL when called from the importer, as data is not imported yet
+    if (dbc) {
+        pix = dbc->thumbnail(index);
     }
 
-    return QPixmap(":/medGui/pixmaps/default_thumbnail.png");
+    return pix.isNull() ? QPixmap(":/medGui/pixmaps/default_thumbnail.png") : pix;
 }
 
+void medDataManager::setWriterPriorities()
+{
+    QList<QString> writers = medAbstractDataFactory::instance()->writers();
+    QMap<int, QString> writerPriorites;
+
+    int startIndex = 0;
+
+    // set itkMetaDataImageWriter as the top priority writer
+    if(writers.contains("itkMetaDataImageWriter"))
+    {
+        writerPriorites.insert(0, "itkMetaDataImageWriter");
+        startIndex = writers.removeOne("itkMetaDataImageWriter") ? 1 : 0;
+    }
+
+    for ( int i=0; i<writers.size(); i++ )
+    {
+        writerPriorites.insert(startIndex+i, writers[i]);
+    }
+
+    medAbstractDataFactory::instance()->setWriterPriorities(writerPriorites);
+}
 
 medDataManager::medDataManager() : d_ptr(new medDataManagerPrivate(this))
 {
@@ -378,8 +426,12 @@ medDataManager::medDataManager() : d_ptr(new medDataManagerPrivate(this))
         connect(controller, SIGNAL(dataRemoved(medDataIndex)), this, SIGNAL(dataRemoved(medDataIndex)));
         connect(controller, SIGNAL(metadataModified(medDataIndex,QString,QString)), this, SIGNAL(metadataModified(medDataIndex,QString,QString)));
     }
+
     connect(&(d->timer), SIGNAL(timeout()), this, SLOT(garbageCollect()));
-    d->timer.start(5*1000); // every minute
+    d->timer.start(5*1000);
+
+    connect(medPluginManager::instance(), SIGNAL(allPluginsLoaded()), this, SLOT(setWriterPriorities()));
+    connect(this, SIGNAL(dataImported(medDataIndex,QUuid)), this, SLOT(removeFromNonPersistent(medDataIndex,QUuid)));
 }
 
 

@@ -110,10 +110,13 @@ void medTabbedViewContainers::closeTab(int index)
     // We don't want to repopulate the tab, we want to close it.
     this->widget(index)->disconnect(this, SLOT(repopulateCurrentTab()));
 
+    // However because of the deleteLater in medViewContainer::closeEvent
+    // we don't really know when the splitter will be destroyed and when (this->count() < 1) will be true
+    // so we can't call directly resetTabState, we need another SIGNAL/SLOT connection for that
+    connect(this->widget(index), SIGNAL(destroyed()), this, SLOT(resetTabState()));
+
     foreach(medViewContainer* container, containersInTab(index))
         container->close();
-
-    this->resetTabState();
 }
 
 void medTabbedViewContainers::resetTabState()
@@ -128,7 +131,10 @@ void medTabbedViewContainers::resetTabState()
 
 medViewContainer* medTabbedViewContainers::addContainerInTab()
 {
-    return this->addContainerInTab(QString("%0 %1").arg(d->owningWorkspace->name()).arg(count()));
+    if (this->count())
+        return this->addContainerInTab(QString("%0 %1").arg(d->owningWorkspace->name()).arg(count()));
+    else
+        return this->addContainerInTab(QString("%0").arg(d->owningWorkspace->name()));
 }
 
 medViewContainer* medTabbedViewContainers::addContainerInTab(const QString &name)
@@ -169,6 +175,9 @@ void medTabbedViewContainers::connectContainer(QUuid container)
 
 void medTabbedViewContainers::repopulateCurrentTab()
 {
+    if(this->count() < 1)
+        this->addContainerInTab();
+
     int idx = this->currentIndex();
     QString tabText = this->tabText(idx);
     this->removeTab(idx);

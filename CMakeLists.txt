@@ -11,7 +11,7 @@
 #
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 2.8.10)
 
 project(MEDINRIA)
 
@@ -101,6 +101,7 @@ endif()
 ## Find package
 ## #############################################################################
 
+set(QT_USE_QTOPENGL on)
 find_package(Qt4 REQUIRED)
 include(${QT_USE_FILE})
 

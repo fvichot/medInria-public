@@ -1,3 +1,40 @@
+medInria v2.2.2:
+- Minimum CMake version is now 2.8.10, as it corrects problem with automoc
+- Window/Level sliders are now expressed as Min/Max for easier manipulation
+- Fixed a bug that was wasting disk space by saving non persistent items on disk
+- Restore split presets, ROI file loading, RGB(A) image support
+- Undo/Redo support in paint segmentation
+- Allow coloring of vector field by a single color for field comparisons
+- Fixed Depth-Peeling on NVidia cards, improved general performance a bit
+- Various bugs and crashes corrections
+
+medInria v2.2.1:
+- Presets for images are back
+- Reversed Loni Lut added
+- Diffusion workspace bug correction
+- File association on Mac corrected
+- Crashing bug in ITK basic filters solved
+- Various bugs corrections
+
+medInria v2.2.0:
+- Rubber band zoom
+- Add support for VTK vtp file format
+- New application design 
+- DICOM import robustness improved
+- Morphological filters (dilate, erode, open, close) added
+- ITK 4.6 and VTK5.10 migration
+- Vector field visualization
+- HighDPI support on OSX
+- New navigator to explore patients/studies/series
+- New view container management system
+- MPR feature added to visualize an image in all orientations 
+- Diffusion workspace refactored
+- View and Data Management API updated
+- View properties toolbox improved and a new system to link properties set up
+- Corrections in time line management
+- 2 new registration plugins are added : LCC log-Demons and non linear block-matching registration
+- Many bug corrections
+
 medInria v2.1.2:
 - Bug fixes on view/layer synchronisation in the registration workspace
 - Made image annotations more legible on any background by adding text shadows
